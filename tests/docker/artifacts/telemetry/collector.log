@@ -1,0 +1,19 @@
+hardening-collector
+--------------------
+timestamp=2025-10-21T20:32:18.849356+00:00
+vulnerability_total=5
+inventory_total=5
+unique_hosts=1
+severity_breakdown=low:5
+
+Последние события:
+vulnerability host=simulated-osquery package=openssl severity=low cve=CVE-2022-0778
+vulnerability host=simulated-osquery package=openssl severity=low cve=CVE-2022-0778
+vulnerability host=simulated-osquery package=openssl severity=low cve=CVE-2022-0778
+vulnerability host=simulated-osquery package=openssl severity=low cve=CVE-2023-2650
+vulnerability host=simulated-osquery package=openssl severity=low cve=CVE-2022-0778
+inventory host=simulated-osquery os=centos kernel=5.15.7
+inventory host=simulated-osquery os=ubuntu kernel=5.15.21
+inventory host=simulated-osquery os=centos kernel=5.15.1
+inventory host=simulated-osquery os=ubuntu kernel=5.15.16
+inventory host=simulated-osquery os=ubuntu kernel=5.15.22
