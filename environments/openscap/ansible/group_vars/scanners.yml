@@ -1,0 +1,17 @@
+scap_datastream_repo_url: "https://scap-content.internal.example.com/datastreams"
+scap_datastreams:
+  - id: ssg-rhel9-ds.xml
+    profile: xccdf_org.ssgproject.content_profile_cis
+    benchmark: RHEL 9 CIS Level 1 Server
+  - id: ssg-ubuntu2004-ds.xml
+    profile: xccdf_org.ssgproject.content_profile_cis_level1_server
+    benchmark: Ubuntu 20.04 CIS Level 1 Server
+scap_scan_output_dir: /var/lib/openscap/results
+scap_schedule_hour: "3"
+scap_schedule_weekday: "Sun"
+fstec_oval_enabled: true
+# При оффлайн-развёртывании укажите путь к скачанному архиву scanoval.zip
+fstec_oval_local_archive: ""
+fstec_oval_definitions:
+  - linux/oval_fstec_linux.xml
+  - windows/oval_fstec_windows.xml
