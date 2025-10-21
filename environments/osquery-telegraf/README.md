@@ -45,7 +45,7 @@ docker compose up -d
 
 ## Интеграция с hardening-сценариями
 Osquery пакеты покрывают проверки из [Linux](../../hardening-scenarios/linux.md) и [Windows](../../hardening-scenarios/windows.md) сценариев, а события передаются в SOC для подтверждения внедрения мер.
-=======
+
 ## Цель
 Предоставить лёгкий агентский стек для инвентаризации, сбора метрик и запуска ad-hoc скриптов с отправкой данных в KUMA или Grafana.
 

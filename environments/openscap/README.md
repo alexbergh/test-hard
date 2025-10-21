@@ -36,6 +36,8 @@ ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
 - Контроллер: 4 vCPU / 8 GB RAM / 100 GB Storage.
 - Контент-репозиторий: 2 vCPU / 4 GB RAM / 50 GB Storage.
 - Доступ к официальным источникам SCAP и внутреннему репозиторию.
+
+=======
 =======
 ## Цель
 Обеспечить формальный hardening-аудит для Linux/Windows систем в соответствии с ФСТЭК 17/21 и CIS Benchmarks, с возможностью загрузки OVAL-профилей в Kaspersky KEA/KSC.
