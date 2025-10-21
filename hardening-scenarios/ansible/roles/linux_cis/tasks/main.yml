@@ -1,0 +1,42 @@
+---
+- name: Apply kernel sysctl parameters
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: yes
+    reload: yes
+  loop: "{{ kernel_sysctl_settings | dict2items }}"
+
+- name: Ensure tmux package is installed for session locking
+  ansible.builtin.package:
+    name: tmux
+    state: present
+
+- name: Configure automatic session lock
+  ansible.builtin.lineinfile:
+    path: /etc/profile.d/99-screen-lock.sh
+    line: 'export TMOUT=900'
+    create: yes
+    mode: "0644"
+
+- name: Harden sudoers file
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/99-security
+    content: |
+      Defaults use_pty
+      Defaults logfile="/var/log/sudo.log"
+    owner: root
+    group: root
+    mode: "0440"
+
+- name: Ensure audit rules capture privileged commands
+  ansible.builtin.copy:
+    dest: /etc/audit/rules.d/privileged.rules
+    content: |
+      -a always,exit -F arch=b64 -S execve -C uid!=euid -F euid=0 -k privileged
+      -a always,exit -F arch=b32 -S execve -C uid!=euid -F euid=0 -k privileged
+    owner: root
+    group: root
+    mode: "0640"
+  notify: rebuild auditd rules
