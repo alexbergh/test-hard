@@ -5,3 +5,4 @@
   roles:
     - common_baseline
     - linux_cis
+    - secaudit_profiles

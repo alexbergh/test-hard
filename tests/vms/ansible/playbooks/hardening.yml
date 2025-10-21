@@ -1,0 +1,12 @@
+---
+- name: Apply baseline and secaudit profiles
+  hosts: all
+  become: true
+  gather_facts: yes
+  roles:
+    - role: common_baseline
+      tags: [baseline]
+    - role: linux_cis
+      tags: [cis]
+    - role: secaudit_profiles
+      tags: [secaudit]

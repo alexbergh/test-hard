@@ -15,3 +15,4 @@ kernel_sysctl_settings:
   net.ipv4.conf.all.send_redirects: 0
   kernel.randomize_va_space: 2
   net.ipv4.tcp_syncookies: 1
+target_environment: test

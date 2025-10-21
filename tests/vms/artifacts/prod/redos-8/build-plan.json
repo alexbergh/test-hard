@@ -1,0 +1,21 @@
+{
+  "generated_at": "2025-10-21T21:00:15.963959+00:00",
+  "environment": "prod",
+  "vm": {
+    "id": "redos-8",
+    "display_name": "РедОС 8",
+    "profile": "redos-8",
+    "hypervisor": "kvm",
+    "cpus": 2,
+    "memory_mb": 4096,
+    "disk_gb": 40
+  },
+  "profile": {
+    "id": "redos-8",
+    "name": "РедОС 8 (выпуск Нейтроник) hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "packer_template": "tests/vms/packer/linux.pkr.hcl",
+  "ansible_playbook": "tests/vms/ansible/playbooks/hardening.yml"
+}

@@ -15,18 +15,21 @@
 
 ## Сценарии hardening
 - [Общие принципы и поток работ](hardening-scenarios/README.md).
-- Linux-плейбук: `hardening-scenarios/ansible/playbooks/linux.yml`.
+- Linux-плейбук: `hardening-scenarios/ansible/playbooks/linux.yml` (включая роль `secaudit_profiles` для профилей RedOS/Astra/Alt/CentOS).
 - Windows-плейбук: `hardening-scenarios/ansible/playbooks/windows.yml`.
 - Методические заметки по платформам: [Linux](hardening-scenarios/linux.md), [Windows](hardening-scenarios/windows.md).
 
-Каждое окружение и сценарий интегрированы: результаты OpenSCAP направляют приоритеты ремедиации, а osquery и Wazuh проверяют внедрение настроек.
+Каждое окружение и сценарий интегрированы: результаты OpenSCAP направляют приоритеты ремедиации, а osquery и Wazuh проверяют внедрение настроек. Профили `secaudit` обеспечивают единую базу контролей для тестовых и продуктивных ВМ.
 
 ## Тестовые окружения
 - Docker Compose: `tests/docker` для быстрой генерации отчётов и телеметрии. При отсутствии Docker скрипты автоматически
-  переключаются на оффлайн-симуляцию, подготавливают базу ФСТЭК через `prepare_fstec_content.py` и формируют примерные артефакты в `tests/docker/artifacts` (включая Markdown-панель hardening-метрик, экспорт дашборда Grafana и payload для KUMA). Учебный архив `scanoval.zip` собирается на лету утилитой `tests/tools/create_sample_fstec_archive.py`.
+  переключаются на оффлайн-симуляцию, подготавливают базу ФСТЭК через `prepare_fstec_content.py` и формируют примерные артефакты
+  в `tests/docker/artifacts` (включая Markdown-панель hardening-метрик, экспорт дашборда Grafana и payload для KUMA). Учебный архив `scanoval.zip` собирается на лету утилитой `tests/tools/create_sample_fstec_archive.py`.
 - Kubernetes (kind): `tests/k8s` для эмуляции стека в кластере. Скрипт `setup-kind.sh` создаёт кластер или запускает симуляцию
   логов и сводок, предварительно извлекая OVAL базу ФСТЭК (архив также формируется утилитой `tests/tools/create_sample_fstec_archive.py`), если бинарник `kind` недоступен.
+- Виртуальные машины: `tests/vms` описывает Packer-шаблон для RedOS 7.3/8, Astra 1.7, Альт 8, CentOS 7 и содержит симуляцию, которая формирует `compliance-report.json`, телеметрию osquery→Grafana/KUMA и журналы сборки для test/prod контуров.
 
 ## Отчёты пробных запусков
 - Результаты текущей проверки оффлайн-симуляций: [reports/2025-10-21-simulation-results.md](reports/2025-10-21-simulation-results.md).
 - Визуализация метрик osquery/Telegraf -> Grafana/KUMA: [reports/2025-10-21-monitoring-dashboard.md](reports/2025-10-21-monitoring-dashboard.md).
+- Проверка артефактов VM и профилей `secaudit`: будет обновлена после запуска `tests/vms/run.sh` (см. каталог `reports/`).

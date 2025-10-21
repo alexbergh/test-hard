@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "id": "centos-7",
+    "name": "CentOS 7 hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "environments": {
+    "test": {
+      "goal": "Быстрый контроль baseline",
+      "notes": "OpenSCAP запускается вручную"
+    },
+    "prod": {
+      "goal": "Интеграция с KUMA/Grafana",
+      "notes": "OpenSCAP и osquery запускаются по расписанию"
+    }
+  },
+  "controls": [
+    {
+      "id": "CENTOS7-CTRL-001",
+      "title": "Обновление через yum-cron",
+      "severity": "medium",
+      "category": "patch_management",
+      "tags": ["yum", "updates"],
+      "secaudit_reference": "linux.updates.yum_cron",
+      "check": "systemctl is-enabled yum-cron",
+      "remediation": "systemctl enable --now yum-cron",
+      "metrics": {
+        "expected": "enabled",
+        "evidence": "systemctl is-enabled yum-cron"
+      }
+    },
+    {
+      "id": "CENTOS7-CTRL-002",
+      "title": "Отключить неиспользуемые службы",
+      "severity": "medium",
+      "category": "services",
+      "tags": ["service", "cleanup"],
+      "secaudit_reference": "linux.services.disable_legacy",
+      "check": "systemctl list-unit-files | grep enabled",
+      "remediation": "Отключить telnet, rsh, avahi",
+      "metrics": {
+        "expected": "inactive",
+        "evidence": "systemctl status telnet.socket"
+      }
+    },
+    {
+      "id": "CENTOS7-CTRL-003",
+      "title": "Включить auditing ядра",
+      "severity": "high",
+      "category": "logging",
+      "tags": ["audit", "kernel"],
+      "secaudit_reference": "linux.audit.grub",
+      "check": "grep audit=1 /etc/default/grub",
+      "remediation": "добавить audit=1 в GRUB_CMDLINE_LINUX",
+      "metrics": {
+        "expected": "audit=1",
+        "evidence": "/etc/default/grub"
+      }
+    },
+    {
+      "id": "CENTOS7-CTRL-004",
+      "title": "Настроить sudo логирование",
+      "severity": "low",
+      "category": "logging",
+      "tags": ["sudo", "audit"],
+      "secaudit_reference": "linux.sudo.logging",
+      "check": "grep logfile /etc/sudoers.d/hardening",
+      "remediation": "Defaults logfile=/var/log/sudo.log",
+      "metrics": {
+        "expected": "/var/log/sudo.log",
+        "evidence": "/etc/sudoers.d/hardening"
+      }
+    },
+    {
+      "id": "CENTOS7-CTRL-005",
+      "title": "Защитить пароли через pam_pwquality",
+      "severity": "high",
+      "category": "account_management",
+      "tags": ["pam", "password"],
+      "secaudit_reference": "linux.auth.pam_pwquality",
+      "check": "grep minlen /etc/security/pwquality.conf",
+      "remediation": "minlen = 14, retry = 3",
+      "metrics": {
+        "expected": "minlen = 14",
+        "evidence": "/etc/security/pwquality.conf"
+      }
+    }
+  ]
+}

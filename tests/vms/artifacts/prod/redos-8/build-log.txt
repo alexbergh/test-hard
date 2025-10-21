@@ -1,0 +1,6 @@
+[2025-10-21T21:00:15.964395+00:00] packer simulate build for redos-8 (prod)
+[00:00] downloading iso placeholder
+[00:05] applying kickstart/preseed
+[00:10] running ansible hardening
+[00:15] compliance summary: 80.0% (4/5)
+[00:16] exporting image artifact

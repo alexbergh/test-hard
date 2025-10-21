@@ -41,3 +41,16 @@ kubectl logs job/openscap-scan -n hardening-test
 ```
 
 Если `kind` не установлен, `setup-kind.sh` выполнит симуляцию, предварительно подготовит OVAL базу ФСТЭК (архив также формируется скриптом `tests/tools/create_sample_fstec_archive.py`) и сформирует сводку по манифестам и примерные логи в `tests/k8s/artifacts`. При наличии `kind` Job сохраняет результаты OpenSCAP в артефакт-контейнере (лог можно выгрузить командой `kubectl logs`), а логи Telegraf и Wazuh доступны через `kubectl logs` для соответствующих pod-ов.
+
+## Виртуальные машины (Packer + симуляция)
+
+Каталог `tests/vms` решает задачу подготовки тестовых/продуктивных образов RedOS 7.3/8, Astra Linux 1.7, Альт 8 и CentOS 7. Шаблон `packer/linux.pkr.hcl` поддерживает запуск с `packer build -var "distro=<id>" -var "environment=test|prod"`, а `run.sh` автоматически переключается на оффлайн-симуляцию, если гипервизор недоступен.
+
+Симуляция `tests/vms/simulate.py` использует профили `hardening-scenarios/secaudit/profiles` и создаёт:
+
+- `artifacts/<env>/<os>/build-plan.json` и `build-log.txt` — доказательства сборки образа.
+- `artifacts/<env>/<os>/compliance-report.json` — отчёт о прохождении контролей `secaudit`.
+- `artifacts/<env>/telemetry/` — события osquery (events/inventory JSONL), Markdown-панель, экспорт Grafana, payload KUMA и сводка метрик.
+
+Эти артефакты используются в отчётах департамента DevOps как доказательство прохождения сценариев hardening для test/prod контуров.
+

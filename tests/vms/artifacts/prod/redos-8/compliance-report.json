@@ -1,0 +1,68 @@
+{
+  "host": "vm-redos8-prod",
+  "environment": "prod",
+  "profile": {
+    "id": "redos-8",
+    "name": "РедОС 8 (выпуск Нейтроник) hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "compliance_percent": 80.0,
+  "controls": [
+    {
+      "id": "REDOS8-CTRL-001",
+      "title": "Включить SSH Banner и контроль доступа",
+      "severity": "medium",
+      "status": "passed",
+      "tags": [
+        "ssh",
+        "banner"
+      ],
+      "reference": "linux.ssh.banner"
+    },
+    {
+      "id": "REDOS8-CTRL-002",
+      "title": "Активировать fapolicyd для контроля запуска",
+      "severity": "high",
+      "status": "passed",
+      "tags": [
+        "fapolicyd",
+        "whitelisting"
+      ],
+      "reference": "linux.fapolicyd.enforce"
+    },
+    {
+      "id": "REDOS8-CTRL-003",
+      "title": "Настроить auditd на удалённый буфер",
+      "severity": "high",
+      "status": "failed",
+      "tags": [
+        "audit",
+        "forward"
+      ],
+      "reference": "linux.audit.offload"
+    },
+    {
+      "id": "REDOS8-CTRL-004",
+      "title": "Включить системный парольный баннер",
+      "severity": "low",
+      "status": "passed",
+      "tags": [
+        "banner",
+        "login"
+      ],
+      "reference": "linux.login.banner"
+    },
+    {
+      "id": "REDOS8-CTRL-005",
+      "title": "Проверить статус osqueryd",
+      "severity": "medium",
+      "status": "passed",
+      "tags": [
+        "osquery",
+        "service"
+      ],
+      "reference": "linux.osquery.service"
+    }
+  ]
+}

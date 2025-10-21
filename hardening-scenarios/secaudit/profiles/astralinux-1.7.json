@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "id": "astralinux-1.7",
+    "name": "Astra Linux 1.7 (Смоленск) hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "environments": {
+    "test": {
+      "goal": "Сбор контрольных измерений",
+      "notes": "Используется локальный apt-репозиторий"
+    },
+    "prod": {
+      "goal": "Сегмент ГИС/ИСОД",
+      "notes": "Политика соответствия профилю защиты 2 уровня"
+    }
+  },
+  "controls": [
+    {
+      "id": "ASTRA17-CTRL-001",
+      "title": "Отключить вход root по SSH",
+      "severity": "high",
+      "category": "access_control",
+      "tags": ["ssh", "pam"],
+      "secaudit_reference": "linux.ssh.disable_root_login",
+      "check": "grep -i PermitRootLogin /etc/ssh/sshd_config",
+      "remediation": "Изменить PermitRootLogin no",
+      "metrics": {
+        "expected": "PermitRootLogin no",
+        "evidence": "/etc/ssh/sshd_config"
+      }
+    },
+    {
+      "id": "ASTRA17-CTRL-002",
+      "title": "Включить аудит доступа к конфиденциальным файлам",
+      "severity": "high",
+      "category": "logging",
+      "tags": ["auditd", "fim"],
+      "secaudit_reference": "linux.audit.rules.confidential",
+      "check": "grep confidential /etc/audit/rules.d/hardening.rules",
+      "remediation": "Добавить правила -w /etc/shadow -p wa -k confidential",
+      "metrics": {
+        "expected": "-w /etc/shadow -p wa -k confidential",
+        "evidence": "/etc/audit/rules.d/hardening.rules"
+      }
+    },
+    {
+      "id": "ASTRA17-CTRL-003",
+      "title": "Настроить автообновление через apt",
+      "severity": "medium",
+      "category": "patch_management",
+      "tags": ["apt", "updates"],
+      "secaudit_reference": "linux.updates.unattended",
+      "check": "grep -i Update-Package-Lists /etc/apt/apt.conf.d/20auto-upgrades",
+      "remediation": "Update-Package-Lists \"1\"",
+      "metrics": {
+        "expected": "1",
+        "evidence": "/etc/apt/apt.conf.d/20auto-upgrades"
+      }
+    },
+    {
+      "id": "ASTRA17-CTRL-004",
+      "title": "Защитить sudo через pam_tally2",
+      "severity": "medium",
+      "category": "account_management",
+      "tags": ["pam", "sudo"],
+      "secaudit_reference": "linux.auth.pam_tally",
+      "check": "grep pam_tally2 /etc/pam.d/sudo",
+      "remediation": "auth required pam_tally2.so deny=5 even_deny_root unlock_time=300",
+      "metrics": {
+        "expected": "pam_tally2.so deny=5",
+        "evidence": "/etc/pam.d/sudo"
+      }
+    },
+    {
+      "id": "ASTRA17-CTRL-005",
+      "title": "Проверить включение osquery",
+      "severity": "low",
+      "category": "monitoring",
+      "tags": ["osquery"],
+      "secaudit_reference": "linux.osquery.package",
+      "check": "dpkg -l | grep osquery",
+      "remediation": "Установить пакет osquery и запустить службу",
+      "metrics": {
+        "expected": "osquery",
+        "evidence": "dpkg -l"
+      }
+    }
+  ]
+}
