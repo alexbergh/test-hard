@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SIMULATOR="${SCRIPT_DIR}/simulate.py"
+
+if ! command -v kind >/dev/null 2>&1; then
+  echo "kind не обнаружен. Выполняется оффлайн-симуляция." >&2
+  python3 "${SIMULATOR}"
+  exit 0
+fi
+
+CLUSTER_NAME=${KIND_CLUSTER_NAME:-hardening-test}
+CONFIG="${SCRIPT_DIR}/kind-cluster.yaml"
+
+if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
+  echo "kind cluster ${CLUSTER_NAME} already exists"
+else
+  kind create cluster --name "${CLUSTER_NAME}" --config "${CONFIG}"
+fi
+
+echo "To access the cluster run: kind export kubeconfig --name ${CLUSTER_NAME}" >&2

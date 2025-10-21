@@ -1,0 +1,17 @@
+common_allowed_users:
+  - ansible
+  - svc_backup
+ssh_ciphers:
+  - aes256-ctr
+  - aes192-ctr
+  - aes128-ctr
+password_max_days: 90
+password_min_days: 7
+password_warn_age: 15
+auditd_max_log_file_mb: 50
+kernel_sysctl_settings:
+  net.ipv4.ip_forward: 0
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  kernel.randomize_va_space: 2
+  net.ipv4.tcp_syncookies: 1
