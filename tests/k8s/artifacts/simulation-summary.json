@@ -1,0 +1,65 @@
+{
+  "generated_at": "2025-10-21T20:32:24.101905+00:00",
+  "resources": 8,
+  "openscap": {
+    "results": [
+      {
+        "title": "Verify /etc/os-release is present",
+        "status": "passed",
+        "message": "Определение oval:org.hardening:def:1 для платформ n/a"
+      }
+    ],
+    "log": "/workspace/test-hard/tests/k8s/artifacts/openscap-job.log"
+  },
+  "telemetry": {
+    "entries": 10,
+    "log": "/workspace/test-hard/tests/k8s/artifacts/telemetry/pod.log",
+    "events_file": "/workspace/test-hard/tests/k8s/artifacts/telemetry/events.jsonl",
+    "metrics": {
+      "generated_at": "2025-10-21T20:32:24.102503+00:00",
+      "vulnerability_total": 5,
+      "inventory_total": 5,
+      "unique_hosts": 1,
+      "severity": [
+        {
+          "severity": "low",
+          "count": 3,
+          "percentage": 60.0
+        },
+        {
+          "severity": "medium",
+          "count": 2,
+          "percentage": 40.0
+        }
+      ],
+      "top_cves": [
+        [
+          "CVE-2023-2650",
+          3
+        ],
+        [
+          "CVE-2024-2511",
+          2
+        ]
+      ],
+      "top_packages": [
+        [
+          "openssl",
+          2
+        ],
+        [
+          "sudo",
+          2
+        ],
+        [
+          "kernel",
+          1
+        ]
+      ]
+    }
+  },
+  "wazuh": {
+    "entries": 6,
+    "log": "/workspace/test-hard/tests/k8s/artifacts/wazuh-pod.log"
+  }
+}

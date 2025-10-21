@@ -1,0 +1,12 @@
+wazuh_manager_address: 203.0.113.5
+wazuh_registration_password: "SuperSecretPassword"
+wazuh_agent_groups:
+  - linux-servers
+  - fim-critical
+wazuh_localfile_monitors:
+  - log: /var/log/auth.log
+  - log: /var/log/syslog
+wazuh_syscheck_paths:
+  - /etc
+  - /usr/bin
+  - /usr/local/bin

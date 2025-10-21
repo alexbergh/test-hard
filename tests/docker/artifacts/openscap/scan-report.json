@@ -1,0 +1,15 @@
+{
+  "generated_at": "2025-10-21T20:32:18.848387+00:00",
+  "scanner": "openscap-simulator",
+  "definitions_evaluated": 1,
+  "passed": 1,
+  "failed": 0,
+  "results": [
+    {
+      "id": "oval:org.hardening:def:1",
+      "title": "Verify /etc/os-release is present",
+      "status": "pass",
+      "details": "Платформа: не указано, семья: unknown, источник: linux/sample-oval.xml, критичность: n/a"
+    }
+  ]
+}

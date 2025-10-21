@@ -1,0 +1,65 @@
+- name: Gather passwd entries
+  ansible.builtin.getent:
+    database: passwd
+
+- name: Ensure only approved users have shell access
+  ansible.builtin.command: >
+    /usr/sbin/usermod -L {{ item.key }}
+  loop: "{{ ansible_facts['getent_passwd'] | default({}) | dict2items }}"
+  when: item.key not in common_allowed_users and item.key != 'root' and item.value[5] not in ['/usr/sbin/nologin', '/bin/false']
+  changed_when: false
+  failed_when: false
+
+- name: Enforce password aging policy
+  ansible.builtin.command: >
+    chage --maxdays {{ password_max_days }} --mindays {{ password_min_days }} --warndays {{ password_warn_age }} {{ item.key }}
+  loop: "{{ ansible_facts['getent_passwd'] | default({}) | dict2items }}"
+  when: item.key not in ['root'] and item.value[5] not in ['/usr/sbin/nologin', '/bin/false']
+  changed_when: false
+  failed_when: false
+
+- name: Configure SSH daemon
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^{{ item.key }}'
+    line: '{{ item.key }} {{ item.value }}'
+    state: present
+    create: yes
+  loop:
+    - { key: 'PasswordAuthentication', value: 'no' }
+    - { key: 'PermitRootLogin', value: 'no' }
+    - { key: 'ChallengeResponseAuthentication', value: 'no' }
+  notify: restart sshd
+
+- name: Configure SSH ciphers and MACs
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^{{ item.key }}'
+    line: '{{ item.key }} {{ item.value }}'
+    state: present
+  loop:
+    - { key: 'Ciphers', value: '{{ ssh_ciphers | join(",") }}' }
+    - { key: 'MACs', value: 'hmac-sha2-512,hmac-sha2-256' }
+  notify: restart sshd
+
+- name: Ensure SSH service is enabled
+  ansible.builtin.service:
+    name: sshd
+    state: started
+    enabled: true
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Ensure SSH service is enabled (Debian)
+  ansible.builtin.service:
+    name: ssh
+    state: started
+    enabled: true
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Configure auditd limits
+  ansible.builtin.lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: '^max_log_file ='
+    line: 'max_log_file = {{ auditd_max_log_file_mb }}'
+    state: present
+  notify: restart auditd
