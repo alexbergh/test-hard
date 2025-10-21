@@ -1,0 +1,34 @@
+{
+  "options": {
+    "config_refresh": 300,
+    "logger_path": "/var/log/osquery",
+    "pidfile": "/var/osquery/osquery.pid",
+    "worker_threads": 4,
+    "utc": true,
+    "disable_events": false
+  },
+  "schedule": {
+    "system_info": {
+      "query": "SELECT hostname, cpu_brand, physical_memory FROM system_info;",
+      "interval": 3600
+    },
+    "listening_ports": {
+      "query": "SELECT * FROM listening_ports;",
+      "interval": 600
+    }
+  },
+  "packs": {
+{% for pack in osquery_packs %}
+    "{{ pack }}": "/etc/osquery/packs/{{ pack }}.conf"{% if not loop.last %},{% endif %}
+{% endfor %}
+  },
+  "decorators": {
+    "load": [
+      "SELECT username FROM logged_in_users WHERE type = 'tty' ORDER BY time DESC LIMIT 1;"
+    ]
+  },
+  "flags": [
+    "--tls_hostname={{ osquery_tls_hostname }}"{% for flag in osquery_additional_flags %},
+    "{{ flag }}"{% endfor %}
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "id": "redos-8",
+    "name": "РедОС 8 (выпуск Нейтроник) hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "environments": {
+    "test": {
+      "goal": "Верификация совместимости с Ansible",
+      "notes": "SELinux включён в режиме enforcing"
+    },
+    "prod": {
+      "goal": "Эксплуатационная среда",
+      "notes": "Используется smartcard-аутентификация и централизованный syslog"
+    }
+  },
+  "controls": [
+    {
+      "id": "REDOS8-CTRL-001",
+      "title": "Включить SSH Banner и контроль доступа",
+      "severity": "medium",
+      "category": "access_control",
+      "tags": ["ssh", "banner"],
+      "secaudit_reference": "linux.ssh.banner",
+      "check": "grep ^Banner /etc/ssh/sshd_config",
+      "remediation": "Banner /etc/issue.net",
+      "metrics": {
+        "expected": "/etc/issue.net",
+        "evidence": "/etc/ssh/sshd_config"
+      }
+    },
+    {
+      "id": "REDOS8-CTRL-002",
+      "title": "Активировать fapolicyd для контроля запуска",
+      "severity": "high",
+      "category": "application_control",
+      "tags": ["fapolicyd", "whitelisting"],
+      "secaudit_reference": "linux.fapolicyd.enforce",
+      "check": "systemctl is-enabled fapolicyd",
+      "remediation": "systemctl enable --now fapolicyd",
+      "metrics": {
+        "expected": "enabled",
+        "evidence": "systemctl is-enabled fapolicyd"
+      }
+    },
+    {
+      "id": "REDOS8-CTRL-003",
+      "title": "Настроить auditd на удалённый буфер",
+      "severity": "high",
+      "category": "logging",
+      "tags": ["audit", "forward"],
+      "secaudit_reference": "linux.audit.offload",
+      "check": "grep ^remote_server /etc/audisp/plugins.d/au-remote.conf",
+      "remediation": "remote_server = 10.10.90.10",
+      "metrics": {
+        "expected": "remote_server = 10.10.90.10",
+        "evidence": "/etc/audisp/plugins.d/au-remote.conf"
+      }
+    },
+    {
+      "id": "REDOS8-CTRL-004",
+      "title": "Включить системный парольный баннер",
+      "severity": "low",
+      "category": "awareness",
+      "tags": ["banner", "login"],
+      "secaudit_reference": "linux.login.banner",
+      "check": "grep Unauthorized /etc/issue",
+      "remediation": "Настроить предупреждение в /etc/issue",
+      "metrics": {
+        "expected": "Warning",
+        "evidence": "/etc/issue"
+      }
+    },
+    {
+      "id": "REDOS8-CTRL-005",
+      "title": "Проверить статус osqueryd",
+      "severity": "medium",
+      "category": "monitoring",
+      "tags": ["osquery", "service"],
+      "secaudit_reference": "linux.osquery.service",
+      "check": "systemctl is-active osqueryd",
+      "remediation": "systemctl enable --now osqueryd",
+      "metrics": {
+        "expected": "active",
+        "evidence": "systemctl status osqueryd"
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "Namespace",
+    "name": "hardening-test",
+    "namespace": null,
+    "images": [],
+    "source": "namespace.yaml"
+  },
+  {
+    "kind": "Job",
+    "name": "openscap-scan",
+    "namespace": null,
+    "images": [
+      "quay.io/openscap/openscap:1.3.9"
+    ],
+    "source": "openscap-job.yaml"
+  },
+  {
+    "kind": "Deployment",
+    "name": "telemetry-telegraf",
+    "namespace": null,
+    "images": [
+      "telegraf:1.28"
+    ],
+    "source": "telemetry.yaml"
+  },
+  {
+    "kind": "Service",
+    "name": "telemetry-telegraf",
+    "namespace": null,
+    "images": [],
+    "source": "telemetry.yaml"
+  },
+  {
+    "kind": "Deployment",
+    "name": "osquery-simulator",
+    "namespace": null,
+    "images": [
+      "python:3.11-slim"
+    ],
+    "source": "telemetry.yaml"
+  },
+  {
+    "kind": "Deployment",
+    "name": "wazuh-manager",
+    "namespace": null,
+    "images": [
+      "wazuh/wazuh-manager:4.7.2"
+    ],
+    "source": "wazuh.yaml"
+  },
+  {
+    "kind": "Service",
+    "name": "wazuh-manager",
+    "namespace": null,
+    "images": [],
+    "source": "wazuh.yaml"
+  },
+  {
+    "kind": "Deployment",
+    "name": "wazuh-agent",
+    "namespace": null,
+    "images": [
+      "wazuh/wazuh-agent:4.7.2"
+    ],
+    "source": "wazuh.yaml"
+  }
+]

@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openscap-scan
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: openscap
+          image: quay.io/openscap/openscap:1.3.9
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              mkdir -p /reports &&
+              oscap oval eval --results /reports/sample-oval-results.xml \
+                --report /reports/sample-oval-report.html /content/sample-oval.xml &&
+              echo "Generated reports in /reports" &&
+              cat /reports/sample-oval-results.xml
+          volumeMounts:
+            - name: content
+              mountPath: /content
+              readOnly: true
+            - name: reports
+              mountPath: /reports
+      volumes:
+        - name: content
+          configMap:
+            name: openscap-content
+        - name: reports
+          emptyDir: {}

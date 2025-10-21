@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-manager
+  template:
+    metadata:
+      labels:
+        app: wazuh-manager
+    spec:
+      containers:
+        - name: manager
+          image: wazuh/wazuh-manager:4.7.2
+          ports:
+            - containerPort: 1514
+              protocol: UDP
+            - containerPort: 1515
+            - containerPort: 55000
+          volumeMounts:
+            - name: manager-config
+              mountPath: /var/ossec/etc/ossec.conf
+              subPath: ossec.conf
+      volumes:
+        - name: manager-config
+          configMap:
+            name: wazuh-manager-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-manager
+spec:
+  selector:
+    app: wazuh-manager
+  ports:
+    - name: events
+      protocol: UDP
+      port: 1514
+      targetPort: 1514
+    - name: authd
+      port: 1515
+      targetPort: 1515
+    - name: api
+      port: 55000
+      targetPort: 55000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-agent
+  template:
+    metadata:
+      labels:
+        app: wazuh-agent
+    spec:
+      containers:
+        - name: agent
+          image: wazuh/wazuh-agent:4.7.2
+          env:
+            - name: WAZUH_MANAGER
+              value: wazuh-manager
+            - name: WAZUH_AGENT_GROUP
+              value: default
+            - name: WAZUH_AGENT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - "sleep 45 && touch /etc/wazuh-k8s-test"

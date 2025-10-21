@@ -1,0 +1,133 @@
+{
+  "batch_id": "kuma-20251021210015",
+  "generated_at": "2025-10-21T21:00:15.959332+00:00",
+  "summary": {
+    "vulnerability_total": 7,
+    "inventory_total": 5,
+    "unique_hosts": 5,
+    "severity_breakdown": [
+      {
+        "severity": "high",
+        "count": 6,
+        "share": 85.71
+      },
+      {
+        "severity": "medium",
+        "count": 1,
+        "share": 14.29
+      }
+    ]
+  },
+  "events": [
+    {
+      "category": "hardening",
+      "kind": "vulnerability",
+      "host": "vm-redos73-test",
+      "package": null,
+      "version": null,
+      "severity": "high",
+      "cve": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "vulnerability",
+      "host": "vm-redos73-test",
+      "package": null,
+      "version": null,
+      "severity": "high",
+      "cve": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "vulnerability",
+      "host": "vm-redos8-test",
+      "package": null,
+      "version": null,
+      "severity": "high",
+      "cve": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "vulnerability",
+      "host": "vm-astralinux17-test",
+      "package": null,
+      "version": null,
+      "severity": "high",
+      "cve": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "vulnerability",
+      "host": "vm-altlinux8-test",
+      "package": null,
+      "version": null,
+      "severity": "medium",
+      "cve": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "vulnerability",
+      "host": "vm-altlinux8-test",
+      "package": null,
+      "version": null,
+      "severity": "high",
+      "cve": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "vulnerability",
+      "host": "vm-centos7-test",
+      "package": null,
+      "version": null,
+      "severity": "high",
+      "cve": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "inventory",
+      "host": "vm-redos73-test",
+      "os": "РедОС 7.3",
+      "kernel": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "inventory",
+      "host": "vm-redos8-test",
+      "os": "РедОС 8",
+      "kernel": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "inventory",
+      "host": "vm-astralinux17-test",
+      "os": "Astra Linux 1.7",
+      "kernel": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "inventory",
+      "host": "vm-altlinux8-test",
+      "os": "Альт 8",
+      "kernel": null,
+      "collected_at": null
+    },
+    {
+      "category": "hardening",
+      "kind": "inventory",
+      "host": "vm-centos7-test",
+      "os": "CentOS 7",
+      "kernel": null,
+      "collected_at": null
+    }
+  ]
+}

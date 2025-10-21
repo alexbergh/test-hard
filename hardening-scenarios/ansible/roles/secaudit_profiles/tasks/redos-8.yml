@@ -1,0 +1,54 @@
+---
+- name: Configure SSH banner (RedOS 8)
+  ansible.builtin.blockinfile:
+    path: /etc/ssh/sshd_config
+    block: |
+      Banner /etc/issue.net
+      PermitRootLogin no
+    marker: "# {mark} managed by secaudit"
+  notify: restart sshd
+
+- name: Deploy warning banner
+  ansible.builtin.copy:
+    dest: /etc/issue.net
+    content: |
+      Внимание! Несанкционированный доступ запрещён. Все действия протоколируются.
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure fapolicyd is enabled
+  ansible.builtin.service:
+    name: fapolicyd
+    state: started
+    enabled: yes
+  notify: restart fapolicyd
+
+- name: Configure auditd remote forwarding (RedOS 8)
+  ansible.builtin.blockinfile:
+    path: /etc/audisp/plugins.d/au-remote.conf
+    block: |
+      active = yes
+      remote_server = {{ (secaudit_target_environment == 'prod') | ternary('logbus.prod.local', 'logbus.test.local') }}
+      transport = tcp
+      queue_depth = 2048
+    owner: root
+    group: root
+    mode: "0640"
+  notify: restart auditd
+
+- name: Configure login banner (RedOS 8)
+  ansible.builtin.copy:
+    dest: /etc/issue
+    content: |
+      Authorized use only. Контакт SOC: soc@example.local.
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure osqueryd service is active
+  ansible.builtin.service:
+    name: osqueryd
+    state: started
+    enabled: yes
+  notify: restart osqueryd

@@ -1,0 +1,68 @@
+{
+  "openscap": {
+    "generated_at": "2025-10-21T20:32:18.848387+00:00",
+    "scanner": "openscap-simulator",
+    "definitions_evaluated": 1,
+    "passed": 1,
+    "failed": 0,
+    "results": [
+      {
+        "id": "oval:org.hardening:def:1",
+        "title": "Verify /etc/os-release is present",
+        "status": "pass",
+        "details": "Платформа: не указано, семья: unknown, источник: linux/sample-oval.xml, критичность: n/a"
+      }
+    ]
+  },
+  "telemetry": {
+    "generated_at": "2025-10-21T20:32:18.852695+00:00",
+    "events": 10,
+    "syslog_messages": 5,
+    "artifacts": [
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/osquery-events.jsonl",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/syslog.log",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/hardening-dashboard.md",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/grafana-dashboard.json",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/kuma-payload.json",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/collector.log"
+    ],
+    "metrics": {
+      "generated_at": "2025-10-21T20:32:18.849356+00:00",
+      "vulnerability_total": 5,
+      "inventory_total": 5,
+      "unique_hosts": 1,
+      "severity": [
+        {
+          "severity": "low",
+          "count": 5,
+          "percentage": 100.0
+        }
+      ],
+      "top_cves": [
+        [
+          "CVE-2022-0778",
+          4
+        ],
+        [
+          "CVE-2023-2650",
+          1
+        ]
+      ],
+      "top_packages": [
+        [
+          "openssl",
+          5
+        ]
+      ]
+    }
+  },
+  "wazuh": {
+    "generated_at": "2025-10-21T20:32:18.853120+00:00",
+    "alerts": 3,
+    "fim_events": 3,
+    "artifacts": [
+      "/workspace/test-hard/tests/docker/artifacts/wazuh/alerts.json",
+      "/workspace/test-hard/tests/docker/artifacts/wazuh/fim-events.jsonl"
+    ]
+  }
+}

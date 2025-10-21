@@ -1,0 +1,3 @@
+---
+# Переменные по умолчанию для плейбука hardening VMs
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

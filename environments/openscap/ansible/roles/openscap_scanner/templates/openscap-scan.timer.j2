@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly OpenSCAP compliance scan
+
+[Timer]
+OnCalendar={{ scap_schedule_weekday }} *-*-* {{ scap_schedule_hour }}:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
