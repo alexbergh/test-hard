@@ -1,0 +1,16 @@
+windows_password_policy:
+  minimum_length: 14
+  maximum_age_days: 60
+  history_size: 24
+  complexity: true
+windows_firewall_profiles:
+  - domain
+  - private
+  - public
+windows_audit_policies:
+  - category: Logon/Logoff
+    subcategory: Logon
+    setting: Success and Failure
+  - category: Policy Change
+    subcategory: Audit Policy Change
+    setting: Success and Failure

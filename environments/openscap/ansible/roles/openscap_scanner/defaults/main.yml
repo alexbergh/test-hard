@@ -1,0 +1,10 @@
+openscap_scanner_packages:
+  RedHat:
+    - openscap-scanner
+    - scap-security-guide
+  Debian:
+    - openscap-scanner
+    - ssg-debian
+openscap_cache_dir: /var/cache/openscap
+openscap_scan_script: /usr/local/sbin/run-openscap-scan
+openscap_systemd_timer: openscap-scan.timer
