@@ -6,6 +6,7 @@
 - **Osquery Agents** — устанавливаются на конечные системы и выполняют SQL-запросы.
 - **Telegraf Forwarder** — собирает результаты osquery и проксирует их в выбранную систему аналитики.
 - **InfluxDB + Grafana (опционально)** — пилотный стек визуализации и алертинга.
+- **KUMA (по лицензии)** — корпоративная платформа мониторинга; в тестовом стенде её API имитирует `tests/docker/kuma-mock`.
 
 ## Автоматизация агентов
 Ansible-плейбук `ansible/playbook.yml`:
@@ -24,7 +25,8 @@ ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
 В каталоге `docker/` находится `docker-compose.yml`, разворачивающий:
 - `influxdb` для хранения метрик;
 - `telegraf-listener` с входами `http_listener_v2` и `syslog`;
-- `grafana` для дашбордов.
+- `grafana` для дашбордов;
+- `kuma-mock` — контейнер на Python, принимающий JSON-пакеты и имитирующий REST API KUMA для тестов.
 
 Развертывание:
 ```bash
@@ -45,3 +47,12 @@ docker compose up -d
 
 ## Интеграция с hardening-сценариями
 Osquery пакеты покрывают проверки из [Linux](../../hardening-scenarios/linux.md) и [Windows](../../hardening-scenarios/windows.md) сценариев, а события передаются в SOC для подтверждения внедрения мер.
+
+
+## Контейнерные образы
+
+- `grafana/grafana:10.4.1` — официальный образ Grafana (Docker Hub).
+- `influxdb:2.7`, `telegraf:1.28` — официальный стек InfluxData.
+- `registry.kaspersky.local/kuma/collector:<tag>` — приватный образ Kaspersky Unified Monitoring and Analysis Platform (для реальной интеграции требуется доступ к корпоративному реестру; в тестовом стенде используется `tests/docker/kuma-mock`).
+
+Mock-коллектор сохраняет входящие события в общий volume и позволяет просматривать их через HTTP `GET /`.

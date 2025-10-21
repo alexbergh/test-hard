@@ -7,7 +7,9 @@ import json
 import random
 import textwrap
 from datetime import datetime, timezone
+from dataclasses import asdict
 from pathlib import Path
+import sys
 import xml.etree.ElementTree as ET
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -15,6 +17,9 @@ ARTIFACTS_DIR = BASE_DIR / "artifacts"
 FSTEC_CONTENT_DIR = BASE_DIR / "openscap" / "content" / "fstec"
 FALLBACK_OVAL_FILE = BASE_DIR / "openscap" / "content" / "sample-oval.xml"
 RNG = random.Random(42)
+
+sys.path.append(str(BASE_DIR.parent / "shared"))
+from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
 
 
 def ensure_dir(path: Path) -> None:
@@ -186,11 +191,21 @@ def simulate_telemetry() -> dict:
 
     (ARTIFACTS_DIR / "telemetry" / "syslog.log").write_text("\n".join(syslog_messages), encoding="utf-8")
 
+    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry").build(events)
+
     return {
         "generated_at": timestamp(),
         "events": len(events),
         "syslog_messages": len(syslog_messages),
-        "artifacts": [str(events_path), str(ARTIFACTS_DIR / "telemetry" / "syslog.log")],
+        "artifacts": [
+            str(events_path),
+            str(ARTIFACTS_DIR / "telemetry" / "syslog.log"),
+            str(ARTIFACTS_DIR / "telemetry" / "hardening-dashboard.md"),
+            str(ARTIFACTS_DIR / "telemetry" / "grafana-dashboard.json"),
+            str(ARTIFACTS_DIR / "telemetry" / "kuma-payload.json"),
+            str(ARTIFACTS_DIR / "telemetry" / "collector.log"),
+        ],
+        "metrics": asdict(metrics),
     }
 
 

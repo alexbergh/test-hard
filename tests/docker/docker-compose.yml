@@ -74,6 +74,19 @@ services:
     depends_on:
       - telegraf-listener
 
+  kuma-mock:
+    build: ./kuma-mock
+    container_name: kuma-mock
+    restart: unless-stopped
+    profiles: ["telemetry"]
+    environment:
+      - LISTEN_PORT=8080
+      - KUMA_DATA_DIR=/app/data
+    ports:
+      - "18080:8080"
+    volumes:
+      - ./artifacts/telemetry/kuma:/app/data
+
   wazuh-indexer:
     image: wazuh/wazuh-indexer:4.7.2
     container_name: wazuh-indexer

@@ -7,7 +7,7 @@
 В директории `tests/docker` находится единый Compose-проект с тремя профилями:
 
 - `openscap` — одноразовый запуск контейнера OpenSCAP, который применяет локальное OVAL-правило и сохраняет ARF/HTML в `tests/docker/artifacts/openscap/`.
-- `telemetry` — InfluxDB, Telegraf и Grafana с контейнером-симулятором osquery-агента, генерирующим телеметрию.
+- `telemetry` — InfluxDB, Telegraf, Grafana и mock-инстанс KUMA с контейнером-симулятором osquery-агента, генерирующим телеметрию и собирающим батчи hardening-метрик.
 - `wazuh` — компактный стек Wazuh (Indexer, Manager, Dashboard) и контейнер-агент, который регистрируется на менеджере и создаёт базовые события FIM/Syscollector.
 
 ### Запуск
@@ -20,7 +20,7 @@
 ./tests/docker/run.sh openscap
 ```
 
-Если Docker недоступен, `run.sh` выполнит оффлайн-симуляцию, перед этим извлечёт базу ФСТЭК через `prepare_fstec_content.py` и сформирует примерные отчёты и логи в `tests/docker/artifacts`. Учебный архив `scanoval.zip` создаётся на лету утилитой `tests/tools/create_sample_fstec_archive.py`, поэтому бинарники не попадают в репозиторий. После запуска можно открыть Grafana на `http://localhost:3000` (admin/changeme) или Wazuh Dashboard на `https://localhost:5601` (admin/changeme), когда контейнеры реально подняты.
+Если Docker недоступен, `run.sh` выполнит оффлайн-симуляцию, перед этим извлечёт базу ФСТЭК через `prepare_fstec_content.py` и сформирует примерные отчёты и логи в `tests/docker/artifacts`. Дополнительно генерируются Markdown-панель (`telemetry/hardening-dashboard.md`), экспорт дашборда Grafana (`telemetry/grafana-dashboard.json`) и payload для KUMA (`telemetry/kuma-payload.json`), чтобы визуально проверить метрики. Учебный архив `scanoval.zip` создаётся на лету утилитой `tests/tools/create_sample_fstec_archive.py`, поэтому бинарники не попадают в репозиторий. После запуска можно открыть Grafana на `http://localhost:3000` (admin/changeme) или Wazuh Dashboard на `https://localhost:5601` (admin/changeme), когда контейнеры реально подняты.
 
 ## Kubernetes (kind)
 

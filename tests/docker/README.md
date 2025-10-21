@@ -4,6 +4,7 @@
 
 - `openscap-runner` выполняет локальный OVAL-скан и складывает результаты в `artifacts/openscap`.
 - `influxdb`, `telegraf-listener`, `grafana` формируют телеметрический пайплайн для проверки пакетов osquery.
+- `kuma-mock` эмулирует приёмник KUMA и сохраняет батчи телеметрии для последующего анализа.
 - `osquery-simulator` периодически отправляет события на Telegraf по HTTP и UDP.
 - `wazuh-*` поднимают менеджер, индексатор и дашборд Wazuh вместе с агентом, который регистрируется автоматически.
 
@@ -21,5 +22,10 @@
 docker compose -f docker-compose.yml --profile openscap --profile telemetry --profile wazuh down
 ```
 
-Артефакты сохраняются в `tests/docker/artifacts` (игнорируются git). В режиме симуляции формируются JSON/текстовые логи для всех
-профилей, что позволяет проверять пайплайн в средах без Docker.
+Артефакты сохраняются в `tests/docker/artifacts` (игнорируются git). В режиме симуляции формируются JSON/текстовые логи для всех профилей, а также готовые заготовки:
+
+- `telemetry/hardening-dashboard.md` — Markdown-панель с визуализацией и ASCII-графиками по критичности.
+- `telemetry/grafana-dashboard.json` — экспорт готового дашборда Grafana, использующего InfluxDB.
+- `telemetry/kuma-payload.json` и `telemetry/collector.log` — батч и журнал условного коллектора для передачи в KUMA.
+
+Эти артефакты формируются как при работе настоящих контейнеров, так и в режиме оффлайн-симуляции.

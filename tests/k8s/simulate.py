@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import random
+import sys
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -13,6 +15,9 @@ ARTIFACTS_DIR = BASE_DIR / "artifacts"
 FSTEC_CONTENT_DIR = BASE_DIR.parent / "docker" / "openscap" / "content" / "fstec"
 FALLBACK_OVAL_FILE = BASE_DIR.parent / "docker" / "openscap" / "content" / "sample-oval.xml"
 RNG = random.Random(314)
+
+sys.path.append(str(BASE_DIR.parent / "shared"))
+from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
 
 
 def ensure_dir(path: Path) -> None:
@@ -154,17 +159,54 @@ def simulate_openscap() -> dict:
 
 def simulate_telemetry() -> dict:
     lines = []
+    events: list[dict] = []
     for seq in range(1, 6):
+        severity = RNG.choice(["low", "medium", "high"])
+        cve = RNG.choice(["CVE-2023-2650", "CVE-2024-2511", "CVE-2022-0778"])
+        vulnerability_event = {
+            "type": "vulnerability",
+            "host": "simulated-k8s-osquery",
+            "sequence": seq,
+            "package": RNG.choice(["openssl", "sudo", "kernel"]),
+            "version": f"1.{RNG.randint(0, 9)}.{RNG.randint(0, 30)}",
+            "severity": severity,
+            "cve": cve,
+            "collected_at": timestamp(),
+        }
+        events.append(vulnerability_event)
         lines.append(
-            f"[{timestamp()}] telegraf-collector sequence={seq} host=simulated-k8s-osquery severity="
-            f"{RNG.choice(['low', 'medium', 'high'])} cve={RNG.choice(['CVE-2023-2650', 'CVE-2024-2511', 'CVE-2022-0778'])}"
+            f"[{vulnerability_event['collected_at']}] telegraf-collector sequence={seq} host=simulated-k8s-osquery "
+            f"severity={severity} cve={cve}"
         )
+        inventory_event = {
+            "type": "inventory",
+            "host": "simulated-k8s-osquery",
+            "sequence": seq,
+            "os": RNG.choice(["ubuntu", "debian", "centos"]),
+            "kernel_version": f"5.15.{RNG.randint(0, 30)}",
+            "collected_at": timestamp(),
+        }
+        events.append(inventory_event)
         lines.append(
-            f"[{timestamp()}] osquery-inventory host=simulated-k8s-osquery kernel=5.15.{RNG.randint(0, 30)}"
+            f"[{inventory_event['collected_at']}] osquery-inventory host=simulated-k8s-osquery kernel={inventory_event['kernel_version']}"
         )
-    log_path = ARTIFACTS_DIR / "telemetry-pod.log"
+    telemetry_dir = ARTIFACTS_DIR / "telemetry"
+    telemetry_dir.mkdir(parents=True, exist_ok=True)
+    log_path = telemetry_dir / "pod.log"
     log_path.write_text("\n".join(lines), encoding="utf-8")
-    return {"entries": len(lines), "log": str(log_path)}
+    events_path = telemetry_dir / "events.jsonl"
+    with events_path.open("w", encoding="utf-8") as handle:
+        for event in events:
+            handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry").build(events)
+
+    return {
+        "entries": len(lines),
+        "log": str(log_path),
+        "events_file": str(events_path),
+        "metrics": asdict(metrics),
+    }
 
 
 def simulate_wazuh() -> dict:
