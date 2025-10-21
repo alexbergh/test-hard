@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPORT_DIR="{{ scap_scan_output_dir }}"
+CACHE_DIR="{{ openscap_cache_dir }}"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+HOSTNAME="$(hostname -s)"
+
+mkdir -p "${REPORT_DIR}/${TIMESTAMP}"
+
+for item in {{ scap_datastreams | to_json }}; do
+  DATASTREAM_PATH="${CACHE_DIR}/${item['id']}"
+  PROFILE_ID="${item['profile']}"
+  BENCHMARK_NAME="${item['benchmark'] | replace(' ', '_') }"
+  RESULT_PREFIX="${REPORT_DIR}/${TIMESTAMP}/${HOSTNAME}_${BENCHMARK_NAME}"
+
+  if [[ ! -f "${DATASTREAM_PATH}" ]]; then
+    echo "Datastream ${DATASTREAM_PATH} missing" >&2
+    continue
+  fi
+
+  oscap xccdf eval \
+    --profile "${PROFILE_ID}" \
+    --results "${RESULT_PREFIX}.xml" \
+    --report "${RESULT_PREFIX}.html" \
+    --oval-results \
+    "${DATASTREAM_PATH}"
+
+done
