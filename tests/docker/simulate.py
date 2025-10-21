@@ -12,7 +12,8 @@ import xml.etree.ElementTree as ET
 
 BASE_DIR = Path(__file__).resolve().parent
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
-OVAL_FILE = BASE_DIR / "openscap" / "content" / "sample-oval.xml"
+FSTEC_CONTENT_DIR = BASE_DIR / "openscap" / "content" / "fstec"
+FALLBACK_OVAL_FILE = BASE_DIR / "openscap" / "content" / "sample-oval.xml"
 RNG = random.Random(42)
 
 
@@ -24,27 +25,80 @@ def timestamp() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def simulate_openscap() -> dict:
-    ensure_dir(ARTIFACTS_DIR / "openscap")
-    tree = ET.parse(OVAL_FILE)
+def parse_oval_definitions_from_file(path: Path) -> list[dict]:
+    tree = ET.parse(path)
     root = tree.getroot()
     ns = {"def": "http://oval.mitre.org/XMLSchema/oval-definitions-5", "oval": "http://oval.mitre.org/XMLSchema/oval-common-5"}
-
-    definitions = []
+    parsed: list[dict] = []
     for definition in root.findall("def:definitions/def:definition", ns):
         definition_id = definition.get("id", "unknown")
         title = definition.findtext("def:metadata/def:title", default="Без названия", namespaces=ns)
-        description = definition.findtext("def:metadata/def:description", default="", namespaces=ns)
-        definitions.append({
-            "id": definition_id,
-            "title": title,
-            "description": description,
-        })
+        severity = definition.findtext("def:metadata/oval:advisory/oval:severity", default="", namespaces=ns)
+        family = definition.findtext("def:metadata/def:affected/def:family", default="", namespaces=ns)
+        platforms = [
+            platform.text.strip()
+            for platform in definition.findall("def:metadata/def:affected/def:platform", ns)
+            if platform.text
+        ]
+        parsed.append(
+            {
+                "id": definition_id,
+                "title": title,
+                "severity": severity,
+                "family": family,
+                "platforms": platforms,
+            }
+        )
+    return parsed
+
+
+def load_fstec_definitions() -> list[dict]:
+    manifest_path = FSTEC_CONTENT_DIR / "manifest.json"
+    definitions: list[dict] = []
+    if manifest_path.exists():
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for file_entry in data.get("files", []):
+            for definition in file_entry.get("definitions", []):
+                definitions.append(
+                    {
+                        "id": definition.get("id", "unknown"),
+                        "title": definition.get("title", "Без названия"),
+                        "severity": definition.get("severity") or "",
+                        "family": definition.get("family") or "",
+                        "platforms": definition.get("platforms", []),
+                        "file": file_entry.get("relative_path", ""),
+                    }
+                )
+    else:
+        xml_files = sorted(FSTEC_CONTENT_DIR.rglob("*.xml")) if FSTEC_CONTENT_DIR.exists() else []
+        if xml_files:
+            for xml_file in xml_files:
+                for definition in parse_oval_definitions_from_file(xml_file):
+                    definition["file"] = str(xml_file.relative_to(FSTEC_CONTENT_DIR))
+                    definitions.append(definition)
+    if not definitions and FALLBACK_OVAL_FILE.exists():
+        definitions = parse_oval_definitions_from_file(FALLBACK_OVAL_FILE)
+        for definition in definitions:
+            definition["file"] = FALLBACK_OVAL_FILE.name
+    return definitions
+
+
+def simulate_openscap() -> dict:
+    ensure_dir(ARTIFACTS_DIR / "openscap")
+    definitions = load_fstec_definitions()
 
     results = []
     for index, definition in enumerate(definitions, start=1):
         status = "pass" if index % 2 == 1 else "fail"
-        details = "Файл найден" if status == "pass" else "Файл отсутствует"
+        platforms = ", ".join(definition.get("platforms", []))
+        severity = definition.get("severity") or "n/a"
+        family = definition.get("family") or "unknown"
+        source = definition.get("file", "fstec/manifest")
+        details = (
+            f"Платформа: {platforms or 'не указано'}, семья: {family}, источник: {source}, критичность: {severity}"
+            if status == "pass"
+            else f"Нарушение политики для {platforms or 'платформы по умолчанию'} (severity={severity})"
+        )
         results.append({
             "id": definition["id"],
             "title": definition["title"],

@@ -32,6 +32,18 @@ ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
 - Профили OVAL синхронизируются в KSC для централизованного контроля соответствия.
 - По webhook/REST API можно уведомлять SOC о критичных отклонениях.
 
+## База OVAL ФСТЭК (scanoval.zip)
+- Источник: [https://bdu.fstec.ru/files/scanoval.zip](https://bdu.fstec.ru/files/scanoval.zip). В средах с фильтрацией HTTP(S) возможен ответ `403 Domain forbidden` — в этом случае скачайте архив вручную и укажите путь в переменной `fstec_oval_local_archive`.
+- Для анализа и подготовки контента используйте скрипт `tools/prepare_fstec_content.py`:
+  ```bash
+  python tools/prepare_fstec_content.py \
+    --archive ~/Downloads/scanoval.zip \
+    --output ./content/fstec \
+    --product "Red Hat" --product "Windows"
+  ```
+- Скрипт формирует `manifest.json` со сводкой определений и YAML `fstec_oval.yml`, который можно включить в `group_vars`.
+- После извлечения Ansible-роль автоматически развёртывает архив, а таймер `run-openscap-scan` запускает дополнительные проверки `oscap oval eval` для каждого выбранного файла.
+
 ## Минимальные требования
 - Контроллер: 4 vCPU / 8 GB RAM / 100 GB Storage.
 - Контент-репозиторий: 2 vCPU / 4 GB RAM / 50 GB Storage.

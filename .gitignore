@@ -4,3 +4,5 @@
 /tests/docker/osquery-simulator/.venv/
 /tests/k8s/artifacts/
 /tests/k8s/.kind-config
+/tests/docker/openscap/content/fstec-sample.zip
+/tests/docker/openscap/content/fstec/

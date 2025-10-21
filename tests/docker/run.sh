@@ -30,4 +30,14 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 echo "Docker не обнаружен. Запускается оффлайн-симуляция профиля ${PROFILE}" >&2
+SAMPLE_XML="${SCRIPT_DIR}/openscap/content/sample-oval.xml"
+SAMPLE_ARCHIVE="${SCRIPT_DIR}/openscap/content/fstec-sample.zip"
+python3 "${SCRIPT_DIR}/../tools/create_sample_fstec_archive.py" \
+  --source "${SAMPLE_XML}" \
+  --archive "${SAMPLE_ARCHIVE}" \
+  --prefix "linux"
+python3 "${SCRIPT_DIR}/../../environments/openscap/tools/prepare_fstec_content.py" \
+  --archive "${SAMPLE_ARCHIVE}" \
+  --output "${SCRIPT_DIR}/openscap/content/fstec" \
+  --clean >/dev/null
 python3 "${SIMULATOR}" "${PROFILE}"

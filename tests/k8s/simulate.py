@@ -10,7 +10,8 @@ import xml.etree.ElementTree as ET
 
 BASE_DIR = Path(__file__).resolve().parent
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
-DOCKER_OVAL = BASE_DIR.parent / "docker" / "openscap" / "content" / "sample-oval.xml"
+FSTEC_CONTENT_DIR = BASE_DIR.parent / "docker" / "openscap" / "content" / "fstec"
+FALLBACK_OVAL_FILE = BASE_DIR.parent / "docker" / "openscap" / "content" / "sample-oval.xml"
 RNG = random.Random(314)
 
 
@@ -74,22 +75,68 @@ def collect_manifests() -> list[dict]:
     return resources
 
 
+def parse_definitions_from_file(path: Path) -> list[dict]:
+    tree = ET.parse(path)
+    root = tree.getroot()
+    ns = {"def": "http://oval.mitre.org/XMLSchema/oval-definitions-5", "oval": "http://oval.mitre.org/XMLSchema/oval-common-5"}
+    parsed: list[dict] = []
+    for definition in root.findall("def:definitions/def:definition", ns):
+        parsed.append(
+            {
+                "id": definition.get("id", "unknown"),
+                "title": definition.findtext("def:metadata/def:title", default="", namespaces=ns),
+                "severity": definition.findtext("def:metadata/oval:advisory/oval:severity", default="", namespaces=ns),
+                "platforms": [
+                    platform.text.strip()
+                    for platform in definition.findall("def:metadata/def:affected/def:platform", ns)
+                    if platform.text
+                ],
+            }
+        )
+    return parsed
+
+
+def load_fstec_definitions() -> list[dict]:
+    manifest_path = FSTEC_CONTENT_DIR / "manifest.json"
+    definitions: list[dict] = []
+    if manifest_path.exists():
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for file_entry in data.get("files", []):
+            for definition in file_entry.get("definitions", []):
+                definitions.append(
+                    {
+                        "id": definition.get("id", "unknown"),
+                        "title": definition.get("title", ""),
+                        "severity": definition.get("severity") or "",
+                        "platforms": definition.get("platforms", []),
+                    }
+                )
+    else:
+        xml_files = sorted(FSTEC_CONTENT_DIR.rglob("*.xml")) if FSTEC_CONTENT_DIR.exists() else []
+        for xml_file in xml_files:
+            definitions.extend(parse_definitions_from_file(xml_file))
+    if not definitions and FALLBACK_OVAL_FILE.exists():
+        definitions = parse_definitions_from_file(FALLBACK_OVAL_FILE)
+    return definitions
+
+
 def simulate_openscap() -> dict:
     ensure_dir(ARTIFACTS_DIR)
-    tree = ET.parse(DOCKER_OVAL)
-    root = tree.getroot()
-    ns = {"def": "http://oval.mitre.org/XMLSchema/oval-definitions-5"}
-
     items = []
-    for idx, definition in enumerate(root.findall("def:definitions/def:definition", ns), start=1):
-        title = definition.findtext("def:metadata/def:title", default="", namespaces=ns)
+    for idx, definition in enumerate(load_fstec_definitions(), start=1):
         status = "passed" if idx % 2 == 1 else "failed"
-        message = "/etc/os-release найден" if status == "passed" else "Не удалось найти /etc/os-release"
-        items.append({
-            "title": title,
-            "status": status,
-            "message": message,
-        })
+        message = (
+            f"Определение {definition.get('id')} для платформ {', '.join(definition.get('platforms', [])) or 'n/a'}"
+            if status == "passed"
+            else f"Несоответствие {definition.get('title')} (severity={definition.get('severity') or 'n/a'})"
+        )
+        items.append(
+            {
+                "title": definition.get("title", ""),
+                "status": status,
+                "message": message,
+            }
+        )
 
     log_lines = [
         "OpenSCAP Kubernetes Job (симуляция)",
