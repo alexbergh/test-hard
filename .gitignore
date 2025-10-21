@@ -2,4 +2,5 @@
 /tests/docker/artifacts/
 /tests/docker/osquery-simulator/__pycache__/
 /tests/docker/osquery-simulator/.venv/
+/tests/k8s/artifacts/
 /tests/k8s/.kind-config

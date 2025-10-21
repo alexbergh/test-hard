@@ -20,7 +20,7 @@
 ./tests/docker/run.sh openscap
 ```
 
-После запуска можно открыть Grafana на `http://localhost:3000` (admin/changeme) или Wazuh Dashboard на `https://localhost:5601` (admin/changeme).
+Если Docker недоступен, `run.sh` выполнит оффлайн-симуляцию и сформирует примерные отчёты и логи в `tests/docker/artifacts`. После запуска можно открыть Grafana на `http://localhost:3000` (admin/changeme) или Wazuh Dashboard на `https://localhost:5601` (admin/changeme), когда контейнеры реально подняты.
 
 ## Kubernetes (kind)
 
@@ -40,4 +40,4 @@ kubectl apply -k tests/k8s
 kubectl logs job/openscap-scan -n hardening-test
 ```
 
-Job сохраняет результаты OpenSCAP в артефакт-контейнере (лог можно выгрузить командой `kubectl logs`). Логи Telegraf и Wazuh доступны через `kubectl logs` для соответствующих pod-ов.
+Если `kind` не установлен, `setup-kind.sh` выполнит симуляцию, сформирует сводку по манифестам и примерные логи в `tests/k8s/artifacts`. При наличии `kind` Job сохраняет результаты OpenSCAP в артефакт-контейнере (лог можно выгрузить командой `kubectl logs`), а логи Telegraf и Wazuh доступны через `kubectl logs` для соответствующих pod-ов.
