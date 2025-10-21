@@ -25,3 +25,6 @@
   переключаются на оффлайн-симуляцию, подготавливают базу ФСТЭК через `prepare_fstec_content.py` и формируют примерные артефакты в `tests/docker/artifacts`. Учебный архив `scanoval.zip` собирается на лету утилитой `tests/tools/create_sample_fstec_archive.py`.
 - Kubernetes (kind): `tests/k8s` для эмуляции стека в кластере. Скрипт `setup-kind.sh` создаёт кластер или запускает симуляцию
   логов и сводок, предварительно извлекая OVAL базу ФСТЭК (архив также формируется утилитой `tests/tools/create_sample_fstec_archive.py`), если бинарник `kind` недоступен.
+
+## Отчёты пробных запусков
+- Результаты текущей проверки оффлайн-симуляций: [reports/2025-10-21-simulation-results.md](reports/2025-10-21-simulation-results.md).
