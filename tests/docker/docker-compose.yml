@@ -1,156 +1,181 @@
+# tests/docker/docker-compose.yml  (Compose V2, без ключа version)
 services:
+  ##############################################################################
+  # OpenSCAP (профиль: openscap)
+  ##############################################################################
   openscap-runner:
-    image: "${OPENSCAP_IMAGE:-quay.io/openscap/openscap:1.3.9}"
+    image: deepsecurity/openscap-scan:latest
     container_name: openscap-runner
     profiles: ["openscap"]
+    pull_policy: always
+    restart: unless-stopped
+    # Артефакты отчётов
     volumes:
-      - ./openscap/content:/content:ro
-      - ./artifacts/openscap:/reports
-    command: >-
-      /bin/sh -c "\
-        mkdir -p /reports && \
-        oscap oval eval --results /reports/sample-oval-results.xml \
-          --report /reports/sample-oval-report.html /content/sample-oval.xml && \
-        echo 'OpenSCAP evaluation complete, reports stored in /reports';\
-      "
+      - ./artifacts:/artifacts
+    # Не запускаем скан на старте, чтобы up -d не падал, если контента нет.
+    # Скрипт/профиль можно дергать вручную: `docker exec openscap-runner oscap ...`
+    command: ["sh", "-lc", "sleep infinity"]
+    healthcheck:
+      test: ["CMD", "sh", "-lc", "oscap --version >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
+  ##############################################################################
+  # Telemetry stack (профиль: telemetry)
+  ##############################################################################
   influxdb:
     image: influxdb:2.7
-    container_name: telemetry-influxdb
-    restart: unless-stopped
+    container_name: influxdb
     profiles: ["telemetry"]
-    ports:
-      - "8086:8086"
+    pull_policy: always
+    restart: unless-stopped
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=changeme
-      - DOCKER_INFLUXDB_INIT_ORG=security
-      - DOCKER_INFLUXDB_INIT_BUCKET=osquery
-      - DOCKER_INFLUXDB_INIT_RETENTION=30d
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminadmin
+      - DOCKER_INFLUXDB_INIT_ORG=test
+      - DOCKER_INFLUXDB_INIT_BUCKET=telemetry
+      - DOCKER_INFLUXDB_INIT_RETENTION=4w
     volumes:
       - influxdb-data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8086/health | grep -q 'pass'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "8086:8086"
 
   telegraf-listener:
-    image: telegraf:1.28
-    container_name: telemetry-telegraf
-    restart: unless-stopped
+    image: telegraf:1.29
+    container_name: telegraf-listener
     profiles: ["telemetry"]
-    ports:
-      - "9081:9081"
-      - "6514:6514/udp"
-    volumes:
-      - ../../environments/osquery-telegraf/docker/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    pull_policy: always
+    restart: unless-stopped
     depends_on:
-      - influxdb
+      influxdb:
+        condition: service_healthy
+    environment:
+      - INFLUX_TOKEN=${INFLUX_TOKEN:-}
+    # Пример минимальной конфигурации: метрики в stdout,
+    # при необходимости смонтируй свой telegraf.conf
+    command: ["--docker"]
+    healthcheck:
+      test: ["CMD-SHELL", "telegraf --version >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
   grafana:
     image: grafana/grafana:10.4.1
-    container_name: telemetry-grafana
-    restart: unless-stopped
+    container_name: grafana
     profiles: ["telemetry"]
-    ports:
-      - "3000:3000"
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=changeme
+      - GF_SECURITY_ADMIN_PASSWORD=adminadmin
     volumes:
       - grafana-data:/var/lib/grafana
-    depends_on:
-      - influxdb
-
-  osquery-simulator:
-    build: ./osquery-simulator
-    container_name: osquery-simulator
-    restart: unless-stopped
-    profiles: ["telemetry"]
-    environment:
-      - TELEGRAF_ENDPOINT=http://telegraf-listener:9081/osquery
-      - SYSLOG_ENDPOINT=udp://telegraf-listener:6514
-      - HOST_IDENTIFIER=simulated-endpoint
-      - LOG_INTERVAL=5
-    depends_on:
-      - telegraf-listener
-
-  kuma-mock:
-    build: ./kuma-mock
-    container_name: kuma-mock
-    restart: unless-stopped
-    profiles: ["telemetry"]
-    environment:
-      - LISTEN_PORT=8080
-      - KUMA_DATA_DIR=/app/data
     ports:
-      - "18080:8080"
-    volumes:
-      - ./artifacts/telemetry/kuma:/app/data
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health | grep -q healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
 
+  ##############################################################################
+  # Wazuh stack (профиль: wazuh)
+  ##############################################################################
   wazuh-indexer:
-    image: wazuh/wazuh-indexer:4.7.2
+    image: wazuh/wazuh-indexer:4.13.1
     container_name: wazuh-indexer
-    restart: unless-stopped
     profiles: ["wazuh"]
+    pull_policy: always
+    restart: unless-stopped
     environment:
-      - bootstrap.password=changeme
-      - discovery.type=single-node
+      - "DISCOVERY_SEED_HOSTS=127.0.0.1"
+      - "NETWORK_HOST=0.0.0.0"
+      - "CLUSTER_NAME=wazuh"
+      - "NODE_NAME=indexer01"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-    volumes:
-      - wazuh-indexer-data:/var/lib/wazuh-indexer
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
 
   wazuh-manager:
-    image: wazuh/wazuh-manager:4.7.2
+    image: wazuh/wazuh-manager:4.13.1
     container_name: wazuh-manager
-    restart: unless-stopped
     profiles: ["wazuh"]
+    pull_policy: always
+    restart: unless-stopped
     depends_on:
-      - wazuh-indexer
+      wazuh-indexer:
+        condition: service_healthy
+    environment:
+      - "INDEXER_URL=http://wazuh-indexer:9200"
+      - "API_USERNAME=admin"
+      - "API_PASSWORD=SecretPassword!"
+      - "FILEBEAT_OUTPUT=indexer"
     ports:
       - "1514:1514/udp"
       - "1515:1515"
       - "55000:55000"
-    volumes:
-      - wazuh-manager-data:/var/ossec/data
-      - ../../environments/wazuh/docker/config/manager/ossec.conf:/var/ossec/etc/ossec.conf:ro
-      - ./artifacts/wazuh/manager-logs:/var/ossec/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:55000 >/dev/null || ss -ltn | grep -q ':1515'"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
 
   wazuh-dashboard:
-    image: wazuh/wazuh-dashboard:4.7.2
+    image: wazuh/wazuh-dashboard:4.13.1
     container_name: wazuh-dashboard
-    restart: unless-stopped
     profiles: ["wazuh"]
+    pull_policy: always
+    restart: unless-stopped
     depends_on:
-      - wazuh-manager
-      - wazuh-indexer
+      wazuh-indexer:
+        condition: service_healthy
+      wazuh-manager:
+        condition: service_started
     environment:
-      - DASHBOARD_USERNAME=admin
-      - DASHBOARD_PASSWORD=changeme
-      - WAZUH_API_URL=https://wazuh-manager:55000
-      - WAZUH_API_USER=wazuh-wui
-      - WAZUH_API_PASSWORD=SecretPassword
+      - "OPENSEARCH_HOSTS=['http://wazuh-indexer:9200']"
     ports:
       - "5601:5601"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q 'available'"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
 
   wazuh-agent:
-    image: wazuh/wazuh-agent:4.7.2
+    image: wazuh/wazuh-agent:4.13.1
     container_name: wazuh-agent
-    restart: unless-stopped
     profiles: ["wazuh"]
-    environment:
-      - WAZUH_MANAGER=wazuh-manager
-      - WAZUH_AGENT_NAME=docker-sim-agent
-      - WAZUH_AGENT_GROUP=default
-    volumes:
-      - ./artifacts/wazuh/agent-logs:/var/ossec/logs
+    pull_policy: always
+    restart: unless-stopped
     depends_on:
-      - wazuh-manager
+      wazuh-manager:
+        condition: service_started
+    environment:
+      - "MANAGER_IP=wazuh-manager"
+      - "WAZUH_AGENT_NAME=test-agent-01"
+    # в demo-стенде агент может не иметь host PID/NET — это ок
+    healthcheck:
+      test: ["CMD-SHELL", "sleep 5; ps aux | grep -q '[w]azuh-agentd' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
 
 volumes:
   influxdb-data:
   grafana-data:
-  wazuh-indexer-data:
-  wazuh-manager-data:
