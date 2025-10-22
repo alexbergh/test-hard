@@ -9,7 +9,7 @@ services:
     image: deepsecurity/openscap-scan:1.2.77
     container_name: openscap-runner
     profiles: ["openscap"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     volumes:
       - ./artifacts:/artifacts
@@ -28,7 +28,7 @@ services:
     image: influxdb:2.7
     container_name: influxdb
     profiles: ["telemetry"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
@@ -51,7 +51,7 @@ services:
     image: telegraf:1.29
     container_name: telegraf-listener
     profiles: ["telemetry"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
       influxdb:
@@ -68,7 +68,7 @@ services:
     image: grafana/grafana:10.4.1
     container_name: grafana
     profiles: ["telemetry"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
       influxdb:
@@ -93,7 +93,7 @@ services:
     image: wazuh/wazuh-indexer:4.13.1
     container_name: wazuh-indexer
     profiles: ["wazuh"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     environment:
       DISCOVERY_SEED_HOSTS: "127.0.0.1"
@@ -113,7 +113,7 @@ services:
     image: wazuh/wazuh-manager:4.13.1
     container_name: wazuh-manager
     profiles: ["wazuh"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
       wazuh-indexer:
@@ -137,7 +137,7 @@ services:
     image: wazuh/wazuh-dashboard:4.13.1
     container_name: wazuh-dashboard
     profiles: ["wazuh"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
       wazuh-indexer:
@@ -158,7 +158,7 @@ services:
     image: wazuh/wazuh-agent:4.13.1
     container_name: wazuh-agent
     profiles: ["wazuh"]
-    pull_policy: always
+    pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
       wazuh-manager:
