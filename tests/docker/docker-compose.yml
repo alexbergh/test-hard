@@ -1,25 +1,28 @@
-# tests/docker/docker-compose.yml  (Compose V2, без ключа version)
+# tests/docker/docker-compose.yml
+# Compose V2 (без ключа "version")
+
 services:
   ##############################################################################
-  # OpenSCAP (профиль: openscap)
+  # OpenSCAP (profile: openscap)
   ##############################################################################
-   openscap-runner:
-      image: deepsecurity/openscap-scan:1.2.77
-     container_name: openscap-runner
-     profiles: ["openscap"]
-     pull_policy: always
-     restart: unless-stopped
-     volumes:
-       - ./artifacts:/artifacts
-     command: ["sh", "-lc", "sleep infinity"]
-     healthcheck:
-       test: ["CMD", "sh", "-lc", "oscap --version >/dev/null 2>&1"]
-       interval: 30s
-       timeout: 5s
-       retries: 5
+  openscap-runner:
+    image: deepsecurity/openscap-scan:1.2.77
+    container_name: openscap-runner
+    profiles: ["openscap"]
+    pull_policy: always
+    restart: unless-stopped
+    volumes:
+      - ./artifacts:/artifacts
+    # Не запускаем скан автоматически, чтобы up -d был безошибочным.
+    command: ["sh", "-lc", "sleep infinity"]
+    healthcheck:
+      test: ["CMD-SHELL", "oscap --version >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
   ##############################################################################
-  # Telemetry stack (профиль: telemetry)
+  # Telemetry stack (profile: telemetry)
   ##############################################################################
   influxdb:
     image: influxdb:2.7
@@ -28,21 +31,21 @@ services:
     pull_policy: always
     restart: unless-stopped
     environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=adminadmin
-      - DOCKER_INFLUXDB_INIT_ORG=test
-      - DOCKER_INFLUXDB_INIT_BUCKET=telemetry
-      - DOCKER_INFLUXDB_INIT_RETENTION=4w
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminadmin
+      DOCKER_INFLUXDB_INIT_ORG: test
+      DOCKER_INFLUXDB_INIT_BUCKET: telemetry
+      DOCKER_INFLUXDB_INIT_RETENTION: 4w
     volumes:
       - influxdb-data:/var/lib/influxdb2
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8086/health | grep -q 'pass'"]
-      interval: 15s
-      timeout: 5s
-      retries: 20
     ports:
       - "8086:8086"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8086/health | grep -q pass"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
 
   telegraf-listener:
     image: telegraf:1.29
@@ -53,11 +56,8 @@ services:
     depends_on:
       influxdb:
         condition: service_healthy
-    environment:
-      - INFLUX_TOKEN=${INFLUX_TOKEN:-}
-    # Пример минимальной конфигурации: метрики в stdout,
-    # при необходимости смонтируй свой telegraf.conf
-    command: ["--docker"]
+    # Минимальный запуск; при необходимости смонтируй свой telegraf.conf
+    command: ["--once=false"]
     healthcheck:
       test: ["CMD-SHELL", "telegraf --version >/dev/null 2>&1"]
       interval: 30s
@@ -74,8 +74,8 @@ services:
       influxdb:
         condition: service_healthy
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=adminadmin
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: adminadmin
     volumes:
       - grafana-data:/var/lib/grafana
     ports:
@@ -84,10 +84,10 @@ services:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health | grep -q healthy"]
       interval: 15s
       timeout: 5s
-      retries: 20
+      retries: 30
 
   ##############################################################################
-  # Wazuh stack (профиль: wazuh)
+  # Wazuh stack (profile: wazuh)
   ##############################################################################
   wazuh-indexer:
     image: wazuh/wazuh-indexer:4.13.1
@@ -96,11 +96,11 @@ services:
     pull_policy: always
     restart: unless-stopped
     environment:
-      - "DISCOVERY_SEED_HOSTS=127.0.0.1"
-      - "NETWORK_HOST=0.0.0.0"
-      - "CLUSTER_NAME=wazuh"
-      - "NODE_NAME=indexer01"
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      DISCOVERY_SEED_HOSTS: "127.0.0.1"
+      NETWORK_HOST: "0.0.0.0"
+      CLUSTER_NAME: "wazuh"
+      NODE_NAME: "indexer01"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
     healthcheck:
@@ -119,10 +119,10 @@ services:
       wazuh-indexer:
         condition: service_healthy
     environment:
-      - "INDEXER_URL=http://wazuh-indexer:9200"
-      - "API_USERNAME=admin"
-      - "API_PASSWORD=SecretPassword!"
-      - "FILEBEAT_OUTPUT=indexer"
+      INDEXER_URL: "http://wazuh-indexer:9200"
+      API_USERNAME: "admin"
+      API_PASSWORD: "SecretPassword!"
+      FILEBEAT_OUTPUT: "indexer"
     ports:
       - "1514:1514/udp"
       - "1515:1515"
@@ -145,11 +145,11 @@ services:
       wazuh-manager:
         condition: service_started
     environment:
-      - "OPENSEARCH_HOSTS=['http://wazuh-indexer:9200']"
+      OPENSEARCH_HOSTS: '["http://wazuh-indexer:9200"]'
     ports:
       - "5601:5601"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q 'available'"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q available"]
       interval: 15s
       timeout: 5s
       retries: 40
@@ -164,11 +164,10 @@ services:
       wazuh-manager:
         condition: service_started
     environment:
-      - "MANAGER_IP=wazuh-manager"
-      - "WAZUH_AGENT_NAME=test-agent-01"
-    # в demo-стенде агент может не иметь host PID/NET — это ок
+      MANAGER_IP: "wazuh-manager"
+      WAZUH_AGENT_NAME: "test-agent-01"
     healthcheck:
-      test: ["CMD-SHELL", "sleep 5; ps aux | grep -q '[w]azuh-agentd' || exit 1"]
+      test: ["CMD-SHELL", "sleep 5; ps aux | grep -q '[w]azuh-agentd'"]
       interval: 30s
       timeout: 5s
       retries: 10
