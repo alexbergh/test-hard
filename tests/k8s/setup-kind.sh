@@ -4,6 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SIMULATOR="${SCRIPT_DIR}/simulate.py"
 
+if [[ -z "${HARDENING_FIXED_TIMESTAMP:-}" ]]; then
+  export HARDENING_FIXED_TIMESTAMP="2025-01-01T00:00:00+00:00"
+fi
+
 if ! command -v kind >/dev/null 2>&1; then
   echo "kind не обнаружен. Выполняется оффлайн-симуляция." >&2
   SAMPLE_XML="${SCRIPT_DIR}/../docker/openscap/content/sample-oval.xml"

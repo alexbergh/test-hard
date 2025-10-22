@@ -5,9 +5,11 @@ import json
 import math
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
+
+from time_utils import TimeSequencer
 
 
 @dataclass
@@ -15,10 +17,6 @@ class SeverityBreakdown:
     severity: str
     count: int
     percentage: float
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _ascii_bar(value: int, max_value: int, width: int = 20) -> str:
@@ -67,9 +65,10 @@ class HardeningMetrics:
 class HardeningMetricsVisualizer:
     """Строит артефакты визуализации и полезные payload-ы."""
 
-    def __init__(self, output_dir: Path):
+    def __init__(self, output_dir: Path, time_sequencer: Optional[TimeSequencer] = None):
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self._time = time_sequencer or TimeSequencer()
 
     def build(self, events: list[dict]) -> HardeningMetrics:
         vulnerability_events = [e for e in events if e.get("type") == "vulnerability"]
@@ -85,8 +84,9 @@ class HardeningMetricsVisualizer:
             percentage = (count / total_vulnerabilities * 100) if total_vulnerabilities else 0
             severity_breakdown.append(SeverityBreakdown(severity=severity, count=count, percentage=percentage))
 
+        generated_at_dt = self._time.next_datetime()
         metrics = HardeningMetrics(
-            generated_at=_now_iso(),
+            generated_at=generated_at_dt.isoformat(),
             vulnerability_total=total_vulnerabilities,
             inventory_total=len(inventory_events),
             unique_hosts=len(_unique_hosts(events)),
@@ -97,7 +97,7 @@ class HardeningMetricsVisualizer:
 
         self._write_dashboard(metrics)
         self._write_grafana_dashboard(metrics)
-        self._write_kuma_payload(metrics, vulnerability_events, inventory_events)
+        self._write_kuma_payload(metrics, vulnerability_events, inventory_events, generated_at_dt)
         self._write_collector_log(metrics, vulnerability_events, inventory_events)
         return metrics
 
@@ -198,9 +198,11 @@ class HardeningMetricsVisualizer:
         metrics: HardeningMetrics,
         vulnerability_events: list[dict],
         inventory_events: list[dict],
+        batch_dt: Optional[datetime] = None,
     ) -> None:
+        batch_time = batch_dt or self._time.next_datetime()
         payload = {
-            "batch_id": f"kuma-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
+            "batch_id": f"kuma-{batch_time.strftime('%Y%m%d%H%M%S')}",
             "generated_at": metrics.generated_at,
             "summary": {
                 "vulnerability_total": metrics.vulnerability_total,

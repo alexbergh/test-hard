@@ -5,6 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 SIMULATOR="${SCRIPT_DIR}/simulate.py"
 
+if [[ -z "${HARDENING_FIXED_TIMESTAMP:-}" ]]; then
+  export HARDENING_FIXED_TIMESTAMP="2025-01-01T00:00:00+00:00"
+fi
+
 PROFILE="${1:-all}"
 
 if command -v docker >/dev/null 2>&1; then
