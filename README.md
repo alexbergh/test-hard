@@ -13,6 +13,45 @@
   - Docker Compose all-in-one: `environments/wazuh/docker/docker-compose.yml`.
   - Ansible-плейбук для агентов: `environments/wazuh/ansible/playbook.yml`.
 
+## Запуск окружений через Docker Compose
+
+Все docker-compose файлы совместимы с Compose V2 (`docker compose`). Убедитесь, что у вас установлены Docker Engine и плагин Compose, а также что выполняются команды из корня репозитория или соответствующего подкаталога.
+
+### Osquery + Telegraf (центральный стек)
+
+```bash
+cd environments/osquery-telegraf/docker
+docker compose up -d
+```
+
+Стек поднимает InfluxDB, приёмник Telegraf и Grafana с дефолтными учётными данными `admin/changeme`. Конфигурация слушателя находится в `telegraf/telegraf.conf` — при необходимости скорректируйте выходы перед запуском.
+
+### Wazuh + Elastic Stack
+
+```bash
+cd environments/wazuh/docker
+docker compose up -d
+```
+
+Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Стандартные логины/пароли задаются переменными окружения в `docker-compose.yml`; при первом запуске измените значения `changeme`/`SecretPassword` и при необходимости подправьте `config/manager/ossec.conf`.
+
+### Полный тестовый стенд (все профили)
+
+Для запуска всех контейнеров проекта одним файлом используйте агрегированный Compose в `tests/docker`:
+
+```bash
+cd tests/docker
+docker compose --profile openscap --profile telemetry --profile wazuh up -d
+```
+
+Профили включают OpenSCAP-runner, телеметрический стек (InfluxDB, Telegraf, Grafana, KUMA mock, osquery-simulator) и полный набор сервисов Wazuh. Артефакты и логи сохраняются в `tests/docker/artifacts`. Для остановки выполните:
+
+```bash
+docker compose --profile openscap --profile telemetry --profile wazuh down
+```
+
+Если требуется одноразовый запуск сканера без фоновых сервисов, можно ограничиться профилем `openscap`. Скрипт `run.sh` в том же каталоге автоматически переключит систему в оффлайн-симуляцию, если Docker недоступен.
+
 ## Сценарии hardening
 - [Общие принципы и поток работ](hardening-scenarios/README.md).
 - Linux-плейбук: `hardening-scenarios/ansible/playbooks/linux.yml` (включая роль `secaudit_profiles` для профилей RedOS/Astra/Alt/CentOS).
