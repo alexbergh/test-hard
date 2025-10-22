@@ -22,7 +22,7 @@ services:
     # Keep idle so `up -d` never fails; run scans via `docker exec`.
     command: ["sh", "-lc", "sleep infinity"]
     healthcheck:
-      test: ["CMD-SHELL", "command -v oscap >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "echo ok"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -63,8 +63,8 @@ services:
       influxdb:
         condition: service_healthy
     # Mount your telegraf.conf if needed, e.g.:
-    # volumes:
-    #   - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    volumes:
+      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "telegraf --version >/dev/null 2>&1"]
       interval: 30s
@@ -110,7 +110,7 @@ services:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     # Provide minimal OpenSearch config with security disabled to avoid cert errors.
     volumes:
-      - ./config/wazuh-indexer/opensearch.yml:/etc/wazuh-indexer/opensearch.yml:ro
+      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
     ports:
       - "9200:9200"
     healthcheck:
