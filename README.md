@@ -59,6 +59,16 @@ docker compose --profile openscap --profile telemetry --profile wazuh down
 > 
 > Compose подставит значение переменной вместо дефолтного `quay.io/openscap/openscap:1.3.9`. Можно указать собственный реестр или локальный образ (`OPENSCAP_IMAGE=localhost:5000/openscap:custom`) и предварительно выполнить `docker pull`/`docker load`.
 
+> **Пинning версии Wazuh.** Образы `wazuh/wazuh-*` в агрегированном Compose по умолчанию используют тег `4.7.1`, потому что более новые сборки (например, `4.7.2`) не публиковались для агента. Если вам нужна другая версия или зеркало, задайте переменные перед запуском:
+>
+> ```bash
+> export WAZUH_VERSION=4.7.1        # или 4.7.3, если все образы есть в реестре
+> export WAZUH_IMAGE_REGISTRY=wazuh # по умолчанию, можно указать registry.example.com/wazuh
+> docker compose --profile openscap --profile telemetry --profile wazuh up -d
+> ```
+>
+> Значения распространяются на `wazuh-indexer`, `wazuh-manager`, `wazuh-dashboard` и `wazuh-agent`. При использовании частного реестра выполните `docker login` и `docker pull` заранее.
+
 Если требуется одноразовый запуск сканера без фоновых сервисов, можно ограничиться профилем `openscap`. Скрипт `run.sh` в том же каталоге автоматически переключит систему в оффлайн-симуляцию, если Docker недоступен.
 
 ## Сценарии hardening
