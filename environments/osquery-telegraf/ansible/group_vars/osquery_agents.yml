@@ -7,7 +7,25 @@ osquery_additional_flags:
 osquery_packs:
   - inventory
   - vulnerability-management
+  - security_monitoring
+  - compliance_checks
 osquery_tls_hostname: kuma-collector.example.com
+telegraf_exec_inputs:
+  - name_override: osquery_packages
+    commands:
+      - "/usr/bin/osqueryi --json 'select name, version from deb_packages;'"
+    timeout: "5s"
+    data_format: json
+    json_tag_keys:
+      - name
+  - name_override: osquery_listening_ports
+    commands:
+      - "/usr/bin/osqueryi --json 'SELECT p.name, lp.port, lp.address FROM listening_ports lp LEFT JOIN processes p ON lp.pid = p.pid;'"
+    timeout: "5s"
+    data_format: json
+    json_tag_keys:
+      - port
+      - name
 telegraf_outputs:
   - type: http
     url: https://kuma-gateway.example.com/collect
