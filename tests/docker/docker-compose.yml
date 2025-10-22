@@ -3,23 +3,20 @@ services:
   ##############################################################################
   # OpenSCAP (профиль: openscap)
   ##############################################################################
-  openscap-runner:
-    image: deepsecurity/openscap-scan:latest
-    container_name: openscap-runner
-    profiles: ["openscap"]
-    pull_policy: always
-    restart: unless-stopped
-    # Артефакты отчётов
-    volumes:
-      - ./artifacts:/artifacts
-    # Не запускаем скан на старте, чтобы up -d не падал, если контента нет.
-    # Скрипт/профиль можно дергать вручную: `docker exec openscap-runner oscap ...`
-    command: ["sh", "-lc", "sleep infinity"]
-    healthcheck:
-      test: ["CMD", "sh", "-lc", "oscap --version >/dev/null 2>&1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
+   openscap-runner:
+      image: deepsecurity/openscap-scan:1.2.77
+     container_name: openscap-runner
+     profiles: ["openscap"]
+     pull_policy: always
+     restart: unless-stopped
+     volumes:
+       - ./artifacts:/artifacts
+     command: ["sh", "-lc", "sleep infinity"]
+     healthcheck:
+       test: ["CMD", "sh", "-lc", "oscap --version >/dev/null 2>&1"]
+       interval: 30s
+       timeout: 5s
+       retries: 5
 
   ##############################################################################
   # Telemetry stack (профиль: telemetry)
