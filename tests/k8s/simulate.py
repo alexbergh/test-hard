@@ -6,7 +6,6 @@ import json
 import random
 import sys
 from dataclasses import asdict
-from datetime import datetime, timezone
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -18,14 +17,18 @@ RNG = random.Random(314)
 
 sys.path.append(str(BASE_DIR.parent / "shared"))
 from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
+from time_utils import TimeSequencer  # noqa: E402
 
 
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
+TIME = TimeSequencer(step_seconds=30)
+
+
 def timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return TIME.next_iso()
 
 
 def parse_resource_block(block: str) -> dict | None:
@@ -199,7 +202,7 @@ def simulate_telemetry() -> dict:
         for event in events:
             handle.write(json.dumps(event, ensure_ascii=False) + "\n")
 
-    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry").build(events)
+    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry", time_sequencer=TIME).build(events)
 
     return {
         "entries": len(lines),

@@ -6,7 +6,6 @@ import argparse
 import json
 import random
 import textwrap
-from datetime import datetime, timezone
 from dataclasses import asdict
 from pathlib import Path
 import sys
@@ -20,14 +19,18 @@ RNG = random.Random(42)
 
 sys.path.append(str(BASE_DIR.parent / "shared"))
 from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
+from time_utils import TimeSequencer  # noqa: E402
 
 
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
+TIME = TimeSequencer(step_seconds=30)
+
+
 def timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return TIME.next_iso()
 
 
 def parse_oval_definitions_from_file(path: Path) -> list[dict]:
@@ -191,7 +194,7 @@ def simulate_telemetry() -> dict:
 
     (ARTIFACTS_DIR / "telemetry" / "syslog.log").write_text("\n".join(syslog_messages), encoding="utf-8")
 
-    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry").build(events)
+    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry", time_sequencer=TIME).build(events)
 
     return {
         "generated_at": timestamp(),

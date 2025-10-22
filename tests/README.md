@@ -22,6 +22,8 @@
 
 Если Docker недоступен, `run.sh` выполнит оффлайн-симуляцию, перед этим извлечёт базу ФСТЭК через `prepare_fstec_content.py` и сформирует примерные отчёты и логи в `tests/docker/artifacts`. Дополнительно генерируются Markdown-панель (`telemetry/hardening-dashboard.md`), экспорт дашборда Grafana (`telemetry/grafana-dashboard.json`) и payload для KUMA (`telemetry/kuma-payload.json`), чтобы визуально проверить метрики. Учебный архив `scanoval.zip` создаётся на лету утилитой `tests/tools/create_sample_fstec_archive.py`, поэтому бинарники не попадают в репозиторий. После запуска можно открыть Grafana на `http://localhost:3000` (admin/changeme) или Wazuh Dashboard на `https://localhost:5601` (admin/changeme), когда контейнеры реально подняты.
 
+> **Note:** Для повторяемых отчётов скрипт автоматически экспортирует `HARDENING_FIXED_TIMESTAMP=2025-01-01T00:00:00+00:00`, если переменная не задана. Значение можно переопределить перед запуском.
+
 ## Kubernetes (kind)
 
 В `tests/k8s` содержится набор манифестов и helper-скриптов для развёртывания тестовых инстансов в кластер `kind`:
@@ -42,6 +44,8 @@ kubectl logs job/openscap-scan -n hardening-test
 
 Если `kind` не установлен, `setup-kind.sh` выполнит симуляцию, предварительно подготовит OVAL базу ФСТЭК (архив также формируется скриптом `tests/tools/create_sample_fstec_archive.py`) и сформирует сводку по манифестам и примерные логи в `tests/k8s/artifacts`. При наличии `kind` Job сохраняет результаты OpenSCAP в артефакт-контейнере (лог можно выгрузить командой `kubectl logs`), а логи Telegraf и Wazuh доступны через `kubectl logs` для соответствующих pod-ов.
 
+> **Note:** По умолчанию симулятор также использует `HARDENING_FIXED_TIMESTAMP`, чтобы логи и payload-ы имели детерминированные значения.
+
 ## Виртуальные машины (Packer + симуляция)
 
 Каталог `tests/vms` решает задачу подготовки тестовых/продуктивных образов RedOS 7.3/8, Astra Linux 1.7, Альт 8 и CentOS 7. Шаблон `packer/linux.pkr.hcl` поддерживает запуск с `packer build -var "distro=<id>" -var "environment=test|prod"`, а `run.sh` автоматически переключается на оффлайн-симуляцию, если гипервизор недоступен.
@@ -53,4 +57,6 @@ kubectl logs job/openscap-scan -n hardening-test
 - `artifacts/<env>/telemetry/` — события osquery (events/inventory JSONL), Markdown-панель, экспорт Grafana, payload KUMA и сводка метрик.
 
 Эти артефакты используются в отчётах департамента DevOps как доказательство прохождения сценариев hardening для test/prod контуров.
+
+> **Note:** Для повторяемости `tests/vms/run.sh` экспортирует `HARDENING_FIXED_TIMESTAMP`, и все события получают фиксированные `collected_at` значения.
 

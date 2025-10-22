@@ -1,6 +1,6 @@
 {
-  "batch_id": "kuma-20251021203224",
-  "generated_at": "2025-10-21T20:32:24.102503+00:00",
+  "batch_id": "kuma-20250101000630",
+  "generated_at": "2025-01-01T00:06:30+00:00",
   "summary": {
     "vulnerability_total": 5,
     "inventory_total": 5,
@@ -27,7 +27,7 @@
       "version": "1.2.0",
       "severity": "low",
       "cve": "CVE-2024-2511",
-      "collected_at": "2025-10-21T20:32:24.102106+00:00"
+      "collected_at": "2025-01-01T00:01:30+00:00"
     },
     {
       "category": "hardening",
@@ -37,7 +37,7 @@
       "version": "1.3.12",
       "severity": "medium",
       "cve": "CVE-2023-2650",
-      "collected_at": "2025-10-21T20:32:24.102130+00:00"
+      "collected_at": "2025-01-01T00:02:30+00:00"
     },
     {
       "category": "hardening",
@@ -47,7 +47,7 @@
       "version": "1.2.4",
       "severity": "medium",
       "cve": "CVE-2023-2650",
-      "collected_at": "2025-10-21T20:32:24.102142+00:00"
+      "collected_at": "2025-01-01T00:03:30+00:00"
     },
     {
       "category": "hardening",
@@ -57,7 +57,7 @@
       "version": "1.9.8",
       "severity": "low",
       "cve": "CVE-2023-2650",
-      "collected_at": "2025-10-21T20:32:24.102152+00:00"
+      "collected_at": "2025-01-01T00:04:30+00:00"
     },
     {
       "category": "hardening",
@@ -67,7 +67,7 @@
       "version": "1.5.16",
       "severity": "low",
       "cve": "CVE-2024-2511",
-      "collected_at": "2025-10-21T20:32:24.102162+00:00"
+      "collected_at": "2025-01-01T00:05:30+00:00"
     },
     {
       "category": "hardening",
@@ -75,7 +75,7 @@
       "host": "simulated-k8s-osquery",
       "os": "centos",
       "kernel": "5.15.20",
-      "collected_at": "2025-10-21T20:32:24.102118+00:00"
+      "collected_at": "2025-01-01T00:02:00+00:00"
     },
     {
       "category": "hardening",
@@ -83,7 +83,7 @@
       "host": "simulated-k8s-osquery",
       "os": "centos",
       "kernel": "5.15.28",
-      "collected_at": "2025-10-21T20:32:24.102137+00:00"
+      "collected_at": "2025-01-01T00:03:00+00:00"
     },
     {
       "category": "hardening",
@@ -91,7 +91,7 @@
       "host": "simulated-k8s-osquery",
       "os": "ubuntu",
       "kernel": "5.15.26",
-      "collected_at": "2025-10-21T20:32:24.102146+00:00"
+      "collected_at": "2025-01-01T00:04:00+00:00"
     },
     {
       "category": "hardening",
@@ -99,7 +99,7 @@
       "host": "simulated-k8s-osquery",
       "os": "ubuntu",
       "kernel": "5.15.6",
-      "collected_at": "2025-10-21T20:32:24.102157+00:00"
+      "collected_at": "2025-01-01T00:05:00+00:00"
     },
     {
       "category": "hardening",
@@ -107,7 +107,7 @@
       "host": "simulated-k8s-osquery",
       "os": "centos",
       "kernel": "5.15.23",
-      "collected_at": "2025-10-21T20:32:24.102166+00:00"
+      "collected_at": "2025-01-01T00:06:00+00:00"
     }
   ]
 }

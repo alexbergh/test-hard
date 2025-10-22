@@ -4,6 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PACKER_TEMPLATE="${SCRIPT_DIR}/packer/linux.pkr.hcl"
 SIMULATOR="${SCRIPT_DIR}/simulate.py"
+if [[ -z "${HARDENING_FIXED_TIMESTAMP:-}" ]]; then
+  export HARDENING_FIXED_TIMESTAMP="2025-01-01T00:00:00+00:00"
+fi
 MODE="${HARDENING_VM_MODE:-simulate}"
 ENVIRONMENT="${1:-all}"
 

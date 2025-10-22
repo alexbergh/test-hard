@@ -29,6 +29,10 @@
   логов и сводок, предварительно извлекая OVAL базу ФСТЭК (архив также формируется утилитой `tests/tools/create_sample_fstec_archive.py`), если бинарник `kind` недоступен.
 - Виртуальные машины: `tests/vms` описывает Packer-шаблон для RedOS 7.3/8, Astra 1.7, Альт 8, CentOS 7 и содержит симуляцию, которая формирует `compliance-report.json`, телеметрию osquery→Grafana/KUMA и журналы сборки для test/prod контуров.
 
+### Детерминированные таймстемпы симуляций
+
+Для воспроизводимых артефактов оффлайн-скрипты (`tests/docker/run.sh`, `tests/k8s/setup-kind.sh`, `tests/vms/run.sh`) автоматически экспортируют переменную `HARDENING_FIXED_TIMESTAMP=2025-01-01T00:00:00+00:00`, если она не задана. Значение считывается всеми симуляторами через общий `TimeSequencer`, поэтому повторные запуски формируют идентичные поля `generated_at` и `collected_at`. При необходимости можно переопределить переменную перед запуском, чтобы получить собственный временной срез.
+
 ## Отчёты пробных запусков
 - Результаты текущей проверки оффлайн-симуляций: [reports/2025-10-21-simulation-results.md](reports/2025-10-21-simulation-results.md).
 - Визуализация метрик osquery/Telegraf -> Grafana/KUMA: [reports/2025-10-21-monitoring-dashboard.md](reports/2025-10-21-monitoring-dashboard.md).

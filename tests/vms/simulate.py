@@ -5,12 +5,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "shared"))
 from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
+from time_utils import TimeSequencer  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCENARIO_DIR = REPO_ROOT / "hardening-scenarios" / "secaudit" / "profiles"
@@ -82,8 +82,11 @@ FAILURE_MATRIX = {
 }
 
 
+TIME = TimeSequencer(step_seconds=30)
+
+
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return TIME.next_iso()
 
 
 TAG_PACKAGE_MAP = {
@@ -309,7 +312,9 @@ def _simulate_environment(environment: str) -> None:
     )
 
     telemetry_dir = env_dir / "telemetry"
-    metrics = HardeningMetricsVisualizer(telemetry_dir).build(vulnerability_events + inventory_events)
+    metrics = HardeningMetricsVisualizer(telemetry_dir, time_sequencer=TIME).build(
+        vulnerability_events + inventory_events
+    )
 
     events_path = telemetry_dir / "events.jsonl"
     events_path.parent.mkdir(parents=True, exist_ok=True)

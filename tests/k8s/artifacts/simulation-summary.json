@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T20:32:24.101905+00:00",
+  "generated_at": "2025-01-01T00:00:30+00:00",
   "resources": 8,
   "openscap": {
     "results": [
@@ -16,7 +16,7 @@
     "log": "/workspace/test-hard/tests/k8s/artifacts/telemetry/pod.log",
     "events_file": "/workspace/test-hard/tests/k8s/artifacts/telemetry/events.jsonl",
     "metrics": {
-      "generated_at": "2025-10-21T20:32:24.102503+00:00",
+      "generated_at": "2025-01-01T00:06:30+00:00",
       "vulnerability_total": 5,
       "inventory_total": 5,
       "unique_hosts": 1,
