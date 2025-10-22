@@ -16,7 +16,7 @@ services:
     # Не запускаем скан автоматически, чтобы up -d был безошибочным.
     command: ["sh", "-lc", "sleep infinity"]
     healthcheck:
-      test: ["CMD-SHELL", "oscap --version >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "command -v oscap >/dev/null 2>&1"]
       interval: 30s
       timeout: 5s
       retries: 5
