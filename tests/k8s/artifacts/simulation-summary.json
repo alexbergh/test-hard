@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T22:53:16.918887+00:00",
+  "generated_at": "2025-10-21T00:00:01+00:00",
   "resources": 8,
   "openscap": {
     "results": [
@@ -14,7 +14,7 @@
       "function": "k8s_openscap",
       "family": "openscap",
       "context": "k8s",
-      "generated_at": "2025-10-21T22:53:16.919245+00:00",
+      "generated_at": "2025-10-21T00:00:03+00:00",
       "baseline": {
         "cycle_time_hours": 11.0,
         "review_rounds": 2.0,
@@ -49,7 +49,7 @@
     "log": "/workspace/test-hard/tests/k8s/artifacts/telemetry/pod.log",
     "events_file": "/workspace/test-hard/tests/k8s/artifacts/telemetry/events.jsonl",
     "metrics": {
-      "generated_at": "2025-10-21T22:53:16.920273+00:00",
+      "generated_at": "2025-10-21T00:00:14+00:00",
       "vulnerability_total": 5,
       "inventory_total": 5,
       "unique_hosts": 1,
@@ -94,7 +94,7 @@
       "function": "k8s_telemetry",
       "family": "telemetry",
       "context": "k8s",
-      "generated_at": "2025-10-21T22:53:16.922319+00:00",
+      "generated_at": "2025-10-21T00:00:15+00:00",
       "baseline": {
         "cycle_time_hours": 8.5,
         "review_rounds": 1.0,
@@ -131,7 +131,7 @@
       "function": "k8s_wazuh",
       "family": "wazuh",
       "context": "k8s",
-      "generated_at": "2025-10-21T22:53:16.923056+00:00",
+      "generated_at": "2025-10-21T00:00:22+00:00",
       "baseline": {
         "cycle_time_hours": 9.0,
         "review_rounds": 2.0,

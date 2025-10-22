@@ -5,19 +5,23 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "shared"))
 from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
 from process_analytics import ProcessAnalytics, ProcessMetricSnapshot  # noqa: E402
+from time_utils import TimeSequencer  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCENARIO_DIR = REPO_ROOT / "hardening-scenarios" / "secaudit" / "profiles"
 ARTIFACTS_DIR = Path(__file__).resolve().parent / "artifacts"
 
-PROCESS_ANALYTICS = ProcessAnalytics(Path(__file__).resolve().parent.parent / "shared" / "process_baseline.json")
+TIME = TimeSequencer()
+PROCESS_ANALYTICS = ProcessAnalytics(
+    Path(__file__).resolve().parent.parent / "shared" / "process_baseline.json",
+    time_provider=TIME,
+)
 
 VM_DEFINITIONS = [
     {
@@ -86,7 +90,7 @@ FAILURE_MATRIX = {
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return TIME.next_iso()
 
 
 def _load_profile(profile_id: str) -> dict:
@@ -148,6 +152,7 @@ def _simulate_environment(environment: str) -> None:
                         "os": vm["display_name"],
                         "category": control.get("category"),
                         "tags": control.get("tags", []),
+                        "collected_at": _now(),
                     }
                 )
         passed = sum(1 for item in control_results if item["status"] == "passed")
@@ -197,6 +202,7 @@ def _simulate_environment(environment: str) -> None:
                 "hypervisor": vm["hypervisor"],
                 "memory_mb": vm["memory_mb"],
                 "disk_gb": vm["disk_gb"],
+                "collected_at": _now(),
             }
         )
         summary.append(
@@ -210,7 +216,10 @@ def _simulate_environment(environment: str) -> None:
         )
 
     telemetry_dir = env_dir / "telemetry"
-    metrics = HardeningMetricsVisualizer(telemetry_dir).build(vulnerability_events + inventory_events)
+    metrics = HardeningMetricsVisualizer(
+        telemetry_dir,
+        time_provider=TIME,
+    ).build(vulnerability_events + inventory_events)
 
     events_path = telemetry_dir / "events.jsonl"
     events_path.parent.mkdir(parents=True, exist_ok=True)

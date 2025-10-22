@@ -7,6 +7,8 @@ SIMULATOR="${SCRIPT_DIR}/simulate.py"
 
 PROFILE="${1:-all}"
 
+export HARDENING_FIXED_TIMESTAMP="${HARDENING_FIXED_TIMESTAMP:-2025-10-21T00:00:00+00:00}"
+
 if command -v docker >/dev/null 2>&1; then
   case "$PROFILE" in
     openscap)

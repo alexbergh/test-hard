@@ -6,7 +6,6 @@ import json
 import random
 import sys
 from dataclasses import asdict
-from datetime import datetime, timezone
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -19,18 +18,18 @@ RNG = random.Random(314)
 sys.path.append(str(BASE_DIR.parent / "shared"))
 from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
 from process_analytics import ProcessAnalytics, ProcessMetricSnapshot  # noqa: E402
+from time_utils import TimeSequencer  # noqa: E402
 
 
-PROCESS_ANALYTICS = ProcessAnalytics(BASE_DIR.parent / "shared" / "process_baseline.json")
+TIME = TimeSequencer()
+PROCESS_ANALYTICS = ProcessAnalytics(
+    BASE_DIR.parent / "shared" / "process_baseline.json",
+    time_provider=TIME,
+)
 
 
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
-
-
-def timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
 
 def parse_resource_block(block: str) -> dict | None:
     kind = None
@@ -149,7 +148,7 @@ def simulate_openscap() -> dict:
 
     log_lines = [
         "OpenSCAP Kubernetes Job (симуляция)",
-        f"Timestamp: {timestamp()}",
+        f"Timestamp: {TIME.next_iso()}",
         "Results:",
     ]
     for item in items:
@@ -196,7 +195,7 @@ def simulate_telemetry() -> dict:
             "version": f"1.{RNG.randint(0, 9)}.{RNG.randint(0, 30)}",
             "severity": severity,
             "cve": cve,
-            "collected_at": timestamp(),
+            "collected_at": TIME.next_iso(),
         }
         events.append(vulnerability_event)
         lines.append(
@@ -209,7 +208,7 @@ def simulate_telemetry() -> dict:
             "sequence": seq,
             "os": RNG.choice(["ubuntu", "debian", "centos"]),
             "kernel_version": f"5.15.{RNG.randint(0, 30)}",
-            "collected_at": timestamp(),
+            "collected_at": TIME.next_iso(),
         }
         events.append(inventory_event)
         lines.append(
@@ -224,7 +223,10 @@ def simulate_telemetry() -> dict:
         for event in events:
             handle.write(json.dumps(event, ensure_ascii=False) + "\n")
 
-    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry").build(events)
+    metrics = HardeningMetricsVisualizer(
+        ARTIFACTS_DIR / "telemetry",
+        time_provider=TIME,
+    ).build(events)
 
     vulnerability_total = max(metrics.vulnerability_total, 1)
     high_total = sum(item.count for item in metrics.severity if item.severity in {"high", "critical"})
@@ -263,11 +265,11 @@ def simulate_wazuh() -> dict:
     lines = []
     for idx in range(1, 4):
         lines.append(
-            f"{timestamp()} wazuh-manager alert_id=sim-k8s-{idx} level={RNG.randint(3, 9)} message=Integrity check"
+            f"{TIME.next_iso()} wazuh-manager alert_id=sim-k8s-{idx} level={RNG.randint(3, 9)} message=Integrity check"
         )
     for path in ["/etc/passwd", "/etc/ssh/sshd_config", "/var/log/auth.log"]:
         lines.append(
-            f"{timestamp()} wazuh-fim path={path} action={RNG.choice(['modified', 'added', 'accessed'])}"
+            f"{TIME.next_iso()} wazuh-fim path={path} action={RNG.choice(['modified', 'added', 'accessed'])}"
         )
     log_path = ARTIFACTS_DIR / "wazuh-pod.log"
     log_path.write_text("\n".join(lines), encoding="utf-8")
@@ -305,7 +307,7 @@ def main() -> None:
 
     overview_lines = [
         "Kubernetes manifests summary (симуляция)",
-        f"Timestamp: {timestamp()}",
+        f"Timestamp: {TIME.next_iso()}",
         "",
     ]
     for resource in resources:
@@ -319,7 +321,7 @@ def main() -> None:
     (ARTIFACTS_DIR / "cluster-overview.txt").write_text("\n".join(overview_lines), encoding="utf-8")
 
     summary = {
-        "generated_at": timestamp(),
+        "generated_at": TIME.next_iso(),
         "resources": len(resources),
         "openscap": simulate_openscap(),
         "telemetry": simulate_telemetry(),

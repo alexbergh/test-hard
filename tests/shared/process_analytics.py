@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
+
+from time_utils import TimeSequencer
 
 
 _METRIC_FIELDS = (
@@ -17,10 +18,6 @@ _METRIC_FIELDS = (
     "p95_latency_ms",
     "error_budget_consumed",
 )
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _round_value(name: str, value: float) -> float:
@@ -76,9 +73,10 @@ class ProcessMetricReport:
 class ProcessAnalytics:
     """Читает baseline-метрики и формирует отчёты по функциям."""
 
-    def __init__(self, baseline_path: Path):
+    def __init__(self, baseline_path: Path, *, time_provider: TimeSequencer | None = None):
         self.baseline_path = baseline_path
         self._baseline = self._load_baseline(baseline_path)
+        self._time = time_provider or TimeSequencer()
 
     @staticmethod
     def _load_baseline(path: Path) -> Dict[str, ProcessMetricSnapshot]:
@@ -112,7 +110,7 @@ class ProcessAnalytics:
             function=key,
             family=family or key,
             context=context,
-            generated_at=_now_iso(),
+            generated_at=self._time.next_iso(),
             baseline=baseline,
             observed=observed,
             delta=delta,

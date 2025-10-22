@@ -1,4 +1,4 @@
-[2025-10-21T22:52:36.564428+00:00] packer simulate build for centos-7 (test)
+[2025-10-21T00:00:20+00:00] packer simulate build for centos-7 (test)
 [00:00] downloading iso placeholder
 [00:05] applying kickstart/preseed
 [00:10] running ansible hardening

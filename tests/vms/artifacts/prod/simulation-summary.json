@@ -1,6 +1,6 @@
 {
   "environment": "prod",
-  "generated_at": "2025-10-21T22:52:36.572924+00:00",
+  "generated_at": "2025-10-21T00:00:45+00:00",
   "systems": [
     {
       "vm_id": "redos-7.3",
@@ -48,7 +48,7 @@
     "function": "vm_prod",
     "family": "vm",
     "context": "prod",
-    "generated_at": "2025-10-21T22:52:36.572624+00:00",
+    "generated_at": "2025-10-21T00:00:44+00:00",
     "baseline": {
       "cycle_time_hours": 16.0,
       "review_rounds": 3.0,

@@ -1,6 +1,6 @@
 {
-  "batch_id": "kuma-20251021225236",
-  "generated_at": "2025-10-21T22:52:36.571275+00:00",
+  "batch_id": "kuma-20251021T000043+0000",
+  "generated_at": "2025-10-21T00:00:43+00:00",
   "summary": {
     "vulnerability_total": 3,
     "inventory_total": 5,
@@ -22,7 +22,7 @@
       "version": null,
       "severity": "high",
       "cve": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:25+00:00"
     },
     {
       "category": "hardening",
@@ -32,7 +32,7 @@
       "version": null,
       "severity": "high",
       "cve": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:29+00:00"
     },
     {
       "category": "hardening",
@@ -42,7 +42,7 @@
       "version": null,
       "severity": "high",
       "cve": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:36+00:00"
     },
     {
       "category": "hardening",
@@ -50,7 +50,7 @@
       "host": "vm-redos73-prod",
       "os": "РедОС 7.3",
       "kernel": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:28+00:00"
     },
     {
       "category": "hardening",
@@ -58,7 +58,7 @@
       "host": "vm-redos8-prod",
       "os": "РедОС 8",
       "kernel": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:32+00:00"
     },
     {
       "category": "hardening",
@@ -66,7 +66,7 @@
       "host": "vm-astralinux17-prod",
       "os": "Astra Linux 1.7",
       "kernel": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:35+00:00"
     },
     {
       "category": "hardening",
@@ -74,7 +74,7 @@
       "host": "vm-altlinux8-prod",
       "os": "Альт 8",
       "kernel": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:39+00:00"
     },
     {
       "category": "hardening",
@@ -82,7 +82,7 @@
       "host": "vm-centos7-prod",
       "os": "CentOS 7",
       "kernel": null,
-      "collected_at": null
+      "collected_at": "2025-10-21T00:00:42+00:00"
     }
   ]
 }

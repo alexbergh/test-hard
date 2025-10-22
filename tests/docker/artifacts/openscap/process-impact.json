@@ -20,7 +20,7 @@
   },
   "family": "openscap",
   "function": "docker_openscap",
-  "generated_at": "2025-10-21T22:52:24.076439+00:00",
+  "generated_at": "2025-10-21T00:00:01+00:00",
   "observed": {
     "cycle_time_hours": 8.5,
     "error_budget_consumed": 0.09,

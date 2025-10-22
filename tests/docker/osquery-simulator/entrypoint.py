@@ -2,9 +2,35 @@ import os
 import random
 import socket
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import requests
+
+_BASE_TIME: datetime | None = None
+_TIME_OFFSET = 0
+
+
+def _next_time() -> datetime:
+    global _BASE_TIME, _TIME_OFFSET
+    if _BASE_TIME is None:
+        candidate = os.environ.get("HARDENING_FIXED_TIMESTAMP")
+        if candidate:
+            value = candidate.strip()
+            if value.endswith("Z"):
+                value = value[:-1] + "+00:00"
+            try:
+                parsed = datetime.fromisoformat(value)
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                _BASE_TIME = parsed.astimezone(timezone.utc)
+            except ValueError:
+                _BASE_TIME = None
+        if _BASE_TIME is None:
+            _BASE_TIME = datetime.now(timezone.utc)
+    current = _BASE_TIME + timedelta(seconds=_TIME_OFFSET)
+    _TIME_OFFSET += 1
+    return current
+
 
 TELEGRAF_ENDPOINT = os.environ.get("TELEGRAF_ENDPOINT", "http://localhost:9081/osquery")
 HOST_IDENTIFIER = os.environ.get("HOST_IDENTIFIER", socket.gethostname())
@@ -12,11 +38,12 @@ LOG_INTERVAL = float(os.environ.get("LOG_INTERVAL", "10"))
 SYSLOG_ENDPOINT = os.environ.get("SYSLOG_ENDPOINT", "udp://telegraf-listener:6514")
 
 def build_osquery_event(query_name: str, columns: dict) -> dict:
+    event_time = _next_time()
     return {
         "name": query_name,
         "hostIdentifier": HOST_IDENTIFIER,
-        "unixTime": int(time.time()),
-        "calendarTime": datetime.now(timezone.utc).strftime("%b %d %Y %H:%M:%S"),
+        "unixTime": int(event_time.timestamp()),
+        "calendarTime": event_time.strftime("%b %d %Y %H:%M:%S"),
         "columns": columns,
         "action": "added",
     }
@@ -63,7 +90,7 @@ def main() -> None:
             send_osquery_event(vulnerability_payload)
             send_osquery_event(inventory_payload)
             send_syslog_message(
-                f"<134>{datetime.utcnow().isoformat()} osquery-simulator {HOST_IDENTIFIER} - - - hardening test sequence={sequence}"
+                f"<134>{_next_time().isoformat()} osquery-simulator {HOST_IDENTIFIER} - - - hardening test sequence={sequence}"
             )
             print(f"[{sequence}] Emitted simulated osquery results")
         except Exception as exc:  # noqa: BLE001 - top-level reporter

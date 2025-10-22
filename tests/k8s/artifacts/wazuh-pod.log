@@ -1,6 +1,6 @@
-2025-10-21T22:53:16.922878+00:00 wazuh-manager alert_id=sim-k8s-1 level=4 message=Integrity check
-2025-10-21T22:53:16.922891+00:00 wazuh-manager alert_id=sim-k8s-2 level=7 message=Integrity check
-2025-10-21T22:53:16.922894+00:00 wazuh-manager alert_id=sim-k8s-3 level=5 message=Integrity check
-2025-10-21T22:53:16.922897+00:00 wazuh-fim path=/etc/passwd action=accessed
-2025-10-21T22:53:16.922902+00:00 wazuh-fim path=/etc/ssh/sshd_config action=added
-2025-10-21T22:53:16.922904+00:00 wazuh-fim path=/var/log/auth.log action=accessed
+2025-10-21T00:00:16+00:00 wazuh-manager alert_id=sim-k8s-1 level=4 message=Integrity check
+2025-10-21T00:00:17+00:00 wazuh-manager alert_id=sim-k8s-2 level=7 message=Integrity check
+2025-10-21T00:00:18+00:00 wazuh-manager alert_id=sim-k8s-3 level=5 message=Integrity check
+2025-10-21T00:00:19+00:00 wazuh-fim path=/etc/passwd action=accessed
+2025-10-21T00:00:20+00:00 wazuh-fim path=/etc/ssh/sshd_config action=added
+2025-10-21T00:00:21+00:00 wazuh-fim path=/var/log/auth.log action=accessed

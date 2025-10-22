@@ -5,9 +5,10 @@ import json
 import math
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
+
+from time_utils import TimeSequencer
 
 
 @dataclass
@@ -15,10 +16,6 @@ class SeverityBreakdown:
     severity: str
     count: int
     percentage: float
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _ascii_bar(value: int, max_value: int, width: int = 20) -> str:
@@ -67,9 +64,10 @@ class HardeningMetrics:
 class HardeningMetricsVisualizer:
     """Строит артефакты визуализации и полезные payload-ы."""
 
-    def __init__(self, output_dir: Path):
+    def __init__(self, output_dir: Path, *, time_provider: TimeSequencer | None = None):
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self._time = time_provider or TimeSequencer()
 
     def build(self, events: list[dict]) -> HardeningMetrics:
         vulnerability_events = [e for e in events if e.get("type") == "vulnerability"]
@@ -85,8 +83,9 @@ class HardeningMetricsVisualizer:
             percentage = (count / total_vulnerabilities * 100) if total_vulnerabilities else 0
             severity_breakdown.append(SeverityBreakdown(severity=severity, count=count, percentage=percentage))
 
+        generated_at = self._time.next_iso()
         metrics = HardeningMetrics(
-            generated_at=_now_iso(),
+            generated_at=generated_at,
             vulnerability_total=total_vulnerabilities,
             inventory_total=len(inventory_events),
             unique_hosts=len(_unique_hosts(events)),
@@ -199,8 +198,9 @@ class HardeningMetricsVisualizer:
         vulnerability_events: list[dict],
         inventory_events: list[dict],
     ) -> None:
+        batch_suffix = metrics.generated_at.replace(":", "").replace("-", "").split(".")[0]
         payload = {
-            "batch_id": f"kuma-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
+            "batch_id": f"kuma-{batch_suffix}",
             "generated_at": metrics.generated_at,
             "summary": {
                 "vulnerability_total": metrics.vulnerability_total,

@@ -20,7 +20,7 @@
   },
   "family": "wazuh",
   "function": "docker_wazuh",
-  "generated_at": "2025-10-21T22:52:24.082405+00:00",
+  "generated_at": "2025-10-21T00:00:26+00:00",
   "observed": {
     "cycle_time_hours": 7.79,
     "error_budget_consumed": 0.194,

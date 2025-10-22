@@ -7,6 +7,8 @@ SIMULATOR="${SCRIPT_DIR}/simulate.py"
 MODE="${HARDENING_VM_MODE:-simulate}"
 ENVIRONMENT="${1:-all}"
 
+export HARDENING_FIXED_TIMESTAMP="${HARDENING_FIXED_TIMESTAMP:-2025-10-21T00:00:00+00:00}"
+
 declare -a DISTROS=("redos-7.3" "redos-8" "astralinux-1.7" "altlinux-8" "centos-7")
 declare -a ENVIRONMENTS=()
 

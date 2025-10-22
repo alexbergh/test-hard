@@ -6,7 +6,6 @@ import argparse
 import json
 import random
 import textwrap
-from datetime import datetime, timezone
 from dataclasses import asdict
 from pathlib import Path
 import sys
@@ -21,17 +20,18 @@ RNG = random.Random(42)
 sys.path.append(str(BASE_DIR.parent / "shared"))
 from hardening_metrics import HardeningMetricsVisualizer  # noqa: E402
 from process_analytics import ProcessAnalytics, ProcessMetricSnapshot  # noqa: E402
+from time_utils import TimeSequencer  # noqa: E402
 
 
-PROCESS_ANALYTICS = ProcessAnalytics(BASE_DIR.parent / "shared" / "process_baseline.json")
+TIME = TimeSequencer()
+PROCESS_ANALYTICS = ProcessAnalytics(
+    BASE_DIR.parent / "shared" / "process_baseline.json",
+    time_provider=TIME,
+)
 
 
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
-
-
-def timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def parse_oval_definitions_from_file(path: Path) -> list[dict]:
@@ -115,8 +115,9 @@ def simulate_openscap() -> dict:
             "details": details,
         })
 
+    generated_at = TIME.next_iso()
     summary = {
-        "generated_at": timestamp(),
+        "generated_at": generated_at,
         "scanner": "openscap-simulator",
         "definitions_evaluated": len(results),
         "passed": sum(1 for item in results if item["status"] == "pass"),
@@ -187,7 +188,7 @@ def simulate_telemetry() -> dict:
                 "version": f"1.1.{RNG.randint(0, 9)}",
                 "severity": RNG.choice(["Low", "Medium", "High"]),
                 "cve": RNG.choice(["CVE-2023-2650", "CVE-2024-2511", "CVE-2022-0778"]),
-                "collected_at": timestamp(),
+                "collected_at": TIME.next_iso(),
             }
         )
         events.append(
@@ -197,7 +198,7 @@ def simulate_telemetry() -> dict:
                 "sequence": sequence,
                 "os": RNG.choice(["ubuntu", "centos", "debian"]),
                 "kernel_version": f"5.15.{RNG.randint(0, 30)}",
-                "collected_at": timestamp(),
+                "collected_at": TIME.next_iso(),
             }
         )
 
@@ -211,12 +212,15 @@ def simulate_telemetry() -> dict:
         if event["type"] != "inventory":
             continue
         syslog_messages.append(
-            f"<134>{timestamp()} osquery-simulator {event['host']} hardening sequence={event['sequence']}"
+            f"<134>{TIME.next_iso()} osquery-simulator {event['host']} hardening sequence={event['sequence']}"
         )
 
     (ARTIFACTS_DIR / "telemetry" / "syslog.log").write_text("\n".join(syslog_messages), encoding="utf-8")
 
-    metrics = HardeningMetricsVisualizer(ARTIFACTS_DIR / "telemetry").build(events)
+    metrics = HardeningMetricsVisualizer(
+        ARTIFACTS_DIR / "telemetry",
+        time_provider=TIME,
+    ).build(events)
 
     vulnerability_total = max(metrics.vulnerability_total, 1)
     high_total = sum(item.count for item in metrics.severity if item.severity in {"high", "critical"})
@@ -243,7 +247,7 @@ def simulate_telemetry() -> dict:
     )
 
     return {
-        "generated_at": timestamp(),
+        "generated_at": TIME.next_iso(),
         "events": len(events),
         "syslog_messages": len(syslog_messages),
         "artifacts": [
@@ -270,7 +274,7 @@ def simulate_wazuh() -> dict:
                 "level": RNG.randint(3, 10),
                 "agent": "simulated-wazuh-agent",
                 "description": "Simulated integrity check",
-                "timestamp": timestamp(),
+                "timestamp": TIME.next_iso(),
             }
         )
 
@@ -280,7 +284,7 @@ def simulate_wazuh() -> dict:
             {
                 "path": path,
                 "event": RNG.choice(["modified", "added", "accessed"]),
-                "timestamp": timestamp(),
+                "timestamp": TIME.next_iso(),
             }
         )
 
@@ -312,7 +316,7 @@ def simulate_wazuh() -> dict:
     )
 
     return {
-        "generated_at": timestamp(),
+        "generated_at": TIME.next_iso(),
         "alerts": len(alerts),
         "fim_events": len(fim_entries),
         "artifacts": [str(alerts_path), str(fim_path)],

@@ -1,10 +1,10 @@
-{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 1, "package": "openssl", "version": "1.2.0", "severity": "low", "cve": "CVE-2024-2511", "collected_at": "2025-10-21T22:53:16.919712+00:00"}
-{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 1, "os": "centos", "kernel_version": "5.15.20", "collected_at": "2025-10-21T22:53:16.919724+00:00"}
-{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 2, "package": "sudo", "version": "1.3.12", "severity": "medium", "cve": "CVE-2023-2650", "collected_at": "2025-10-21T22:53:16.919731+00:00"}
-{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 2, "os": "centos", "kernel_version": "5.15.28", "collected_at": "2025-10-21T22:53:16.919735+00:00"}
-{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 3, "package": "kernel", "version": "1.2.4", "severity": "medium", "cve": "CVE-2023-2650", "collected_at": "2025-10-21T22:53:16.919741+00:00"}
-{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 3, "os": "ubuntu", "kernel_version": "5.15.26", "collected_at": "2025-10-21T22:53:16.919745+00:00"}
-{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 4, "package": "openssl", "version": "1.9.8", "severity": "low", "cve": "CVE-2023-2650", "collected_at": "2025-10-21T22:53:16.919750+00:00"}
-{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 4, "os": "ubuntu", "kernel_version": "5.15.6", "collected_at": "2025-10-21T22:53:16.919754+00:00"}
-{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 5, "package": "sudo", "version": "1.5.16", "severity": "low", "cve": "CVE-2024-2511", "collected_at": "2025-10-21T22:53:16.919759+00:00"}
-{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 5, "os": "centos", "kernel_version": "5.15.23", "collected_at": "2025-10-21T22:53:16.919763+00:00"}
+{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 1, "package": "openssl", "version": "1.2.0", "severity": "low", "cve": "CVE-2024-2511", "collected_at": "2025-10-21T00:00:04+00:00"}
+{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 1, "os": "centos", "kernel_version": "5.15.20", "collected_at": "2025-10-21T00:00:05+00:00"}
+{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 2, "package": "sudo", "version": "1.3.12", "severity": "medium", "cve": "CVE-2023-2650", "collected_at": "2025-10-21T00:00:06+00:00"}
+{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 2, "os": "centos", "kernel_version": "5.15.28", "collected_at": "2025-10-21T00:00:07+00:00"}
+{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 3, "package": "kernel", "version": "1.2.4", "severity": "medium", "cve": "CVE-2023-2650", "collected_at": "2025-10-21T00:00:08+00:00"}
+{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 3, "os": "ubuntu", "kernel_version": "5.15.26", "collected_at": "2025-10-21T00:00:09+00:00"}
+{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 4, "package": "openssl", "version": "1.9.8", "severity": "low", "cve": "CVE-2023-2650", "collected_at": "2025-10-21T00:00:10+00:00"}
+{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 4, "os": "ubuntu", "kernel_version": "5.15.6", "collected_at": "2025-10-21T00:00:11+00:00"}
+{"type": "vulnerability", "host": "simulated-k8s-osquery", "sequence": 5, "package": "sudo", "version": "1.5.16", "severity": "low", "cve": "CVE-2024-2511", "collected_at": "2025-10-21T00:00:12+00:00"}
+{"type": "inventory", "host": "simulated-k8s-osquery", "sequence": 5, "os": "centos", "kernel_version": "5.15.23", "collected_at": "2025-10-21T00:00:13+00:00"}

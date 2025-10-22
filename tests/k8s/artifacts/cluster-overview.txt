@@ -1,5 +1,5 @@
 Kubernetes manifests summary (симуляция)
-Timestamp: 2025-10-21T22:53:16.918672+00:00
+Timestamp: 2025-10-21T00:00:00+00:00
 
 - Namespace / hardening-test (ns=None) <- namespace.yaml
 - Job / openscap-scan (ns=None) <- openscap-job.yaml

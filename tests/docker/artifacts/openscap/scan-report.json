@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-10-21T22:52:24.076384+00:00",
+  "generated_at": "2025-10-21T00:00:00+00:00",
   "scanner": "openscap-simulator",
   "definitions_evaluated": 1,
   "passed": 1,
@@ -16,7 +16,7 @@
     "function": "docker_openscap",
     "family": "openscap",
     "context": "docker",
-    "generated_at": "2025-10-21T22:52:24.076439+00:00",
+    "generated_at": "2025-10-21T00:00:01+00:00",
     "baseline": {
       "cycle_time_hours": 10.0,
       "review_rounds": 2.0,

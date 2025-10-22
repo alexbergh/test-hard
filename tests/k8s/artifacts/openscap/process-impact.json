@@ -20,7 +20,7 @@
   },
   "family": "openscap",
   "function": "k8s_openscap",
-  "generated_at": "2025-10-21T22:53:16.919245+00:00",
+  "generated_at": "2025-10-21T00:00:03+00:00",
   "observed": {
     "cycle_time_hours": 9.68,
     "error_budget_consumed": 0.105,

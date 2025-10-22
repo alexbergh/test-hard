@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import defaultdict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
+
+sys.path.append(str(Path(__file__).resolve().parents[1] / "shared"))
+from time_utils import now_iso  # noqa: E402
 
 _METRIC_FIELDS = (
     "cycle_time_hours",
@@ -18,10 +21,6 @@ _METRIC_FIELDS = (
     "p95_latency_ms",
     "error_budget_consumed",
 )
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _round_value(name: str, value: float) -> float:
@@ -93,7 +92,7 @@ def build_summary(reports: List[Dict[str, Any]]) -> Dict[str, Any]:
         }
         families[family] = {"contexts": contexts, "averages": averages}
 
-    return {"generated_at": _now_iso(), "families": families}
+    return {"generated_at": now_iso(), "families": families}
 
 
 def render_markdown(summary: Dict[str, Any]) -> str:

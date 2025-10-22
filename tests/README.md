@@ -58,4 +58,5 @@ kubectl logs job/openscap-scan -n hardening-test
 - Базовые значения метрик (время цикла, раунды ревью, MTTR, P95, расход бюджета ошибок) определены в `tests/shared/process_baseline.json`.
 - Скрипты симуляции сохраняют `process-impact.json` и Markdown-версии с фактами для каждого контекста (docker/k8s/vm test/prod).
 - После каждого запуска `tests/docker/run.sh`, `tests/k8s/setup-kind.sh` и `tests/vms/run.sh` автоматически вызывается `tests/tools/generate_process_report.py`, формирующий консолидированный отчёт `reports/2025-10-21-process-analytics.md` и JSON `reports/process-metrics-summary.json`.
+- Для детерминированных артефактов все скрипты запуска по умолчанию экспортируют переменную `HARDENING_FIXED_TIMESTAMP=2025-10-21T00:00:00+00:00`; при необходимости можно переопределить её значением в формате ISO 8601 (UTC).
 

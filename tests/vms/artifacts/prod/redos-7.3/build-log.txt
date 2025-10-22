@@ -1,4 +1,4 @@
-[2025-10-21T22:52:36.568233+00:00] packer simulate build for redos-7.3 (prod)
+[2025-10-21T00:00:27+00:00] packer simulate build for redos-7.3 (prod)
 [00:00] downloading iso placeholder
 [00:05] applying kickstart/preseed
 [00:10] running ansible hardening
