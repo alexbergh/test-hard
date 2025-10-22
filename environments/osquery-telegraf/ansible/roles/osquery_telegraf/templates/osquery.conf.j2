@@ -1,20 +1,25 @@
 {
   "options": {
-    "config_refresh": 300,
+    "config_plugin": "filesystem",
+    "logger_plugin": "filesystem",
     "logger_path": "/var/log/osquery",
+    "disable_logging": "false",
+    "log_result_events": "true",
+    "schedule_splay_percent": "10",
+    "utc": "true",
     "pidfile": "/var/osquery/osquery.pid",
-    "worker_threads": 4,
-    "utc": true,
-    "disable_events": false
+    "worker_threads": 4
   },
   "schedule": {
     "system_info": {
-      "query": "SELECT hostname, cpu_brand, physical_memory FROM system_info;",
-      "interval": 3600
+      "query": "SELECT hostname, cpu_brand, physical_memory, hardware_vendor, hardware_model, uuid FROM system_info;",
+      "interval": 86400,
+      "description": "Базовая инвентаризационная информация о системе (раз в сутки)."
     },
-    "listening_ports": {
-      "query": "SELECT * FROM listening_ports;",
-      "interval": 600
+    "os_version": {
+      "query": "SELECT name, version, platform, major, patch FROM os_version;",
+      "interval": 86400,
+      "description": "Информация о версии ОС (раз в сутки)."
     }
   },
   "packs": {

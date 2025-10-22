@@ -36,9 +36,21 @@ docker compose up -d
 
 ## Поток данных
 1. Osquery формирует результаты и пишет в `/var/log/osquery/*.log`.
-2. Telegraf tail-input считывает JSON и отправляет по HTTP/InfluxDB.
+2. Telegraf через `inputs.exec` опрашивает `osqueryi` и отправляет результаты по HTTP/InfluxDB.
 3. Осадки попадют в KUMA или в локальный InfluxDB -> Grafana.
-4. Пакеты `inventory.conf` и `vulnerability-management.conf` обеспечивают контроль состава ПО и версий.
+4. Пакеты `inventory.conf`, `vulnerability-management.conf`, `security_monitoring.conf` и `compliance_checks.conf` обеспечивают контроль состава ПО, состояние безопасности и проверку политик.
+
+## Готовый шаблон мониторинга
+
+Роль `osquery_telegraf` разворачивает полноценную связку «осмотр → доставка» по умолчанию:
+
+- Основной конфиг `osquery.conf` включает базовый инвентаризационный график (`system_info`, `os_version`) и подключает пакеты `security_monitoring` и `compliance_checks`.
+- Пакеты лежат в `ansible/roles/osquery_telegraf/files/packs/` и покрывают:
+  - мониторинг безопасности (установленные пакеты, сетевые порты, локальные администраторы, свежая shell-история, cron-задачи);
+  - проверки соответствия (SUID-бинарники, `PermitRootLogin`, состояние `iptables`).
+- Шаблон `telegraf.conf` настраивает агента на чтение результатов через `inputs.exec` (вызовы `osqueryi --json ...`) и передачу событий как в KUMA (HTTP), так и в InfluxDB/Grafana.
+
+Все параметры выносятся в `group_vars/osquery_agents.yml`: здесь настраиваются список пакетов, команды `inputs.exec`, а также outputs (`http`, `influxdb_v2`, и др.). Это позволяет быстро переключить сбор событий между SIEM (KUMA), системами визуализации (Grafana/InfluxDB) или другими получателями.
 
 ## Безопасность
 - Хранить токены/пароли Telegraf в Ansible Vault.

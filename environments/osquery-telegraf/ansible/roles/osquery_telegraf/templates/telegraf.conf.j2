@@ -1,15 +1,32 @@
-[[inputs.tail]]
-  files = ["/var/log/osquery/osqueryd.results.log"]
-  from_beginning = false
-  data_format = "json"
-  json_time_key = "calendarTime"
-  json_time_format = "Jan 2 2006 15:04:05"
-  json_time_zone = "Local"
-  tag_keys = ["name", "hostIdentifier"]
+[agent]
+  interval = "60s"
+  round_interval = true
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  flush_interval = "10s"
+  flush_jitter = "0s"
+  hostname = ""
 
-[[inputs.file]]
-  files = ["/var/log/osquery/osqueryd.snapshots.log"]
-  data_format = "json"
+#==============================================================================
+# INPUTS
+#==============================================================================
+
+{% for input in telegraf_exec_inputs %}
+[[inputs.exec]]
+  commands = [{% for command in input.commands %}"{{ command }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+  timeout = "{{ input.timeout | default('5s') }}"
+  data_format = "{{ input.data_format | default('json') }}"
+{% if input.name_override is defined %}
+  name_override = "{{ input.name_override }}"
+{% endif %}
+{% if input.json_tag_keys is defined %}
+  json_tag_keys = [{% for key in input.json_tag_keys %}"{{ key }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+{% endif %}
+{% if input.json_string_fields is defined %}
+  json_string_fields = [{% for key in input.json_string_fields %}"{{ key }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+{% endif %}
+
+{% endfor %}
 
 {% for output in telegraf_outputs %}
 {% if output.type == 'http' %}
