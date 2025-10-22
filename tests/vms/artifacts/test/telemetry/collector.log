@@ -1,0 +1,19 @@
+hardening-collector
+--------------------
+timestamp=2025-10-21T22:52:36.564712+00:00
+vulnerability_total=7
+inventory_total=5
+unique_hosts=5
+severity_breakdown=high:6,medium:1
+
+Последние события:
+vulnerability host=vm-redos73-test package=None severity=high cve=None
+vulnerability host=vm-redos73-test package=None severity=high cve=None
+vulnerability host=vm-redos8-test package=None severity=high cve=None
+vulnerability host=vm-astralinux17-test package=None severity=high cve=None
+vulnerability host=vm-altlinux8-test package=None severity=medium cve=None
+inventory host=vm-redos73-test os=РедОС 7.3 kernel=None
+inventory host=vm-redos8-test os=РедОС 8 kernel=None
+inventory host=vm-astralinux17-test os=Astra Linux 1.7 kernel=None
+inventory host=vm-altlinux8-test os=Альт 8 kernel=None
+inventory host=vm-centos7-test os=CentOS 7 kernel=None

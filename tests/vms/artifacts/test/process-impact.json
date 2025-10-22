@@ -1,0 +1,33 @@
+{
+  "baseline": {
+    "cycle_time_hours": 14.0,
+    "error_budget_consumed": 0.26,
+    "incident_frequency": 0.35,
+    "mttr_hours": 6.5,
+    "p95_latency_ms": 1200.0,
+    "review_comments": 15.0,
+    "review_rounds": 3.0
+  },
+  "context": "test",
+  "delta": {
+    "cycle_time_hours": -2.52,
+    "error_budget_consumed": -0.06,
+    "incident_frequency": -0.076,
+    "mttr_hours": -0.33,
+    "p95_latency_ms": -24.0,
+    "review_comments": -4.0,
+    "review_rounds": -1.0
+  },
+  "family": "vm",
+  "function": "vm_test",
+  "generated_at": "2025-10-21T22:52:36.566706+00:00",
+  "observed": {
+    "cycle_time_hours": 11.48,
+    "error_budget_consumed": 0.2,
+    "incident_frequency": 0.274,
+    "mttr_hours": 6.17,
+    "p95_latency_ms": 1176.0,
+    "review_comments": 11.0,
+    "review_rounds": 2.0
+  }
+}

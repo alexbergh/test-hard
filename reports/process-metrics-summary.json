@@ -1,0 +1,393 @@
+{
+  "families": {
+    "openscap": {
+      "averages": {
+        "baseline": {
+          "cycle_time_hours": 10.5,
+          "error_budget_consumed": 0.185,
+          "incident_frequency": 0.245,
+          "mttr_hours": 4.65,
+          "p95_latency_ms": 975.0,
+          "review_comments": 12.0,
+          "review_rounds": 2.0
+        },
+        "delta": {
+          "cycle_time_hours": -1.41,
+          "error_budget_consumed": -0.087,
+          "incident_frequency": -0.104,
+          "mttr_hours": -0.88,
+          "p95_latency_ms": -87.5,
+          "review_comments": -6.0,
+          "review_rounds": -1.0
+        },
+        "observed": {
+          "cycle_time_hours": 9.09,
+          "error_budget_consumed": 0.098,
+          "incident_frequency": 0.141,
+          "mttr_hours": 3.77,
+          "p95_latency_ms": 887.5,
+          "review_comments": 6.0,
+          "review_rounds": 1.0
+        }
+      },
+      "contexts": [
+        {
+          "baseline": {
+            "cycle_time_hours": 10.0,
+            "error_budget_consumed": 0.18,
+            "incident_frequency": 0.25,
+            "mttr_hours": 4.5,
+            "p95_latency_ms": 950.0,
+            "review_comments": 12.0,
+            "review_rounds": 2.0
+          },
+          "context": "docker",
+          "delta": {
+            "cycle_time_hours": -1.5,
+            "error_budget_consumed": -0.09,
+            "incident_frequency": -0.112,
+            "mttr_hours": -0.9,
+            "p95_latency_ms": -95.0,
+            "review_comments": -7.0,
+            "review_rounds": -1.0
+          },
+          "function": "docker_openscap",
+          "observed": {
+            "cycle_time_hours": 8.5,
+            "error_budget_consumed": 0.09,
+            "incident_frequency": 0.138,
+            "mttr_hours": 3.6,
+            "p95_latency_ms": 855.0,
+            "review_comments": 5.0,
+            "review_rounds": 1.0
+          },
+          "source": "/workspace/test-hard/tests/docker/artifacts/openscap/process-impact.json"
+        },
+        {
+          "baseline": {
+            "cycle_time_hours": 11.0,
+            "error_budget_consumed": 0.19,
+            "incident_frequency": 0.24,
+            "mttr_hours": 4.8,
+            "p95_latency_ms": 1000.0,
+            "review_comments": 11.0,
+            "review_rounds": 2.0
+          },
+          "context": "k8s",
+          "delta": {
+            "cycle_time_hours": -1.32,
+            "error_budget_consumed": -0.085,
+            "incident_frequency": -0.096,
+            "mttr_hours": -0.86,
+            "p95_latency_ms": -80.0,
+            "review_comments": -6.0,
+            "review_rounds": -1.0
+          },
+          "function": "k8s_openscap",
+          "observed": {
+            "cycle_time_hours": 9.68,
+            "error_budget_consumed": 0.105,
+            "incident_frequency": 0.144,
+            "mttr_hours": 3.94,
+            "p95_latency_ms": 920.0,
+            "review_comments": 6.0,
+            "review_rounds": 1.0
+          },
+          "source": "/workspace/test-hard/tests/k8s/artifacts/openscap/process-impact.json"
+        }
+      ]
+    },
+    "telemetry": {
+      "averages": {
+        "baseline": {
+          "cycle_time_hours": 8.25,
+          "error_budget_consumed": 0.205,
+          "incident_frequency": 0.31,
+          "mttr_hours": 3.25,
+          "p95_latency_ms": 875.0,
+          "review_comments": 6.0,
+          "review_rounds": 1.0
+        },
+        "delta": {
+          "cycle_time_hours": 0.0,
+          "error_budget_consumed": -0.029,
+          "incident_frequency": -0.029,
+          "mttr_hours": -0.12,
+          "p95_latency_ms": -58.9,
+          "review_comments": 0.0,
+          "review_rounds": 0.0
+        },
+        "observed": {
+          "cycle_time_hours": 8.25,
+          "error_budget_consumed": 0.175,
+          "incident_frequency": 0.28,
+          "mttr_hours": 3.13,
+          "p95_latency_ms": 816.1,
+          "review_comments": 6.0,
+          "review_rounds": 1.0
+        }
+      },
+      "contexts": [
+        {
+          "baseline": {
+            "cycle_time_hours": 8.0,
+            "error_budget_consumed": 0.2,
+            "incident_frequency": 0.3,
+            "mttr_hours": 3.0,
+            "p95_latency_ms": 850.0,
+            "review_comments": 6.0,
+            "review_rounds": 1.0
+          },
+          "context": "docker",
+          "delta": {
+            "cycle_time_hours": 0.0,
+            "error_budget_consumed": -0.03,
+            "incident_frequency": -0.03,
+            "mttr_hours": -0.12,
+            "p95_latency_ms": -63.8,
+            "review_comments": 0.0,
+            "review_rounds": 0.0
+          },
+          "function": "docker_telemetry",
+          "observed": {
+            "cycle_time_hours": 8.0,
+            "error_budget_consumed": 0.17,
+            "incident_frequency": 0.27,
+            "mttr_hours": 2.88,
+            "p95_latency_ms": 786.2,
+            "review_comments": 6.0,
+            "review_rounds": 1.0
+          },
+          "source": "/workspace/test-hard/tests/docker/artifacts/telemetry/process-impact.json"
+        },
+        {
+          "baseline": {
+            "cycle_time_hours": 8.5,
+            "error_budget_consumed": 0.21,
+            "incident_frequency": 0.32,
+            "mttr_hours": 3.5,
+            "p95_latency_ms": 900.0,
+            "review_comments": 5.0,
+            "review_rounds": 1.0
+          },
+          "context": "k8s",
+          "delta": {
+            "cycle_time_hours": 0.0,
+            "error_budget_consumed": -0.029,
+            "incident_frequency": -0.029,
+            "mttr_hours": -0.12,
+            "p95_latency_ms": -54.0,
+            "review_comments": 0.0,
+            "review_rounds": 0.0
+          },
+          "function": "k8s_telemetry",
+          "observed": {
+            "cycle_time_hours": 8.5,
+            "error_budget_consumed": 0.181,
+            "incident_frequency": 0.291,
+            "mttr_hours": 3.38,
+            "p95_latency_ms": 846.0,
+            "review_comments": 5.0,
+            "review_rounds": 1.0
+          },
+          "source": "/workspace/test-hard/tests/k8s/artifacts/telemetry/process-impact.json"
+        }
+      ]
+    },
+    "vm": {
+      "averages": {
+        "baseline": {
+          "cycle_time_hours": 15.0,
+          "error_budget_consumed": 0.255,
+          "incident_frequency": 0.34,
+          "mttr_hours": 6.25,
+          "p95_latency_ms": 1190.0,
+          "review_comments": 16.0,
+          "review_rounds": 3.0
+        },
+        "delta": {
+          "cycle_time_hours": -3.02,
+          "error_budget_consumed": -0.065,
+          "incident_frequency": -0.081,
+          "mttr_hours": -0.32,
+          "p95_latency_ms": -23.8,
+          "review_comments": -5.0,
+          "review_rounds": -1.0
+        },
+        "observed": {
+          "cycle_time_hours": 11.98,
+          "error_budget_consumed": 0.19,
+          "incident_frequency": 0.259,
+          "mttr_hours": 5.94,
+          "p95_latency_ms": 1166.2,
+          "review_comments": 12.0,
+          "review_rounds": 2.0
+        }
+      },
+      "contexts": [
+        {
+          "baseline": {
+            "cycle_time_hours": 16.0,
+            "error_budget_consumed": 0.25,
+            "incident_frequency": 0.33,
+            "mttr_hours": 6.0,
+            "p95_latency_ms": 1180.0,
+            "review_comments": 18.0,
+            "review_rounds": 3.0
+          },
+          "context": "prod",
+          "delta": {
+            "cycle_time_hours": -3.52,
+            "error_budget_consumed": -0.07,
+            "incident_frequency": -0.087,
+            "mttr_hours": -0.3,
+            "p95_latency_ms": -23.6,
+            "review_comments": -6.0,
+            "review_rounds": -1.0
+          },
+          "function": "vm_prod",
+          "observed": {
+            "cycle_time_hours": 12.48,
+            "error_budget_consumed": 0.18,
+            "incident_frequency": 0.243,
+            "mttr_hours": 5.7,
+            "p95_latency_ms": 1156.4,
+            "review_comments": 12.0,
+            "review_rounds": 2.0
+          },
+          "source": "/workspace/test-hard/tests/vms/artifacts/prod/process-impact.json"
+        },
+        {
+          "baseline": {
+            "cycle_time_hours": 14.0,
+            "error_budget_consumed": 0.26,
+            "incident_frequency": 0.35,
+            "mttr_hours": 6.5,
+            "p95_latency_ms": 1200.0,
+            "review_comments": 15.0,
+            "review_rounds": 3.0
+          },
+          "context": "test",
+          "delta": {
+            "cycle_time_hours": -2.52,
+            "error_budget_consumed": -0.06,
+            "incident_frequency": -0.076,
+            "mttr_hours": -0.33,
+            "p95_latency_ms": -24.0,
+            "review_comments": -4.0,
+            "review_rounds": -1.0
+          },
+          "function": "vm_test",
+          "observed": {
+            "cycle_time_hours": 11.48,
+            "error_budget_consumed": 0.2,
+            "incident_frequency": 0.274,
+            "mttr_hours": 6.17,
+            "p95_latency_ms": 1176.0,
+            "review_comments": 11.0,
+            "review_rounds": 2.0
+          },
+          "source": "/workspace/test-hard/tests/vms/artifacts/test/process-impact.json"
+        }
+      ]
+    },
+    "wazuh": {
+      "averages": {
+        "baseline": {
+          "cycle_time_hours": 9.25,
+          "error_budget_consumed": 0.225,
+          "incident_frequency": 0.275,
+          "mttr_hours": 5.15,
+          "p95_latency_ms": 1007.5,
+          "review_comments": 10.0,
+          "review_rounds": 2.0
+        },
+        "delta": {
+          "cycle_time_hours": -1.4,
+          "error_budget_consumed": -0.024,
+          "incident_frequency": -0.036,
+          "mttr_hours": -0.42,
+          "p95_latency_ms": -54.5,
+          "review_comments": -2.0,
+          "review_rounds": 0.0
+        },
+        "observed": {
+          "cycle_time_hours": 7.86,
+          "error_budget_consumed": 0.202,
+          "incident_frequency": 0.239,
+          "mttr_hours": 4.73,
+          "p95_latency_ms": 953.0,
+          "review_comments": 8.0,
+          "review_rounds": 2.0
+        }
+      },
+      "contexts": [
+        {
+          "baseline": {
+            "cycle_time_hours": 9.5,
+            "error_budget_consumed": 0.22,
+            "incident_frequency": 0.28,
+            "mttr_hours": 5.0,
+            "p95_latency_ms": 1025.0,
+            "review_comments": 10.0,
+            "review_rounds": 2.0
+          },
+          "context": "docker",
+          "delta": {
+            "cycle_time_hours": -1.71,
+            "error_budget_consumed": -0.026,
+            "incident_frequency": -0.042,
+            "mttr_hours": -0.45,
+            "p95_latency_ms": -61.5,
+            "review_comments": -2.0,
+            "review_rounds": 0.0
+          },
+          "function": "docker_wazuh",
+          "observed": {
+            "cycle_time_hours": 7.79,
+            "error_budget_consumed": 0.194,
+            "incident_frequency": 0.238,
+            "mttr_hours": 4.55,
+            "p95_latency_ms": 963.5,
+            "review_comments": 8.0,
+            "review_rounds": 2.0
+          },
+          "source": "/workspace/test-hard/tests/docker/artifacts/wazuh/process-impact.json"
+        },
+        {
+          "baseline": {
+            "cycle_time_hours": 9.0,
+            "error_budget_consumed": 0.23,
+            "incident_frequency": 0.27,
+            "mttr_hours": 5.3,
+            "p95_latency_ms": 990.0,
+            "review_comments": 9.0,
+            "review_rounds": 2.0
+          },
+          "context": "k8s",
+          "delta": {
+            "cycle_time_hours": -1.08,
+            "error_budget_consumed": -0.021,
+            "incident_frequency": -0.029,
+            "mttr_hours": -0.38,
+            "p95_latency_ms": -47.5,
+            "review_comments": -1.0,
+            "review_rounds": 0.0
+          },
+          "function": "k8s_wazuh",
+          "observed": {
+            "cycle_time_hours": 7.92,
+            "error_budget_consumed": 0.209,
+            "incident_frequency": 0.241,
+            "mttr_hours": 4.92,
+            "p95_latency_ms": 942.5,
+            "review_comments": 8.0,
+            "review_rounds": 2.0
+          },
+          "source": "/workspace/test-hard/tests/k8s/artifacts/wazuh/process-impact.json"
+        }
+      ]
+    }
+  },
+  "generated_at": "2025-10-21T22:53:17.451079+00:00"
+}

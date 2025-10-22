@@ -1,0 +1,10 @@
+---
+- name: Apply Windows hardening baseline
+  hosts: windows_targets
+  gather_facts: no
+  vars:
+    ansible_connection: winrm
+    ansible_winrm_transport: credssp
+    ansible_winrm_server_cert_validation: ignore
+  roles:
+    - windows_baseline

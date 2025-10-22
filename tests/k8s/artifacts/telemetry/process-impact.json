@@ -1,0 +1,33 @@
+{
+  "baseline": {
+    "cycle_time_hours": 8.5,
+    "error_budget_consumed": 0.21,
+    "incident_frequency": 0.32,
+    "mttr_hours": 3.5,
+    "p95_latency_ms": 900.0,
+    "review_comments": 5.0,
+    "review_rounds": 1.0
+  },
+  "context": "k8s",
+  "delta": {
+    "cycle_time_hours": 0.0,
+    "error_budget_consumed": -0.029,
+    "incident_frequency": -0.029,
+    "mttr_hours": -0.12,
+    "p95_latency_ms": -54.0,
+    "review_comments": 0.0,
+    "review_rounds": 0.0
+  },
+  "family": "telemetry",
+  "function": "k8s_telemetry",
+  "generated_at": "2025-10-21T22:53:16.922319+00:00",
+  "observed": {
+    "cycle_time_hours": 8.5,
+    "error_budget_consumed": 0.181,
+    "incident_frequency": 0.291,
+    "mttr_hours": 3.38,
+    "p95_latency_ms": 846.0,
+    "review_comments": 5.0,
+    "review_rounds": 1.0
+  }
+}

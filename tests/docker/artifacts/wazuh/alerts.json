@@ -1,0 +1,26 @@
+[
+  {
+    "id": "simulated-alert-1",
+    "rule": "550",
+    "level": 9,
+    "agent": "simulated-wazuh-agent",
+    "description": "Simulated integrity check",
+    "timestamp": "2025-10-21T22:52:24.082097+00:00"
+  },
+  {
+    "id": "simulated-alert-2",
+    "rule": "550",
+    "level": 6,
+    "agent": "simulated-wazuh-agent",
+    "description": "Simulated integrity check",
+    "timestamp": "2025-10-21T22:52:24.082104+00:00"
+  },
+  {
+    "id": "simulated-alert-3",
+    "rule": "550",
+    "level": 10,
+    "agent": "simulated-wazuh-agent",
+    "description": "Simulated integrity check",
+    "timestamp": "2025-10-21T22:52:24.082107+00:00"
+  }
+]

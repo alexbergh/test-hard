@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-telegraf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemetry-telegraf
+  template:
+    metadata:
+      labels:
+        app: telemetry-telegraf
+    spec:
+      containers:
+        - name: telegraf
+          image: telegraf:1.28
+          volumeMounts:
+            - name: telegraf-config
+              mountPath: /etc/telegraf/telegraf.conf
+              subPath: telegraf.conf
+          ports:
+            - containerPort: 9081
+            - containerPort: 6514
+          env:
+            - name: HOSTNAME
+              value: telemetry-telegraf
+      volumes:
+        - name: telegraf-config
+          configMap:
+            name: telegraf-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry-telegraf
+spec:
+  selector:
+    app: telemetry-telegraf
+  ports:
+    - name: http-listener
+      protocol: TCP
+      port: 9081
+      targetPort: 9081
+    - name: syslog
+      protocol: UDP
+      port: 6514
+      targetPort: 6514
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: osquery-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: osquery-simulator
+  template:
+    metadata:
+      labels:
+        app: osquery-simulator
+    spec:
+      containers:
+        - name: simulator
+          image: python:3.11-slim
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              pip install --no-cache-dir requests &&
+              python /opt/osquery-simulator/entrypoint.py
+          env:
+            - name: TELEGRAF_ENDPOINT
+              value: http://telemetry-telegraf:9081/osquery
+            - name: SYSLOG_ENDPOINT
+              value: udp://telemetry-telegraf:6514
+            - name: HOST_IDENTIFIER
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: LOG_INTERVAL
+              value: "5"
+          volumeMounts:
+            - name: simulator-script
+              mountPath: /opt/osquery-simulator
+      volumes:
+        - name: simulator-script
+          configMap:
+            name: osquery-simulator

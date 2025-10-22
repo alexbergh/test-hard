@@ -1,0 +1,158 @@
+version: "3.9"
+
+services:
+  openscap-runner:
+    image: quay.io/openscap/openscap:1.3.9
+    container_name: openscap-runner
+    profiles: ["openscap"]
+    volumes:
+      - ./openscap/content:/content:ro
+      - ./artifacts/openscap:/reports
+    command: >-
+      /bin/sh -c "\
+        mkdir -p /reports && \
+        oscap oval eval --results /reports/sample-oval-results.xml \
+          --report /reports/sample-oval-report.html /content/sample-oval.xml && \
+        echo 'OpenSCAP evaluation complete, reports stored in /reports';\
+      "
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: telemetry-influxdb
+    restart: unless-stopped
+    profiles: ["telemetry"]
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=changeme
+      - DOCKER_INFLUXDB_INIT_ORG=security
+      - DOCKER_INFLUXDB_INIT_BUCKET=osquery
+      - DOCKER_INFLUXDB_INIT_RETENTION=30d
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+
+  telegraf-listener:
+    image: telegraf:1.28
+    container_name: telemetry-telegraf
+    restart: unless-stopped
+    profiles: ["telemetry"]
+    ports:
+      - "9081:9081"
+      - "6514:6514/udp"
+    volumes:
+      - ../../environments/osquery-telegraf/docker/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: telemetry-grafana
+    restart: unless-stopped
+    profiles: ["telemetry"]
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=changeme
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+  osquery-simulator:
+    build: ./osquery-simulator
+    container_name: osquery-simulator
+    restart: unless-stopped
+    profiles: ["telemetry"]
+    environment:
+      - TELEGRAF_ENDPOINT=http://telegraf-listener:9081/osquery
+      - SYSLOG_ENDPOINT=udp://telegraf-listener:6514
+      - HOST_IDENTIFIER=simulated-endpoint
+      - LOG_INTERVAL=5
+    depends_on:
+      - telegraf-listener
+
+  kuma-mock:
+    build: ./kuma-mock
+    container_name: kuma-mock
+    restart: unless-stopped
+    profiles: ["telemetry"]
+    environment:
+      - LISTEN_PORT=8080
+      - KUMA_DATA_DIR=/app/data
+    ports:
+      - "18080:8080"
+    volumes:
+      - ./artifacts/telemetry/kuma:/app/data
+
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.7.2
+    container_name: wazuh-indexer
+    restart: unless-stopped
+    profiles: ["wazuh"]
+    environment:
+      - bootstrap.password=changeme
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.7.2
+    container_name: wazuh-manager
+    restart: unless-stopped
+    profiles: ["wazuh"]
+    depends_on:
+      - wazuh-indexer
+    ports:
+      - "1514:1514/udp"
+      - "1515:1515"
+      - "55000:55000"
+    volumes:
+      - wazuh-manager-data:/var/ossec/data
+      - ../../environments/wazuh/docker/config/manager/ossec.conf:/var/ossec/etc/ossec.conf:ro
+      - ./artifacts/wazuh/manager-logs:/var/ossec/logs
+
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.7.2
+    container_name: wazuh-dashboard
+    restart: unless-stopped
+    profiles: ["wazuh"]
+    depends_on:
+      - wazuh-manager
+      - wazuh-indexer
+    environment:
+      - DASHBOARD_USERNAME=admin
+      - DASHBOARD_PASSWORD=changeme
+      - WAZUH_API_URL=https://wazuh-manager:55000
+      - WAZUH_API_USER=wazuh-wui
+      - WAZUH_API_PASSWORD=SecretPassword
+    ports:
+      - "5601:5601"
+
+  wazuh-agent:
+    image: wazuh/wazuh-agent:4.7.2
+    container_name: wazuh-agent
+    restart: unless-stopped
+    profiles: ["wazuh"]
+    environment:
+      - WAZUH_MANAGER=wazuh-manager
+      - WAZUH_AGENT_NAME=docker-sim-agent
+      - WAZUH_AGENT_GROUP=default
+    volumes:
+      - ./artifacts/wazuh/agent-logs:/var/ossec/logs
+    depends_on:
+      - wazuh-manager
+
+volumes:
+  influxdb-data:
+  grafana-data:
+  wazuh-indexer-data:
+  wazuh-manager-data:

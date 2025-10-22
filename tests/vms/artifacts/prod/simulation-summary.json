@@ -1,0 +1,80 @@
+{
+  "environment": "prod",
+  "generated_at": "2025-10-21T22:52:36.572924+00:00",
+  "systems": [
+    {
+      "vm_id": "redos-7.3",
+      "host": "vm-redos73-prod",
+      "environment": "prod",
+      "compliance": 80.0,
+      "failed_controls": [
+        "REDOS73-CTRL-004"
+      ]
+    },
+    {
+      "vm_id": "redos-8",
+      "host": "vm-redos8-prod",
+      "environment": "prod",
+      "compliance": 80.0,
+      "failed_controls": [
+        "REDOS8-CTRL-003"
+      ]
+    },
+    {
+      "vm_id": "astralinux-1.7",
+      "host": "vm-astralinux17-prod",
+      "environment": "prod",
+      "compliance": 100.0,
+      "failed_controls": []
+    },
+    {
+      "vm_id": "altlinux-8",
+      "host": "vm-altlinux8-prod",
+      "environment": "prod",
+      "compliance": 80.0,
+      "failed_controls": [
+        "ALT8-CTRL-005"
+      ]
+    },
+    {
+      "vm_id": "centos-7",
+      "host": "vm-centos7-prod",
+      "environment": "prod",
+      "compliance": 100.0,
+      "failed_controls": []
+    }
+  ],
+  "process": {
+    "function": "vm_prod",
+    "family": "vm",
+    "context": "prod",
+    "generated_at": "2025-10-21T22:52:36.572624+00:00",
+    "baseline": {
+      "cycle_time_hours": 16.0,
+      "review_rounds": 3.0,
+      "review_comments": 18.0,
+      "incident_frequency": 0.33,
+      "mttr_hours": 6.0,
+      "p95_latency_ms": 1180.0,
+      "error_budget_consumed": 0.25
+    },
+    "observed": {
+      "cycle_time_hours": 12.48,
+      "review_rounds": 2.0,
+      "review_comments": 12.0,
+      "incident_frequency": 0.243,
+      "mttr_hours": 5.7,
+      "p95_latency_ms": 1156.4,
+      "error_budget_consumed": 0.18
+    },
+    "delta": {
+      "cycle_time_hours": -3.52,
+      "review_rounds": -1.0,
+      "review_comments": -6.0,
+      "incident_frequency": -0.087,
+      "mttr_hours": -0.3,
+      "p95_latency_ms": -23.6,
+      "error_budget_consumed": -0.07
+    }
+  }
+}

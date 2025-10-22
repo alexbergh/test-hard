@@ -1,0 +1,74 @@
+{
+  "docker_openscap": {
+    "cycle_time_hours": 10.0,
+    "review_rounds": 2,
+    "review_comments": 12,
+    "incident_frequency": 0.25,
+    "mttr_hours": 4.5,
+    "p95_latency_ms": 950.0,
+    "error_budget_consumed": 0.18
+  },
+  "docker_telemetry": {
+    "cycle_time_hours": 8.0,
+    "review_rounds": 1,
+    "review_comments": 6,
+    "incident_frequency": 0.3,
+    "mttr_hours": 3.0,
+    "p95_latency_ms": 850.0,
+    "error_budget_consumed": 0.2
+  },
+  "docker_wazuh": {
+    "cycle_time_hours": 9.5,
+    "review_rounds": 2,
+    "review_comments": 10,
+    "incident_frequency": 0.28,
+    "mttr_hours": 5.0,
+    "p95_latency_ms": 1025.0,
+    "error_budget_consumed": 0.22
+  },
+  "k8s_openscap": {
+    "cycle_time_hours": 11.0,
+    "review_rounds": 2,
+    "review_comments": 11,
+    "incident_frequency": 0.24,
+    "mttr_hours": 4.8,
+    "p95_latency_ms": 1000.0,
+    "error_budget_consumed": 0.19
+  },
+  "k8s_telemetry": {
+    "cycle_time_hours": 8.5,
+    "review_rounds": 1,
+    "review_comments": 5,
+    "incident_frequency": 0.32,
+    "mttr_hours": 3.5,
+    "p95_latency_ms": 900.0,
+    "error_budget_consumed": 0.21
+  },
+  "k8s_wazuh": {
+    "cycle_time_hours": 9.0,
+    "review_rounds": 2,
+    "review_comments": 9,
+    "incident_frequency": 0.27,
+    "mttr_hours": 5.3,
+    "p95_latency_ms": 990.0,
+    "error_budget_consumed": 0.23
+  },
+  "vm_test": {
+    "cycle_time_hours": 14.0,
+    "review_rounds": 3,
+    "review_comments": 15,
+    "incident_frequency": 0.35,
+    "mttr_hours": 6.5,
+    "p95_latency_ms": 1200.0,
+    "error_budget_consumed": 0.26
+  },
+  "vm_prod": {
+    "cycle_time_hours": 16.0,
+    "review_rounds": 3,
+    "review_comments": 18,
+    "incident_frequency": 0.33,
+    "mttr_hours": 6.0,
+    "p95_latency_ms": 1180.0,
+    "error_budget_consumed": 0.25
+  }
+}

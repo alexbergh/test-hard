@@ -1,0 +1,43 @@
+---
+- name: Enable yum-cron service
+  ansible.builtin.service:
+    name: yum-cron
+    state: started
+    enabled: yes
+
+- name: Disable legacy network services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop:
+    - telnet.socket
+    - rlogin.socket
+    - rsh.socket
+    - avahi-daemon
+
+- name: Ensure audit=1 kernel parameter set
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX='
+    line: 'GRUB_CMDLINE_LINUX="crashkernel=auto resume=/dev/mapper/vg-root-swap audit=1"'
+  notify: reload sysctl
+
+- name: Configure sudo logging
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/hardening
+    content: |
+      Defaults use_pty
+      Defaults logfile="/var/log/sudo.log"
+    owner: root
+    group: root
+    mode: "0440"
+
+- name: Enforce pam_pwquality policy
+  ansible.builtin.blockinfile:
+    path: /etc/security/pwquality.conf
+    block: |
+      minlen = {{ (secaudit_target_environment == 'prod') | ternary(14, 12) }}
+      retry = 3
+      difok = 4
+    marker: "# {mark} managed by secaudit"

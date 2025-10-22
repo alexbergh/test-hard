@@ -1,0 +1,167 @@
+{
+  "openscap": {
+    "generated_at": "2025-10-21T22:52:24.076384+00:00",
+    "scanner": "openscap-simulator",
+    "definitions_evaluated": 1,
+    "passed": 1,
+    "failed": 0,
+    "results": [
+      {
+        "id": "oval:org.hardening:def:1",
+        "title": "Verify /etc/os-release is present",
+        "status": "pass",
+        "details": "Платформа: не указано, семья: unknown, источник: linux/sample-oval.xml, критичность: n/a"
+      }
+    ],
+    "process": {
+      "function": "docker_openscap",
+      "family": "openscap",
+      "context": "docker",
+      "generated_at": "2025-10-21T22:52:24.076439+00:00",
+      "baseline": {
+        "cycle_time_hours": 10.0,
+        "review_rounds": 2.0,
+        "review_comments": 12.0,
+        "incident_frequency": 0.25,
+        "mttr_hours": 4.5,
+        "p95_latency_ms": 950.0,
+        "error_budget_consumed": 0.18
+      },
+      "observed": {
+        "cycle_time_hours": 8.5,
+        "review_rounds": 1.0,
+        "review_comments": 5.0,
+        "incident_frequency": 0.138,
+        "mttr_hours": 3.6,
+        "p95_latency_ms": 855.0,
+        "error_budget_consumed": 0.09
+      },
+      "delta": {
+        "cycle_time_hours": -1.5,
+        "review_rounds": -1.0,
+        "review_comments": -7.0,
+        "incident_frequency": -0.112,
+        "mttr_hours": -0.9,
+        "p95_latency_ms": -95.0,
+        "error_budget_consumed": -0.09
+      }
+    }
+  },
+  "telemetry": {
+    "generated_at": "2025-10-21T22:52:24.081925+00:00",
+    "events": 10,
+    "syslog_messages": 5,
+    "artifacts": [
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/osquery-events.jsonl",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/syslog.log",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/hardening-dashboard.md",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/grafana-dashboard.json",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/kuma-payload.json",
+      "/workspace/test-hard/tests/docker/artifacts/telemetry/collector.log"
+    ],
+    "metrics": {
+      "generated_at": "2025-10-21T22:52:24.078259+00:00",
+      "vulnerability_total": 5,
+      "inventory_total": 5,
+      "unique_hosts": 1,
+      "severity": [
+        {
+          "severity": "low",
+          "count": 5,
+          "percentage": 100.0
+        }
+      ],
+      "top_cves": [
+        [
+          "CVE-2022-0778",
+          4
+        ],
+        [
+          "CVE-2023-2650",
+          1
+        ]
+      ],
+      "top_packages": [
+        [
+          "openssl",
+          5
+        ]
+      ]
+    },
+    "process": {
+      "function": "docker_telemetry",
+      "family": "telemetry",
+      "context": "docker",
+      "generated_at": "2025-10-21T22:52:24.081569+00:00",
+      "baseline": {
+        "cycle_time_hours": 8.0,
+        "review_rounds": 1.0,
+        "review_comments": 6.0,
+        "incident_frequency": 0.3,
+        "mttr_hours": 3.0,
+        "p95_latency_ms": 850.0,
+        "error_budget_consumed": 0.2
+      },
+      "observed": {
+        "cycle_time_hours": 8.0,
+        "review_rounds": 1.0,
+        "review_comments": 6.0,
+        "incident_frequency": 0.27,
+        "mttr_hours": 2.88,
+        "p95_latency_ms": 786.2,
+        "error_budget_consumed": 0.17
+      },
+      "delta": {
+        "cycle_time_hours": 0.0,
+        "review_rounds": 0.0,
+        "review_comments": 0.0,
+        "incident_frequency": -0.03,
+        "mttr_hours": -0.12,
+        "p95_latency_ms": -63.8,
+        "error_budget_consumed": -0.03
+      }
+    }
+  },
+  "wazuh": {
+    "generated_at": "2025-10-21T22:52:24.082714+00:00",
+    "alerts": 3,
+    "fim_events": 3,
+    "artifacts": [
+      "/workspace/test-hard/tests/docker/artifacts/wazuh/alerts.json",
+      "/workspace/test-hard/tests/docker/artifacts/wazuh/fim-events.jsonl"
+    ],
+    "process": {
+      "function": "docker_wazuh",
+      "family": "wazuh",
+      "context": "docker",
+      "generated_at": "2025-10-21T22:52:24.082405+00:00",
+      "baseline": {
+        "cycle_time_hours": 9.5,
+        "review_rounds": 2.0,
+        "review_comments": 10.0,
+        "incident_frequency": 0.28,
+        "mttr_hours": 5.0,
+        "p95_latency_ms": 1025.0,
+        "error_budget_consumed": 0.22
+      },
+      "observed": {
+        "cycle_time_hours": 7.79,
+        "review_rounds": 2.0,
+        "review_comments": 8.0,
+        "incident_frequency": 0.238,
+        "mttr_hours": 4.55,
+        "p95_latency_ms": 963.5,
+        "error_budget_consumed": 0.194
+      },
+      "delta": {
+        "cycle_time_hours": -1.71,
+        "review_rounds": 0.0,
+        "review_comments": -2.0,
+        "incident_frequency": -0.042,
+        "mttr_hours": -0.45,
+        "p95_latency_ms": -61.5,
+        "error_budget_consumed": -0.026
+      }
+    }
+  }
+}

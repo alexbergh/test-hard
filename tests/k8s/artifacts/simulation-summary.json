@@ -1,0 +1,164 @@
+{
+  "generated_at": "2025-10-21T22:53:16.918887+00:00",
+  "resources": 8,
+  "openscap": {
+    "results": [
+      {
+        "title": "Verify /etc/os-release is present",
+        "status": "passed",
+        "message": "Определение oval:org.hardening:def:1 для платформ n/a"
+      }
+    ],
+    "log": "/workspace/test-hard/tests/k8s/artifacts/openscap-job.log",
+    "process": {
+      "function": "k8s_openscap",
+      "family": "openscap",
+      "context": "k8s",
+      "generated_at": "2025-10-21T22:53:16.919245+00:00",
+      "baseline": {
+        "cycle_time_hours": 11.0,
+        "review_rounds": 2.0,
+        "review_comments": 11.0,
+        "incident_frequency": 0.24,
+        "mttr_hours": 4.8,
+        "p95_latency_ms": 1000.0,
+        "error_budget_consumed": 0.19
+      },
+      "observed": {
+        "cycle_time_hours": 9.68,
+        "review_rounds": 1.0,
+        "review_comments": 6.0,
+        "incident_frequency": 0.144,
+        "mttr_hours": 3.94,
+        "p95_latency_ms": 920.0,
+        "error_budget_consumed": 0.105
+      },
+      "delta": {
+        "cycle_time_hours": -1.32,
+        "review_rounds": -1.0,
+        "review_comments": -6.0,
+        "incident_frequency": -0.096,
+        "mttr_hours": -0.86,
+        "p95_latency_ms": -80.0,
+        "error_budget_consumed": -0.085
+      }
+    }
+  },
+  "telemetry": {
+    "entries": 10,
+    "log": "/workspace/test-hard/tests/k8s/artifacts/telemetry/pod.log",
+    "events_file": "/workspace/test-hard/tests/k8s/artifacts/telemetry/events.jsonl",
+    "metrics": {
+      "generated_at": "2025-10-21T22:53:16.920273+00:00",
+      "vulnerability_total": 5,
+      "inventory_total": 5,
+      "unique_hosts": 1,
+      "severity": [
+        {
+          "severity": "low",
+          "count": 3,
+          "percentage": 60.0
+        },
+        {
+          "severity": "medium",
+          "count": 2,
+          "percentage": 40.0
+        }
+      ],
+      "top_cves": [
+        [
+          "CVE-2023-2650",
+          3
+        ],
+        [
+          "CVE-2024-2511",
+          2
+        ]
+      ],
+      "top_packages": [
+        [
+          "openssl",
+          2
+        ],
+        [
+          "sudo",
+          2
+        ],
+        [
+          "kernel",
+          1
+        ]
+      ]
+    },
+    "process": {
+      "function": "k8s_telemetry",
+      "family": "telemetry",
+      "context": "k8s",
+      "generated_at": "2025-10-21T22:53:16.922319+00:00",
+      "baseline": {
+        "cycle_time_hours": 8.5,
+        "review_rounds": 1.0,
+        "review_comments": 5.0,
+        "incident_frequency": 0.32,
+        "mttr_hours": 3.5,
+        "p95_latency_ms": 900.0,
+        "error_budget_consumed": 0.21
+      },
+      "observed": {
+        "cycle_time_hours": 8.5,
+        "review_rounds": 1.0,
+        "review_comments": 5.0,
+        "incident_frequency": 0.291,
+        "mttr_hours": 3.38,
+        "p95_latency_ms": 846.0,
+        "error_budget_consumed": 0.181
+      },
+      "delta": {
+        "cycle_time_hours": 0.0,
+        "review_rounds": 0.0,
+        "review_comments": 0.0,
+        "incident_frequency": -0.029,
+        "mttr_hours": -0.12,
+        "p95_latency_ms": -54.0,
+        "error_budget_consumed": -0.029
+      }
+    }
+  },
+  "wazuh": {
+    "entries": 6,
+    "log": "/workspace/test-hard/tests/k8s/artifacts/wazuh-pod.log",
+    "process": {
+      "function": "k8s_wazuh",
+      "family": "wazuh",
+      "context": "k8s",
+      "generated_at": "2025-10-21T22:53:16.923056+00:00",
+      "baseline": {
+        "cycle_time_hours": 9.0,
+        "review_rounds": 2.0,
+        "review_comments": 9.0,
+        "incident_frequency": 0.27,
+        "mttr_hours": 5.3,
+        "p95_latency_ms": 990.0,
+        "error_budget_consumed": 0.23
+      },
+      "observed": {
+        "cycle_time_hours": 7.92,
+        "review_rounds": 2.0,
+        "review_comments": 8.0,
+        "incident_frequency": 0.241,
+        "mttr_hours": 4.92,
+        "p95_latency_ms": 942.5,
+        "error_budget_consumed": 0.209
+      },
+      "delta": {
+        "cycle_time_hours": -1.08,
+        "review_rounds": 0.0,
+        "review_comments": -1.0,
+        "incident_frequency": -0.029,
+        "mttr_hours": -0.38,
+        "p95_latency_ms": -47.5,
+        "error_budget_consumed": -0.021
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+[2025-10-21T22:53:16.919712+00:00] telegraf-collector sequence=1 host=simulated-k8s-osquery severity=low cve=CVE-2024-2511
+[2025-10-21T22:53:16.919724+00:00] osquery-inventory host=simulated-k8s-osquery kernel=5.15.20
+[2025-10-21T22:53:16.919731+00:00] telegraf-collector sequence=2 host=simulated-k8s-osquery severity=medium cve=CVE-2023-2650
+[2025-10-21T22:53:16.919735+00:00] osquery-inventory host=simulated-k8s-osquery kernel=5.15.28
+[2025-10-21T22:53:16.919741+00:00] telegraf-collector sequence=3 host=simulated-k8s-osquery severity=medium cve=CVE-2023-2650
+[2025-10-21T22:53:16.919745+00:00] osquery-inventory host=simulated-k8s-osquery kernel=5.15.26
+[2025-10-21T22:53:16.919750+00:00] telegraf-collector sequence=4 host=simulated-k8s-osquery severity=low cve=CVE-2023-2650
+[2025-10-21T22:53:16.919754+00:00] osquery-inventory host=simulated-k8s-osquery kernel=5.15.6
+[2025-10-21T22:53:16.919759+00:00] telegraf-collector sequence=5 host=simulated-k8s-osquery severity=low cve=CVE-2024-2511
+[2025-10-21T22:53:16.919763+00:00] osquery-inventory host=simulated-k8s-osquery kernel=5.15.23

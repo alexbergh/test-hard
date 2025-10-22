@@ -1,0 +1,21 @@
+{
+  "generated_at": "2025-10-21T22:52:36.570482+00:00",
+  "environment": "prod",
+  "vm": {
+    "id": "centos-7",
+    "display_name": "CentOS 7",
+    "profile": "centos-7",
+    "hypervisor": "kvm",
+    "cpus": 2,
+    "memory_mb": 4096,
+    "disk_gb": 30
+  },
+  "profile": {
+    "id": "centos-7",
+    "name": "CentOS 7 hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "packer_template": "tests/vms/packer/linux.pkr.hcl",
+  "ansible_playbook": "tests/vms/ansible/playbooks/hardening.yml"
+}

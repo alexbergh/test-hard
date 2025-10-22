@@ -1,0 +1,33 @@
+{
+  "baseline": {
+    "cycle_time_hours": 16.0,
+    "error_budget_consumed": 0.25,
+    "incident_frequency": 0.33,
+    "mttr_hours": 6.0,
+    "p95_latency_ms": 1180.0,
+    "review_comments": 18.0,
+    "review_rounds": 3.0
+  },
+  "context": "prod",
+  "delta": {
+    "cycle_time_hours": -3.52,
+    "error_budget_consumed": -0.07,
+    "incident_frequency": -0.087,
+    "mttr_hours": -0.3,
+    "p95_latency_ms": -23.6,
+    "review_comments": -6.0,
+    "review_rounds": -1.0
+  },
+  "family": "vm",
+  "function": "vm_prod",
+  "generated_at": "2025-10-21T22:52:36.572624+00:00",
+  "observed": {
+    "cycle_time_hours": 12.48,
+    "error_budget_consumed": 0.18,
+    "incident_frequency": 0.243,
+    "mttr_hours": 5.7,
+    "p95_latency_ms": 1156.4,
+    "review_comments": 12.0,
+    "review_rounds": 2.0
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "id": "redos-7.3",
+    "name": "РедОС 7.3 базовый профиль",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "environments": {
+    "test": {
+      "goal": "Подтвердить установку и baseline",
+      "notes": "Доступен root через консоль, аудит в локальные журналы"
+    },
+    "prod": {
+      "goal": "Полное соответствие ФСТЭК 17/21",
+      "notes": "Аудит пересылается на центральный сервер, пароли меняются раз в 60 дней"
+    }
+  },
+  "controls": [
+    {
+      "id": "REDOS73-CTRL-001",
+      "title": "Отключить root вход по SSH",
+      "severity": "high",
+      "category": "access_control",
+      "tags": ["ssh", "account"],
+      "secaudit_reference": "linux.ssh.disable_root_login",
+      "check": "sshd -T | grep permitrootlogin",
+      "remediation": "Установить PermitRootLogin no и разрешить только secops",
+      "metrics": {
+        "expected": "PermitRootLogin no",
+        "evidence": "/etc/ssh/sshd_config"
+      }
+    },
+    {
+      "id": "REDOS73-CTRL-002",
+      "title": "Ограничить шифры и MAC для SSH",
+      "severity": "medium",
+      "category": "crypto",
+      "tags": ["ssh", "cipher"],
+      "secaudit_reference": "linux.ssh.strict_ciphers",
+      "check": "grep ^Ciphers /etc/ssh/sshd_config",
+      "remediation": "Ciphers aes256-ctr,aes192-ctr,aes128-ctr",
+      "metrics": {
+        "expected": ["aes256-ctr", "aes192-ctr", "aes128-ctr"],
+        "evidence": "/etc/ssh/sshd_config"
+      }
+    },
+    {
+      "id": "REDOS73-CTRL-003",
+      "title": "Включить отправку auditd на центральный сервер",
+      "severity": "medium",
+      "category": "logging",
+      "tags": ["audit", "rsyslog"],
+      "secaudit_reference": "linux.audit.remote_forwarding",
+      "check": "grep ^remote_server /etc/audisp/plugins.d/au-remote.conf",
+      "remediation": "Настроить audisp-remote на syslog.example.local",
+      "metrics": {
+        "expected": "remote_server = syslog.example.local",
+        "evidence": "/etc/audisp/plugins.d/au-remote.conf"
+      }
+    },
+    {
+      "id": "REDOS73-CTRL-004",
+      "title": "Ужесточить политику паролей",
+      "severity": "high",
+      "category": "account_management",
+      "tags": ["pam", "password"],
+      "secaudit_reference": "linux.auth.pam_pwquality",
+      "check": "grep ^PASS_MAX_DAYS /etc/login.defs",
+      "remediation": "PASS_MAX_DAYS 60, PASS_MIN_DAYS 1, PASS_WARN_AGE 14",
+      "metrics": {
+        "expected": "PASS_MAX_DAYS 60",
+        "evidence": "/etc/login.defs"
+      }
+    },
+    {
+      "id": "REDOS73-CTRL-005",
+      "title": "Убедиться в установке osquery pack hardening",
+      "severity": "low",
+      "category": "inventory",
+      "tags": ["osquery", "monitoring"],
+      "secaudit_reference": "linux.osquery.pack_hardening",
+      "check": "test -f /opt/osquery/packs/hardening.conf",
+      "remediation": "Скопировать pack из репозитория мониторинга",
+      "metrics": {
+        "expected": "hardening.conf",
+        "evidence": "/opt/osquery/packs"
+      }
+    }
+  ]
+}

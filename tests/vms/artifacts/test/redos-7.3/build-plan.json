@@ -1,0 +1,21 @@
+{
+  "generated_at": "2025-10-21T22:52:36.561025+00:00",
+  "environment": "test",
+  "vm": {
+    "id": "redos-7.3",
+    "display_name": "РедОС 7.3",
+    "profile": "redos-7.3",
+    "hypervisor": "kvm",
+    "cpus": 2,
+    "memory_mb": 4096,
+    "disk_gb": 30
+  },
+  "profile": {
+    "id": "redos-7.3",
+    "name": "РедОС 7.3 базовый профиль",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "packer_template": "tests/vms/packer/linux.pkr.hcl",
+  "ansible_playbook": "tests/vms/ansible/playbooks/hardening.yml"
+}

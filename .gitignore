@@ -1,0 +1,6 @@
+# Generated artifacts from local test environments
+/tests/docker/osquery-simulator/__pycache__/
+/tests/docker/osquery-simulator/.venv/
+/tests/k8s/.kind-config
+/tests/docker/openscap/content/fstec-sample.zip
+/tests/docker/openscap/content/fstec/

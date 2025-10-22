@@ -1,0 +1,68 @@
+{
+  "host": "vm-centos7-test",
+  "environment": "test",
+  "profile": {
+    "id": "centos-7",
+    "name": "CentOS 7 hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "compliance_percent": 80.0,
+  "controls": [
+    {
+      "id": "CENTOS7-CTRL-001",
+      "title": "Обновление через yum-cron",
+      "severity": "medium",
+      "status": "passed",
+      "tags": [
+        "yum",
+        "updates"
+      ],
+      "reference": "linux.updates.yum_cron"
+    },
+    {
+      "id": "CENTOS7-CTRL-002",
+      "title": "Отключить неиспользуемые службы",
+      "severity": "medium",
+      "status": "passed",
+      "tags": [
+        "service",
+        "cleanup"
+      ],
+      "reference": "linux.services.disable_legacy"
+    },
+    {
+      "id": "CENTOS7-CTRL-003",
+      "title": "Включить auditing ядра",
+      "severity": "high",
+      "status": "passed",
+      "tags": [
+        "audit",
+        "kernel"
+      ],
+      "reference": "linux.audit.grub"
+    },
+    {
+      "id": "CENTOS7-CTRL-004",
+      "title": "Настроить sudo логирование",
+      "severity": "low",
+      "status": "passed",
+      "tags": [
+        "sudo",
+        "audit"
+      ],
+      "reference": "linux.sudo.logging"
+    },
+    {
+      "id": "CENTOS7-CTRL-005",
+      "title": "Защитить пароли через pam_pwquality",
+      "severity": "high",
+      "status": "failed",
+      "tags": [
+        "pam",
+        "password"
+      ],
+      "reference": "linux.auth.pam_pwquality"
+    }
+  ]
+}

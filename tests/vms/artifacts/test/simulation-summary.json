@@ -1,0 +1,86 @@
+{
+  "environment": "test",
+  "generated_at": "2025-10-21T22:52:36.567167+00:00",
+  "systems": [
+    {
+      "vm_id": "redos-7.3",
+      "host": "vm-redos73-test",
+      "environment": "test",
+      "compliance": 60.0,
+      "failed_controls": [
+        "REDOS73-CTRL-001",
+        "REDOS73-CTRL-004"
+      ]
+    },
+    {
+      "vm_id": "redos-8",
+      "host": "vm-redos8-test",
+      "environment": "test",
+      "compliance": 80.0,
+      "failed_controls": [
+        "REDOS8-CTRL-003"
+      ]
+    },
+    {
+      "vm_id": "astralinux-1.7",
+      "host": "vm-astralinux17-test",
+      "environment": "test",
+      "compliance": 80.0,
+      "failed_controls": [
+        "ASTRA17-CTRL-002"
+      ]
+    },
+    {
+      "vm_id": "altlinux-8",
+      "host": "vm-altlinux8-test",
+      "environment": "test",
+      "compliance": 60.0,
+      "failed_controls": [
+        "ALT8-CTRL-004",
+        "ALT8-CTRL-005"
+      ]
+    },
+    {
+      "vm_id": "centos-7",
+      "host": "vm-centos7-test",
+      "environment": "test",
+      "compliance": 80.0,
+      "failed_controls": [
+        "CENTOS7-CTRL-005"
+      ]
+    }
+  ],
+  "process": {
+    "function": "vm_test",
+    "family": "vm",
+    "context": "test",
+    "generated_at": "2025-10-21T22:52:36.566706+00:00",
+    "baseline": {
+      "cycle_time_hours": 14.0,
+      "review_rounds": 3.0,
+      "review_comments": 15.0,
+      "incident_frequency": 0.35,
+      "mttr_hours": 6.5,
+      "p95_latency_ms": 1200.0,
+      "error_budget_consumed": 0.26
+    },
+    "observed": {
+      "cycle_time_hours": 11.48,
+      "review_rounds": 2.0,
+      "review_comments": 11.0,
+      "incident_frequency": 0.274,
+      "mttr_hours": 6.17,
+      "p95_latency_ms": 1176.0,
+      "error_budget_consumed": 0.2
+    },
+    "delta": {
+      "cycle_time_hours": -2.52,
+      "review_rounds": -1.0,
+      "review_comments": -4.0,
+      "incident_frequency": -0.076,
+      "mttr_hours": -0.33,
+      "p95_latency_ms": -24.0,
+      "error_budget_consumed": -0.06
+    }
+  }
+}

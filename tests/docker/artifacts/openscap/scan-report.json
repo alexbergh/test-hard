@@ -1,0 +1,48 @@
+{
+  "generated_at": "2025-10-21T22:52:24.076384+00:00",
+  "scanner": "openscap-simulator",
+  "definitions_evaluated": 1,
+  "passed": 1,
+  "failed": 0,
+  "results": [
+    {
+      "id": "oval:org.hardening:def:1",
+      "title": "Verify /etc/os-release is present",
+      "status": "pass",
+      "details": "Платформа: не указано, семья: unknown, источник: linux/sample-oval.xml, критичность: n/a"
+    }
+  ],
+  "process": {
+    "function": "docker_openscap",
+    "family": "openscap",
+    "context": "docker",
+    "generated_at": "2025-10-21T22:52:24.076439+00:00",
+    "baseline": {
+      "cycle_time_hours": 10.0,
+      "review_rounds": 2.0,
+      "review_comments": 12.0,
+      "incident_frequency": 0.25,
+      "mttr_hours": 4.5,
+      "p95_latency_ms": 950.0,
+      "error_budget_consumed": 0.18
+    },
+    "observed": {
+      "cycle_time_hours": 8.5,
+      "review_rounds": 1.0,
+      "review_comments": 5.0,
+      "incident_frequency": 0.138,
+      "mttr_hours": 3.6,
+      "p95_latency_ms": 855.0,
+      "error_budget_consumed": 0.09
+    },
+    "delta": {
+      "cycle_time_hours": -1.5,
+      "review_rounds": -1.0,
+      "review_comments": -7.0,
+      "incident_frequency": -0.112,
+      "mttr_hours": -0.9,
+      "p95_latency_ms": -95.0,
+      "error_budget_consumed": -0.09
+    }
+  }
+}

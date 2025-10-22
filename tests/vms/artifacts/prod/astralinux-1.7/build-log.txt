@@ -1,0 +1,6 @@
+[2025-10-21T22:52:36.569518+00:00] packer simulate build for astralinux-1.7 (prod)
+[00:00] downloading iso placeholder
+[00:05] applying kickstart/preseed
+[00:10] running ansible hardening
+[00:15] compliance summary: 100.0% (5/5)
+[00:16] exporting image artifact

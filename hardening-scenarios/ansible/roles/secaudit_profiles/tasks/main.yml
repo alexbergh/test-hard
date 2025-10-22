@@ -1,0 +1,12 @@
+---
+- name: Ensure secaudit_profile_id is provided
+  ansible.builtin.assert:
+    that:
+      - secaudit_profile_id is defined
+      - secaudit_profile_id in secaudit_profile_map
+    fail_msg: "Неизвестный профиль secaudit: {{ secaudit_profile_id }}"
+
+- name: Include profile specific tasks
+  ansible.builtin.include_tasks: "{{ secaudit_profile_map[secaudit_profile_id] }}"
+  vars:
+    secaudit_target_environment: "{{ target_environment | default('test') }}"

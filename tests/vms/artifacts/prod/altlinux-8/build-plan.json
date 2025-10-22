@@ -1,0 +1,21 @@
+{
+  "generated_at": "2025-10-21T22:52:36.569746+00:00",
+  "environment": "prod",
+  "vm": {
+    "id": "altlinux-8",
+    "display_name": "Альт 8",
+    "profile": "altlinux-8",
+    "hypervisor": "kvm",
+    "cpus": 2,
+    "memory_mb": 4096,
+    "disk_gb": 40
+  },
+  "profile": {
+    "id": "altlinux-8",
+    "name": "Альт Сервер 8 hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "packer_template": "tests/vms/packer/linux.pkr.hcl",
+  "ansible_playbook": "tests/vms/ansible/playbooks/hardening.yml"
+}

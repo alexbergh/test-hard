@@ -1,0 +1,21 @@
+{
+  "generated_at": "2025-10-21T22:52:36.562863+00:00",
+  "environment": "test",
+  "vm": {
+    "id": "astralinux-1.7",
+    "display_name": "Astra Linux 1.7",
+    "profile": "astralinux-1.7",
+    "hypervisor": "kvm",
+    "cpus": 2,
+    "memory_mb": 4096,
+    "disk_gb": 40
+  },
+  "profile": {
+    "id": "astralinux-1.7",
+    "name": "Astra Linux 1.7 (Смоленск) hardening",
+    "source": "alexbergh/secaudit-core",
+    "version": "2025.10"
+  },
+  "packer_template": "tests/vms/packer/linux.pkr.hcl",
+  "ansible_playbook": "tests/vms/ansible/playbooks/hardening.yml"
+}

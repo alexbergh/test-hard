@@ -1,0 +1,8 @@
+---
+- name: Apply Linux hardening baseline
+  hosts: linux_targets
+  become: true
+  roles:
+    - common_baseline
+    - linux_cis
+    - secaudit_profiles
