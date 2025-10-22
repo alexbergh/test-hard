@@ -1,6 +1,6 @@
 {
-  "batch_id": "kuma-20251021210015",
-  "generated_at": "2025-10-21T21:00:15.959332+00:00",
+  "batch_id": "kuma-20251022092257",
+  "generated_at": "2025-10-22T09:22:57.100683+00:00",
   "summary": {
     "vulnerability_total": 7,
     "inventory_total": 5,
@@ -23,111 +23,111 @@
       "category": "hardening",
       "kind": "vulnerability",
       "host": "vm-redos73-test",
-      "package": null,
-      "version": null,
+      "package": "openssh-server",
+      "version": "2025.10.001",
       "severity": "high",
-      "cve": null,
-      "collected_at": null
+      "cve": "CVE-2024-3001",
+      "collected_at": "2025-10-22T09:22:57.094358+00:00"
     },
     {
       "category": "hardening",
       "kind": "vulnerability",
       "host": "vm-redos73-test",
-      "package": null,
-      "version": null,
+      "package": "pam",
+      "version": "2025.10.004",
       "severity": "high",
-      "cve": null,
-      "collected_at": null
+      "cve": "CVE-2024-3004",
+      "collected_at": "2025-10-22T09:22:57.094422+00:00"
     },
     {
       "category": "hardening",
       "kind": "vulnerability",
       "host": "vm-redos8-test",
-      "package": null,
-      "version": null,
+      "package": "auditd",
+      "version": "2025.10.003",
       "severity": "high",
-      "cve": null,
-      "collected_at": null
+      "cve": "CVE-2024-8003",
+      "collected_at": "2025-10-22T09:22:57.095843+00:00"
     },
     {
       "category": "hardening",
       "kind": "vulnerability",
       "host": "vm-astralinux17-test",
-      "package": null,
-      "version": null,
+      "package": "auditd",
+      "version": "2025.10.002",
       "severity": "high",
-      "cve": null,
-      "collected_at": null
+      "cve": "CVE-2024-7002",
+      "collected_at": "2025-10-22T09:22:57.097171+00:00"
     },
     {
       "category": "hardening",
       "kind": "vulnerability",
       "host": "vm-altlinux8-test",
-      "package": null,
-      "version": null,
+      "package": "auditd",
+      "version": "2025.10.004",
       "severity": "medium",
-      "cve": null,
-      "collected_at": null
+      "cve": "CVE-2024-8004",
+      "collected_at": "2025-10-22T09:22:57.098252+00:00"
     },
     {
       "category": "hardening",
       "kind": "vulnerability",
       "host": "vm-altlinux8-test",
-      "package": null,
-      "version": null,
+      "package": "aide",
+      "version": "2025.10.005",
       "severity": "high",
-      "cve": null,
-      "collected_at": null
+      "cve": "CVE-2024-8005",
+      "collected_at": "2025-10-22T09:22:57.098277+00:00"
     },
     {
       "category": "hardening",
       "kind": "vulnerability",
       "host": "vm-centos7-test",
-      "package": null,
-      "version": null,
+      "package": "pam",
+      "version": "2025.10.005",
       "severity": "high",
-      "cve": null,
-      "collected_at": null
+      "cve": "CVE-2024-7005",
+      "collected_at": "2025-10-22T09:22:57.099246+00:00"
     },
     {
       "category": "hardening",
       "kind": "inventory",
       "host": "vm-redos73-test",
       "os": "РедОС 7.3",
-      "kernel": null,
-      "collected_at": null
+      "kernel": "3.10.0-1160.redos.7.x86_64",
+      "collected_at": "2025-10-22T09:22:57.095599+00:00"
     },
     {
       "category": "hardening",
       "kind": "inventory",
       "host": "vm-redos8-test",
       "os": "РедОС 8",
-      "kernel": null,
-      "collected_at": null
+      "kernel": "4.18.0-425.redos.8.x86_64",
+      "collected_at": "2025-10-22T09:22:57.096923+00:00"
     },
     {
       "category": "hardening",
       "kind": "inventory",
       "host": "vm-astralinux17-test",
       "os": "Astra Linux 1.7",
-      "kernel": null,
-      "collected_at": null
+      "kernel": "5.10.0-astora-1.7",
+      "collected_at": "2025-10-22T09:22:57.098032+00:00"
     },
     {
       "category": "hardening",
       "kind": "inventory",
       "host": "vm-altlinux8-test",
       "os": "Альт 8",
-      "kernel": null,
-      "collected_at": null
+      "kernel": "5.15.0-alt8",
+      "collected_at": "2025-10-22T09:22:57.099062+00:00"
     },
     {
       "category": "hardening",
       "kind": "inventory",
       "host": "vm-centos7-test",
       "os": "CentOS 7",
-      "kernel": null,
-      "collected_at": null
+      "kernel": "3.10.0-1160.el7.x86_64",
+      "collected_at": "2025-10-22T09:22:57.100094+00:00"
     }
   ]
 }

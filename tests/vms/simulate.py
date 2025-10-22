@@ -86,6 +86,90 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+TAG_PACKAGE_MAP = {
+    "ssh": "openssh-server",
+    "account": "shadow-utils",
+    "audit": "auditd",
+    "auditd": "auditd",
+    "rsyslog": "rsyslog",
+    "cipher": "openssl",
+    "pam": "pam",
+    "password": "pam_pwquality",
+    "inventory": "osquery",
+    "osquery": "osquery",
+    "apt": "apt",
+    "updates": "unattended-upgrades",
+    "sudo": "sudo",
+    "firewall": "firewalld",
+    "fim": "auditd",
+    "aide": "aide",
+    "monitoring": "osquery",
+}
+
+CATEGORY_PACKAGE_MAP = {
+    "access_control": "openssh-server",
+    "logging": "rsyslog",
+    "account_management": "shadow-utils",
+    "inventory": "osquery",
+    "patch_management": "yum-cron",
+    "monitoring": "osquery",
+}
+
+PROFILE_KERNEL_MAP = {
+    "redos-7.3": "3.10.0-1160.redos.7.x86_64",
+    "redos-8": "4.18.0-425.redos.8.x86_64",
+    "astralinux-1.7": "5.10.0-astora-1.7",
+    "altlinux-8": "5.15.0-alt8",
+    "centos-7": "3.10.0-1160.el7.x86_64",
+}
+
+
+def _control_package(control: dict, profile: dict) -> str:
+    for tag in control.get("tags", []):
+        normalized = str(tag).lower()
+        if normalized in TAG_PACKAGE_MAP:
+            return TAG_PACKAGE_MAP[normalized]
+    category = control.get("category")
+    if category:
+        normalized_category = str(category).lower()
+        if normalized_category in CATEGORY_PACKAGE_MAP:
+            return CATEGORY_PACKAGE_MAP[normalized_category]
+    reference = control.get("secaudit_reference")
+    if reference:
+        return reference.split(".")[-1].replace("_", "-")
+    return profile.get("metadata", {}).get("id", "hardening-control")
+
+
+def _control_version(control: dict, profile: dict) -> str:
+    profile_version = profile.get("metadata", {}).get("version")
+    control_suffix = control.get("id", "CTRL")
+    suffix = control_suffix.split("-")[-1]
+    if profile_version:
+        return f"{profile_version}.{suffix}"
+    return suffix
+
+
+def _control_cve(control: dict) -> str:
+    control_id = control.get("id", "CTRL")
+    digits = "".join(ch for ch in control_id if ch.isdigit())
+    try:
+        suffix = int(digits[-4:]) if digits else abs(hash(control_id)) % 10000
+    except ValueError:
+        suffix = abs(hash(control_id)) % 10000
+    return f"CVE-2024-{suffix:04d}"
+
+
+def _profile_kernel_version(profile: dict) -> str:
+    metadata = profile.get("metadata", {})
+    profile_id = metadata.get("id", "linux")
+    if profile_id in PROFILE_KERNEL_MAP:
+        return PROFILE_KERNEL_MAP[profile_id]
+    version = metadata.get("version")
+    if version:
+        return f"{profile_id}-kernel-{version}"
+    return f"{profile_id}-kernel"
+
+
 def _load_profile(profile_id: str) -> dict:
     path = SCENARIO_DIR / f"{profile_id}.json"
     if not path.exists():
@@ -133,6 +217,7 @@ def _simulate_environment(environment: str) -> None:
                 "reference": control.get("secaudit_reference"),
             })
             if status == "failed":
+                collected_at = _now()
                 vulnerability_events.append(
                     {
                         "type": "vulnerability",
@@ -145,6 +230,10 @@ def _simulate_environment(environment: str) -> None:
                         "os": vm["display_name"],
                         "category": control.get("category"),
                         "tags": control.get("tags", []),
+                        "package": _control_package(control, profile),
+                        "version": _control_version(control, profile),
+                        "cve": _control_cve(control),
+                        "collected_at": collected_at,
                     }
                 )
         passed = sum(1 for item in control_results if item["status"] == "passed")
@@ -182,6 +271,8 @@ def _simulate_environment(environment: str) -> None:
                 "[00:16] exporting image artifact",
             ],
         )
+        kernel_version = _profile_kernel_version(profile)
+        collected_at = _now()
         inventory_events.append(
             {
                 "type": "inventory",
@@ -194,6 +285,8 @@ def _simulate_environment(environment: str) -> None:
                 "hypervisor": vm["hypervisor"],
                 "memory_mb": vm["memory_mb"],
                 "disk_gb": vm["disk_gb"],
+                "kernel_version": kernel_version,
+                "collected_at": collected_at,
             }
         )
         summary.append(

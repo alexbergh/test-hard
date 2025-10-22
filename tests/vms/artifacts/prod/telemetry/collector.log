@@ -1,17 +1,17 @@
 hardening-collector
 --------------------
-timestamp=2025-10-21T21:00:15.966917+00:00
+timestamp=2025-10-22T09:22:57.111395+00:00
 vulnerability_total=3
 inventory_total=5
 unique_hosts=5
 severity_breakdown=high:3
 
 Последние события:
-vulnerability host=vm-redos73-prod package=None severity=high cve=None
-vulnerability host=vm-redos8-prod package=None severity=high cve=None
-vulnerability host=vm-altlinux8-prod package=None severity=high cve=None
-inventory host=vm-redos73-prod os=РедОС 7.3 kernel=None
-inventory host=vm-redos8-prod os=РедОС 8 kernel=None
-inventory host=vm-astralinux17-prod os=Astra Linux 1.7 kernel=None
-inventory host=vm-altlinux8-prod os=Альт 8 kernel=None
-inventory host=vm-centos7-prod os=CentOS 7 kernel=None
+vulnerability host=vm-redos73-prod package=pam severity=high cve=CVE-2024-3004
+vulnerability host=vm-redos8-prod package=auditd severity=high cve=CVE-2024-8003
+vulnerability host=vm-altlinux8-prod package=aide severity=high cve=CVE-2024-8005
+inventory host=vm-redos73-prod os=РедОС 7.3 kernel=3.10.0-1160.redos.7.x86_64
+inventory host=vm-redos8-prod os=РедОС 8 kernel=4.18.0-425.redos.8.x86_64
+inventory host=vm-astralinux17-prod os=Astra Linux 1.7 kernel=5.10.0-astora-1.7
+inventory host=vm-altlinux8-prod os=Альт 8 kernel=5.15.0-alt8
+inventory host=vm-centos7-prod os=CentOS 7 kernel=3.10.0-1160.el7.x86_64
