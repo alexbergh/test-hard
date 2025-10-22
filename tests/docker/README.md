@@ -22,6 +22,8 @@
 docker compose -f docker-compose.yml --profile openscap --profile telemetry --profile wazuh down
 ```
 
+> **Замена образа OpenSCAP.** При недоступности `quay.io` установите переменную перед запуском: `export OPENSCAP_IMAGE=deepsecurity/openscap-scan:latest`. Compose подставит её вместо значения по умолчанию (`quay.io/openscap/openscap:1.3.9`), поэтому можно использовать зеркала или локально загруженный образ (`OPENSCAP_IMAGE=myregistry.local/openscap:offline`). Не забудьте предварительно выполнить `docker pull`/`docker load`.
+
 Артефакты сохраняются в `tests/docker/artifacts` (игнорируются git). В режиме симуляции формируются JSON/текстовые логи для всех профилей, а также готовые заготовки:
 
 - `telemetry/hardening-dashboard.md` — Markdown-панель с визуализацией и ASCII-графиками по критичности.
