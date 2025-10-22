@@ -50,6 +50,15 @@ docker compose --profile openscap --profile telemetry --profile wazuh up -d
 docker compose --profile openscap --profile telemetry --profile wazuh down
 ```
 
+> **Совет.** Если доступ к `quay.io` ограничен (ошибка TLS handshake), задайте альтернативный образ перед запуском:
+> 
+> ```bash
+> export OPENSCAP_IMAGE=deepsecurity/openscap-scan:latest
+> docker compose --profile openscap --profile telemetry --profile wazuh up -d
+> ```
+> 
+> Compose подставит значение переменной вместо дефолтного `quay.io/openscap/openscap:1.3.9`. Можно указать собственный реестр или локальный образ (`OPENSCAP_IMAGE=localhost:5000/openscap:custom`) и предварительно выполнить `docker pull`/`docker load`.
+
 Если требуется одноразовый запуск сканера без фоновых сервисов, можно ограничиться профилем `openscap`. Скрипт `run.sh` в том же каталоге автоматически переключит систему в оффлайн-симуляцию, если Docker недоступен.
 
 ## Сценарии hardening
