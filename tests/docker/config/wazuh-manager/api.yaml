@@ -1,11 +1,12 @@
+# tests/docker/config/wazuh-manager/api.yaml
 hosts:
   - address: 0.0.0.0
     port: 55000
   - address: "::"
     port: 55000
+
 https:
   enabled: true
-  cert: server.crt
   key: server.key
+  cert: server.crt
   use_ca: false
-
