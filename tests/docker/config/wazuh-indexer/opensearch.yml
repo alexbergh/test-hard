@@ -2,4 +2,4 @@ cluster.name: "wazuh"
 node.name: "indexer01"
 network.host: 0.0.0.0
 discovery.type: single-node
-plugins.security.disabled: true
+# Security plugin remains enabled; TLS certificates are handled by the container entrypoint.
