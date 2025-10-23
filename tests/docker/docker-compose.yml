@@ -45,7 +45,7 @@ services:
   # OpenSCAP (profile: openscap)
   ##############################################################################
   openscap-runner:
-    image: deepsecurity/openscap-scan:1.2.77
+    image: deepsecurity/openscap-scan:1.2.83
     container_name: openscap-runner
     profiles: ["openscap"]
     pull_policy: if_not_present
