@@ -29,6 +29,10 @@
 > (её применяет и дашборд). При разворачивании в продуктиве замените self-signed сертификаты
 > и включите собственные политики безопасности.
 
+> **Секреты Wazuh.** Compose читает файл `.env` в каталоге `tests/docker` и передаёт значения
+> `WAZUH_INDEXER_PASSWORD` и `WAZUH_API_PASSWORD` во все сервисы Wazuh. Замените примеры из
+> репозитория на собственные пароли перед запуском контейнеров.
+
   При повреждённых томах Wazuh (ошибка `Installing /var/ossec/var/multigroups ... Exiting.`)
   удалите контейнер и связанные анонимные volumes: `docker compose rm -sfv wazuh-manager`
   и `docker volume prune`. После очистки запустите стек заново, начиная с `wazuh-indexer`.
