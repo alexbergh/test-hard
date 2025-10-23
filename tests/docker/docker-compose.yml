@@ -7,6 +7,7 @@
 #     node.name: "indexer01"
 #     network.host: 0.0.0.0
 #     discovery.type: single-node
+#     plugins.security.disabled: true
 #
 #   ./config/wazuh-manager/api.yaml
 #     host: 0.0.0.0
@@ -122,9 +123,6 @@ services:
     pull_policy: if_not_present
     restart: unless-stopped
     environment:
-      # ИСПРАВЛЕНИЕ: Эта переменная отключает плагин безопасности, который
-      # по умолчанию требует SSL-сертификаты и вызывает ошибку прав доступа.
-      # OPENSEARCH_SECURITY_DISABLED: "true"
       DISCOVERY_SEED_HOSTS: "127.0.0.1"
       NETWORK_HOST: "0.0.0.0"
       CLUSTER_NAME: "wazuh"
