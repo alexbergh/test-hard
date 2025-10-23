@@ -1,12 +1,12 @@
 # tests/docker/docker-compose.yml
 # Полный compose для профилей: openscap, telemetry, wazuh.
 # Требуются локальные файлы:
+#
 #   ./config/wazuh-indexer/opensearch.yml
 #     cluster.name: "wazuh"
 #     node.name: "indexer01"
 #     network.host: 0.0.0.0
 #     discovery.type: single-node
-#     plugins.security.disabled: true
 #
 #   ./config/wazuh-manager/api.yaml
 #     host: 0.0.0.0
@@ -122,6 +122,9 @@ services:
     pull_policy: if_not_present
     restart: unless-stopped
     environment:
+      # ИСПРАВЛЕНИЕ: Эта переменная отключает плагин безопасности, который
+      # по умолчанию требует SSL-сертификаты и вызывает ошибку прав доступа.
+      OPENSEARCH_SECURITY_DISABLED: "true"
       DISCOVERY_SEED_HOSTS: "127.0.0.1"
       NETWORK_HOST: "0.0.0.0"
       CLUSTER_NAME: "wazuh"
@@ -147,7 +150,7 @@ services:
       wazuh-indexer:
         condition: service_healthy
     environment:
-      INDEXER_URL: "http://wazuh-indexer:9200"  # security у Indexer отключён → HTTP
+      INDEXER_URL: "http://wazuh-indexer:9200"
       FILEBEAT_OUTPUT: "indexer"
       INDEXER_SSL_VERIFICATION: "false"
       API_USERNAME: "admin"
