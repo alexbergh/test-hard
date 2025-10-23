@@ -10,9 +10,8 @@
 
 ## Быстрый старт (Docker Compose)
 Каталог `docker/` содержит `docker-compose.yml`, поднимающий indexer, manager и dashboard с базовой конфигурацией.
-Стек закреплён на Wazuh 4.13.1 (manager/indexer/dashboard) с включённой безопасностью OpenSearch и HTTPS API.
-Пароли передаются через переменные `WAZUH_INDEXER_PASSWORD` и `WAZUH_API_PASSWORD`
-(можно задать в `.env` перед запуском или использовать значения по умолчанию из compose).
+Стек закреплён на Wazuh 4.13.1 (manager/indexer/dashboard) с отключённым security-плагином OpenSearch и HTTPS API менеджера.
+Индексер принимает подключения по HTTP без авторизации, а дашборд использует дефолтную пару `admin/admin`.
 ```bash
 cd docker
 docker compose up -d

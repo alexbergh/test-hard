@@ -6,6 +6,6 @@ hosts:
 
 https:
   enabled: true
-  cert: ssl/server.crt
-  key: ssl/server.key
+  cert: /var/ossec/api/configuration/ssl/server.crt
+  key: /var/ossec/api/configuration/ssl/server.key
   use_ca: false

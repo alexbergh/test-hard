@@ -33,7 +33,7 @@ cd environments/wazuh/docker
 docker compose up -d
 ```
 
-Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Стандартные логины/пароли задаются переменными окружения в `docker-compose.yml` (можно переопределить через `.env`). Перед продовым запуском измените значения по умолчанию `SecretPassword123!`/`AnotherSecretPassword456!` и при необходимости подправьте `config/manager/ossec.conf`.
+Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Индексер слушает HTTP без авторизации, менеджер предоставляет HTTPS API (сертификаты лежат в `config/manager/api/ssl/`), а в дашборд можно войти под `admin/admin`. Перед продовым запуском обновите self-signed сертификаты и включите нужные политики безопасности.
 
 ### Полный тестовый стенд (все профили)
 

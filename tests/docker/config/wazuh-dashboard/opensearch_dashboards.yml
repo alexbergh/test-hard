@@ -2,4 +2,3 @@ server.host: "0.0.0.0"
 server.name: "wazuh-dashboard"
 opensearch.hosts: ["https://wazuh-indexer:9200"]
 opensearch.ssl.verificationMode: none
-# Authentication parameters are injected via environment variables in docker-compose.
