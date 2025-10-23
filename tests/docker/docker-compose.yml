@@ -7,16 +7,23 @@
 #     node.name: "indexer01"
 #     network.host: 0.0.0.0
 #     discovery.type: single-node
+#     plugins.security.disabled: true
 #
 #   ./config/wazuh-manager/api.yaml
-#     host: 0.0.0.0
+#     host: ['0.0.0.0', '::']
 #     port: 55000
-#     https: true
-#     ssl:
-#       certificate: /var/ossec/api/configuration/ssl/server.crt
+#     https:
+#       enabled: true
+#       cert: /var/ossec/api/configuration/ssl/server.crt
 #       key: /var/ossec/api/configuration/ssl/server.key
+#       use_ca: false
 #
-#   ./config/telegraf/telegraf.conf (минимальный рабочий конфиг Telegraf)
+#   ./config/wazuh-manager/ssl/server.crt и ./config/wazuh-manager/ssl/server.key
+#     self-signed сертификат и ключ для HTTPS API (можно заменить своими).
+#
+#   ./config/telegraf/telegraf.conf (минимальный рабочий конфиг Telegraf — файл
+#   должен существовать внутри каталога ./config/telegraf, который монтируется
+#   в контейнер)
 #     [agent]
 #       interval = "10s"
 #     [[outputs.influxdb_v2]]
@@ -27,6 +34,12 @@
 #     [[inputs.cpu]] percpu=true; totalcpu=true
 #     [[inputs.mem]]
 #     [[inputs.net]]
+#
+#   ./config/wazuh-dashboard/opensearch_dashboards.yml
+#     server.host: "0.0.0.0"
+#     server.name: "wazuh-dashboard"
+#     opensearch.hosts: ["http://wazuh-indexer:9200"]
+#     opensearch.ssl.verificationMode: none
 
 services:
   ##############################################################################
@@ -83,7 +96,7 @@ services:
       influxdb:
         condition: service_healthy
     volumes:
-      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./config/telegraf:/etc/telegraf:ro
     healthcheck:
       test: ["CMD-SHELL", "telegraf --version >/dev/null 2>&1"]
       interval: 30s
@@ -122,9 +135,6 @@ services:
     pull_policy: if_not_present
     restart: unless-stopped
     environment:
-      # ИСПРАВЛЕНИЕ: Эта переменная отключает плагин безопасности, который
-      # по умолчанию требует SSL-сертификаты и вызывает ошибку прав доступа.
-      # OPENSEARCH_SECURITY_DISABLED: "true"
       DISCOVERY_SEED_HOSTS: "127.0.0.1"
       NETWORK_HOST: "0.0.0.0"
       CLUSTER_NAME: "wazuh"
@@ -157,12 +167,13 @@ services:
       API_PASSWORD: "SecretPassword!"
     volumes:
       - ./config/wazuh-manager/api.yaml:/var/ossec/api/configuration/api.yaml:ro
+      - ./config/wazuh-manager/ssl:/var/ossec/api/configuration/ssl:ro
     ports:
       - "1514:1514/udp"
       - "1515:1515"
       - "55000:55000"
     healthcheck:
-      test: ["CMD-SHELL", "curl -skf https://localhost:55000 >/dev/null || ss -ltn | grep -q ':1515'"]
+      test: ["CMD-SHELL", "curl -fsSk https://localhost:55000 >/dev/null || curl -fsS http://localhost:55000 >/dev/null || ss -ltn | grep -q ':1515'"]
       interval: 15s
       timeout: 5s
       retries: 40
@@ -180,8 +191,11 @@ services:
         condition: service_healthy
     environment:
       OPENSEARCH_HOSTS: '["http://wazuh-indexer:9200"]'
+      PATH: "/usr/share/wazuh-dashboard/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     ports:
       - "5601:5601"
+    volumes:
+      - ./config/wazuh-dashboard:/usr/share/wazuh-dashboard/config:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q available"]
       interval: 15s

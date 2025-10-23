@@ -7,6 +7,25 @@
 - `kuma-mock` эмулирует приёмник KUMA и сохраняет батчи телеметрии для последующего анализа.
 - `osquery-simulator` периодически отправляет события на Telegraf по HTTP и UDP.
 - `wazuh-*` поднимают менеджер, индексатор и дашборд Wazuh вместе с агентом, который регистрируется автоматически.
+  В веб-интерфейс Wazuh входите под `admin / SecretPassword!`. Для сброса пароля используйте
+  контейнерный скрипт: `docker exec -it wazuh-dashboard \
+  /usr/share/wazuh-dashboard/node/bin/node /usr/share/wazuh-dashboard/wazuh-reset-password.js admin`.
+  API менеджера по умолчанию слушает HTTPS на порту 55000 и конфигурируется через файл
+  `config/wazuh-manager/api.yaml`, который должен использовать схему Wazuh 4.13: поле
+  `host` — это список адресов (по умолчанию `['0.0.0.0', '::']`), `port` задаёт порт
+  прослушивания, а блок `https` содержит абсолютные пути к сертификатам
+  (`/var/ossec/api/configuration/ssl/server.crt` и
+  `/var/ossec/api/configuration/ssl/server.key`). В репозитории
+  лежит готовый self-signed сертификат в `config/wazuh-manager/ssl/server.crt`
+  (закрытый ключ — `server.key`). При необходимости сгенерируйте новые файлы собственной CA
+  и сохраните их в том же каталоге, чтобы compose-маунт автоматически подхватил их внутри
+  контейнера. Чтобы перейти на HTTP, оставьте `host: ['0.0.0.0']` и выставьте
+  `https.enabled: false`; маунт каталога `ssl/` можно убрать или заменить на собственные
+  файлы по необходимости.
+
+  При повреждённых томах Wazuh (ошибка `Installing /var/ossec/var/multigroups ... Exiting.`)
+  удалите контейнер и связанные анонимные volumes: `docker compose rm -sfv wazuh-manager`
+  и `docker volume prune`. После очистки запустите стек заново, начиная с `wazuh-indexer`.
 
 Перед запуском убедитесь, что Docker Engine поддерживает Compose V2 (`docker compose`). Если Docker недоступен (например, в CI),
 скрипт `run.sh` автоматически переключится на оффлайн-симуляцию, подготовит базу ФСТЭК через `prepare_fstec_content.py` и сгенерирует примерные отчёты в каталоге `artifacts/`. Учебный архив `scanoval.zip` формируется на лету утилитой `tests/tools/create_sample_fstec_archive.py`, поэтому бинарные файлы не хранятся в репозитории.
