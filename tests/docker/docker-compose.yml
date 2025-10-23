@@ -17,7 +17,9 @@
 #       certificate: /var/ossec/api/configuration/ssl/server.crt
 #       key: /var/ossec/api/configuration/ssl/server.key
 #
-#   ./config/telegraf/telegraf.conf (минимальный рабочий конфиг Telegraf)
+#   ./config/telegraf/telegraf.conf (минимальный рабочий конфиг Telegraf — файл
+#   должен существовать внутри каталога ./config/telegraf, который монтируется
+#   в контейнер)
 #     [agent]
 #       interval = "10s"
 #     [[outputs.influxdb_v2]]
@@ -84,7 +86,7 @@ services:
       influxdb:
         condition: service_healthy
     volumes:
-      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./config/telegraf:/etc/telegraf:ro
     healthcheck:
       test: ["CMD-SHELL", "telegraf --version >/dev/null 2>&1"]
       interval: 30s
