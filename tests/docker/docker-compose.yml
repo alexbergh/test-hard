@@ -132,7 +132,7 @@ services:
   # Wazuh stack (profile: wazuh)
   ##############################################################################
   wazuh-indexer:
-    image: wazuh/wazuh-indexer:4.14.0
+    image: wazuh/wazuh-indexer:4.7.4
     container_name: wazuh-indexer
     profiles: ["wazuh"]
     pull_policy: if_not_present
@@ -182,7 +182,7 @@ services:
       retries: 40
 
   wazuh-dashboard:
-    image: wazuh/wazuh-dashboard:4.14.0
+    image: wazuh/wazuh-dashboard:4.7.4
     container_name: wazuh-dashboard
     profiles: ["wazuh"]
     pull_policy: if_not_present
@@ -206,7 +206,7 @@ services:
       retries: 40
 
   wazuh-agent:
-    image: wazuh/wazuh-agent:4.14.0
+    image: wazuh/wazuh-agent:4.7.4
     container_name: wazuh-agent
     profiles: ["wazuh"]
     pull_policy: if_not_present
