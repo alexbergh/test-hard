@@ -124,14 +124,14 @@ services:
     environment:
       # ИСПРАВЛЕНИЕ: Эта переменная отключает плагин безопасности, который
       # по умолчанию требует SSL-сертификаты и вызывает ошибку прав доступа.
-      OPENSEARCH_SECURITY_DISABLED: "true"
+      # OPENSEARCH_SECURITY_DISABLED: "true"
       DISCOVERY_SEED_HOSTS: "127.0.0.1"
       NETWORK_HOST: "0.0.0.0"
       CLUSTER_NAME: "wazuh"
       NODE_NAME: "indexer01"
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     volumes:
-      - ./config/wazuh-indexer/opensearch.yml:/etc/wazuh-indexer/opensearch.yml:ro
+      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
     ports:
       - "9200:9200"
     healthcheck:
