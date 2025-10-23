@@ -7,6 +7,12 @@
 - `kuma-mock` эмулирует приёмник KUMA и сохраняет батчи телеметрии для последующего анализа.
 - `osquery-simulator` периодически отправляет события на Telegraf по HTTP и UDP.
 - `wazuh-*` поднимают менеджер, индексатор и дашборд Wazuh вместе с агентом, который регистрируется автоматически.
+  В веб-интерфейс Wazuh входите под `admin / SecretPassword!`. Для сброса пароля используйте
+  контейнерный скрипт: `docker exec -it wazuh-dashboard \
+  /usr/share/wazuh-dashboard/node/bin/node /usr/share/wazuh-dashboard/wazuh-reset-password.js admin`.
+  API менеджера по умолчанию слушает HTTP на порту 55000. Чтобы включить HTTPS, в файле
+  `config/wazuh-manager/api.yaml` переведите `https.enabled` в `true` и убедитесь, что смонтированы
+  сертификаты по путям `https.cert` и `https.key`.
 
 Перед запуском убедитесь, что Docker Engine поддерживает Compose V2 (`docker compose`). Если Docker недоступен (например, в CI),
 скрипт `run.sh` автоматически переключится на оффлайн-симуляцию, подготовит базу ФСТЭК через `prepare_fstec_content.py` и сгенерирует примерные отчёты в каталоге `artifacts/`. Учебный архив `scanoval.zip` формируется на лету утилитой `tests/tools/create_sample_fstec_archive.py`, поэтому бинарные файлы не хранятся в репозитории.

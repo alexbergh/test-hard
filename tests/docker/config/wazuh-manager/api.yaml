@@ -1,0 +1,7 @@
+host: 0.0.0.0
+port: 55000
+https:
+  enabled: false
+  cert: /var/ossec/api/configuration/ssl/server.crt
+  key: /var/ossec/api/configuration/ssl/server.key
+
