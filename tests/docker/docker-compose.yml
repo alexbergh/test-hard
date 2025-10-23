@@ -20,6 +20,9 @@
 #       key: /var/ossec/api/configuration/ssl/server.key
 #       use_ca: false
 #
+#   ./config/wazuh-manager/ssl/server.crt и ./config/wazuh-manager/ssl/server.key
+#     self-signed сертификат и ключ для HTTPS API (можно заменить своими).
+#
 #   ./config/telegraf/telegraf.conf (минимальный рабочий конфиг Telegraf — файл
 #   должен существовать внутри каталога ./config/telegraf, который монтируется
 #   в контейнер)
@@ -166,6 +169,7 @@ services:
       API_PASSWORD: "SecretPassword!"
     volumes:
       - ./config/wazuh-manager/api.yaml:/var/ossec/api/configuration/api.yaml:ro
+      - ./config/wazuh-manager/ssl:/var/ossec/api/configuration/ssl:ro
     ports:
       - "1514:1514/udp"
       - "1515:1515"
