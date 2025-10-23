@@ -7,31 +7,28 @@
 - `kuma-mock` эмулирует приёмник KUMA и сохраняет батчи телеметрии для последующего анализа.
 - `osquery-simulator` периодически отправляет события на Telegraf по HTTP и UDP.
 - `wazuh-*` поднимают менеджер, индексатор и дашборд Wazuh вместе с агентом, который
-  регистрируется автоматически. В веб-интерфейс Wazuh входите под `admin/admin`
-  (дефолтная пара от образа). При необходимости смените пароль через встроенный скрипт:
-  `docker exec -it wazuh-dashboard \
+  регистрируется автоматически. Все сервисы читают пароли из `.env` в корне каталога
+  (`WAZUH_INDEXER_PASSWORD` для OpenSearch и `WAZUH_API_PASSWORD` для API менеджера).
+  По умолчанию используются значения из репозитория, но перед продуктивным запуском
+  замените их на уникальные. Дашборд слушает HTTPS на `https://localhost:443` и требует
+  пару `admin/<WAZUH_API_PASSWORD>` из `.env`. При необходимости пароль можно сменить
+  через встроенный скрипт: `docker exec -it wazuh-dashboard \
   /usr/share/wazuh-dashboard/node/bin/node \
   /usr/share/wazuh-dashboard/wazuh-reset-password.js admin`.
   API менеджера по умолчанию слушает HTTPS на порту 55000 и конфигурируется через файл
-  `config/wazuh-manager/api.yaml`, который должен использовать схему Wazuh 4.13: поле
-  `hosts` — это список адресов (по умолчанию `[{'address': '0.0.0.0', 'port': 55000}]`),
-  а блок `https` содержит абсолютные пути к сертификатам (`/var/ossec/api/configuration/ssl/server.crt`
-  и `/var/ossec/api/configuration/ssl/server.key`). В репозитории лежит готовый self-signed
-  сертификат в `config/wazuh-manager/ssl/server.crt` (закрытый ключ — `server.key`). При
-  необходимости сгенерируйте новые файлы собственной CA и сохраните их в том же каталоге,
-  чтобы compose-маунт автоматически подхватил их внутри контейнера. Чтобы перейти на HTTP,
-  оставьте `hosts[0].address: '0.0.0.0'` и `https.enabled: false`; маунт каталога `ssl/`
-  можно убрать или заменить на собственные файлы по необходимости.
+  `config/wazuh-manager/api.yaml`, который должен использовать схему Wazuh 4.13: раздел
+  `hosts` — это список адресов (по умолчанию `0.0.0.0` и `::` на порту 55000), а блок
+  `https` содержит пути к self-signed сертификатам (`ssl/server.crt` и `ssl/server.key`).
+  Файлы уже лежат в репозитории; при замене сертификатов достаточно перезаписать содержимое
+  каталога `config/wazuh-manager/ssl/`.
 
-> **Секреты Wazuh.** Безопасность OpenSearch отключена (`plugins.security.disabled: true` в
-> `config/wazuh-indexer/opensearch.yml`), поэтому дашборд соединяется с индексером без
-> авторизации. API менеджера использует преднастроенную учётную запись `wazuh-wui/wazuh-wui`
-> (её применяет и дашборд). При разворачивании в продуктиве замените self-signed сертификаты
-> и включите собственные политики безопасности.
-
-> **Секреты Wazuh.** Compose читает файл `.env` в каталоге `tests/docker` и передаёт значения
-> `WAZUH_INDEXER_PASSWORD` и `WAZUH_API_PASSWORD` во все сервисы Wazuh. Замените примеры из
-> репозитория на собственные пароли перед запуском контейнеров.
+> **Секреты Wazuh.** OpenSearch запускается с включённым security-плагином и проверкой TLS.
+> Файл `config/wazuh-indexer/opensearch.yml` переопределяет конфигурацию по умолчанию и
+> добавляет политику Java Security (`opensearch.security.manager.java.policy`), чтобы
+> процесс индексера мог читать сгенерированные сертификаты в `/etc/wazuh-indexer/certs/`.
+> Менеджер и дашборд подключаются к индексеру по HTTPS с логином `admin` и паролем из `.env`.
+> Если требуется доверять собственному центру сертификации, замените стандартные сертификаты
+> внутри контейнеров (см. официальную инструкцию Wazuh по `wazuh-cert-tool`).
 
   При повреждённых томах Wazuh (ошибка `Installing /var/ossec/var/multigroups ... Exiting.`)
   удалите контейнер и связанные анонимные volumes: `docker compose rm -sfv wazuh-manager`

@@ -33,7 +33,7 @@ cd environments/wazuh/docker
 docker compose up -d
 ```
 
-Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Индексер слушает HTTP без авторизации, менеджер предоставляет HTTPS API (сертификаты лежат в `config/manager/api/ssl/`), а в дашборд можно войти под `admin/admin`. Перед продовым запуском обновите self-signed сертификаты и включите нужные политики безопасности.
+Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Индексер принимает только HTTPS-подключения с логином `admin` и паролем из `.env`, менеджер предоставляет HTTPS API (сертификаты лежат в `config/manager/api/ssl/`), а в дашборд вход осуществляется по адресу `https://localhost:443` той же парой `admin/<WAZUH_API_PASSWORD>`. Перед продуктивным запуском обновите `.env` и замените self-signed сертификаты.
 
 ### Полный тестовый стенд (все профили)
 

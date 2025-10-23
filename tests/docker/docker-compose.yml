@@ -130,12 +130,14 @@ services:
     restart: unless-stopped
     environment:
       - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - DISABLE_SECURITY_PLUGIN=false
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/config/opensearch.yml:ro
     ports:
       - "9200:9200"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?pretty >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS --cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty >/dev/null"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -150,9 +152,15 @@ services:
       wazuh-indexer:
         condition: service_healthy
     environment:
-      - INDEXER_URL=http://wazuh-indexer:9200
-      - FILEBEAT_OUTPUT=indexer
-      - INDEXER_SSL_VERIFICATION=false
+      WAZUH_INDEXER_URL: https://wazuh-indexer:9200
+      WAZUH_INDEXER_USER: admin
+      WAZUH_INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD}
+      WAZUH_API_USER: admin
+      WAZUH_API_PASSWORD: ${WAZUH_API_PASSWORD}
+      INDEXER_URL: https://wazuh-indexer:9200
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD}
+      INDEXER_SSL_VERIFICATION: "false"
     volumes:
       - ./config/wazuh-manager:/var/ossec/api/configuration:ro
     ports:
@@ -160,7 +168,7 @@ services:
       - "1515:1515"
       - "55000:55000"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsSk -u wazuh-wui:wazuh-wui https://localhost:55000/manager/status >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_API_PASSWORD} https://localhost:55000/manager/status >/dev/null"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -177,9 +185,20 @@ services:
       wazuh-manager:
         condition: service_healthy
     ports:
-      - "5601:5601"
+      - "443:5601"
+    environment:
+      OPENSEARCH_HOSTS: '["https://wazuh-indexer:9200"]'
+      OPENSEARCH_USERNAME: admin
+      OPENSEARCH_PASSWORD: ${WAZUH_INDEXER_PASSWORD}
+      OPENSEARCH_DASHBOARDS_USERNAME: admin
+      OPENSEARCH_DASHBOARDS_PASSWORD: ${WAZUH_API_PASSWORD}
+      WAZUH_API_URL: https://wazuh-manager:55000
+      API_USERNAME: admin
+      API_PASSWORD: ${WAZUH_API_PASSWORD}
+    volumes:
+      - ./config/wazuh-dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q available"]
+      test: ["CMD-SHELL", "curl -fsSk https://localhost:5601/api/status | grep -q available"]
       interval: 30s
       timeout: 10s
       retries: 5
