@@ -33,7 +33,7 @@ cd environments/wazuh/docker
 docker compose up -d
 ```
 
-Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Стандартные логины/пароли задаются переменными окружения в `docker-compose.yml`; при первом запуске измените значения `changeme`/`SecretPassword` и при необходимости подправьте `config/manager/ossec.conf`.
+Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Индексер принимает только HTTPS-подключения с логином `admin` и паролем из `.env`, менеджер предоставляет HTTPS API (сертификаты лежат в `config/manager/api/ssl/`), а в дашборд вход осуществляется по адресу `https://localhost:443` той же парой `admin/<WAZUH_API_PASSWORD>`. Перед продуктивным запуском обновите `.env` и замените self-signed сертификаты.
 
 ### Полный тестовый стенд (все профили)
 
@@ -59,10 +59,10 @@ docker compose --profile openscap --profile telemetry --profile wazuh down
 > 
 > Compose подставит значение переменной вместо дефолтного `quay.io/openscap/openscap:1.3.9`. Можно указать собственный реестр или локальный образ (`OPENSCAP_IMAGE=localhost:5000/openscap:custom`) и предварительно выполнить `docker pull`/`docker load`.
 
-> **Пинning версии Wazuh.** Образы `wazuh/wazuh-*` в агрегированном Compose по умолчанию используют тег `4.7.1`, потому что более новые сборки (например, `4.7.2`) не публиковались для агента. Если вам нужна другая версия или зеркало, задайте переменные перед запуском:
+> **Пинning версии Wazuh.** Образы `wazuh/wazuh-*` в агрегированном Compose и окружении `environments/wazuh` по умолчанию используют тег `4.13.1`. Если вам нужна другая версия или зеркало, задайте переменные перед запуском:
 >
 > ```bash
-> export WAZUH_VERSION=4.7.1        # или 4.7.3, если все образы есть в реестре
+> export WAZUH_VERSION=4.13.1        # укажите другой тег при наличии альтернативной сборки
 > export WAZUH_IMAGE_REGISTRY=wazuh # по умолчанию, можно указать registry.example.com/wazuh
 > docker compose --profile openscap --profile telemetry --profile wazuh up -d
 > ```

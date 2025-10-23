@@ -2,23 +2,14 @@
 # Полный compose для профилей: openscap, telemetry, wazuh.
 # Требуются локальные файлы:
 #
-#   ./config/wazuh-indexer/opensearch.yml
-#     cluster.name: "wazuh"
-#     node.name: "indexer01"
-#     network.host: 0.0.0.0
-#     discovery.type: single-node
-#     plugins.security.disabled: true
-#
 #   ./config/wazuh-manager/api.yaml
 #     hosts:
 #       - address: 0.0.0.0
 #         port: 55000
-#       - address: "::"
-#         port: 55000
 #     https:
 #       enabled: true
-#       cert: server.crt
-#       key: server.key
+#       cert: /var/ossec/api/configuration/ssl/server.crt
+#       key: /var/ossec/api/configuration/ssl/server.key
 #       use_ca: false
 #
 #   ./config/wazuh-manager/ssl/server.crt и ./config/wazuh-manager/ssl/server.key
@@ -134,40 +125,40 @@ services:
   wazuh-indexer:
     image: wazuh/wazuh-indexer:4.13.1
     container_name: wazuh-indexer
-    profiles: ["wazuh"]
     pull_policy: if_not_present
     restart: unless-stopped
     environment:
-      DISCOVERY_SEED_HOSTS: "127.0.0.1"
-      NETWORK_HOST: "0.0.0.0"
-      CLUSTER_NAME: "wazuh"
-      NODE_NAME: "indexer01"
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - DISABLE_SECURITY_PLUGIN=false
     volumes:
-      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/config/opensearch.yml:ro
     ports:
       - "9200:9200"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null"]
-      interval: 15s
-      timeout: 5s
-      retries: 40
+      test: ["CMD-SHELL", "curl -fsS --cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty >/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   wazuh-manager:
     image: wazuh/wazuh-manager:4.13.1
     container_name: wazuh-manager
-    profiles: ["wazuh"]
     pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
       wazuh-indexer:
         condition: service_healthy
     environment:
-      INDEXER_URL: "http://wazuh-indexer:9200"
-      FILEBEAT_OUTPUT: "indexer"
+      WAZUH_INDEXER_URL: https://wazuh-indexer:9200
+      WAZUH_INDEXER_USER: admin
+      WAZUH_INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD}
+      WAZUH_API_USER: admin
+      WAZUH_API_PASSWORD: ${WAZUH_API_PASSWORD}
+      INDEXER_URL: https://wazuh-indexer:9200
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD}
       INDEXER_SSL_VERIFICATION: "false"
-      API_USERNAME: "admin"
-      API_PASSWORD: "SecretPassword!"
     volumes:
       - ./config/wazuh-manager:/var/ossec/api/configuration:ro
     ports:
@@ -175,15 +166,14 @@ services:
       - "1515:1515"
       - "55000:55000"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsSk https://localhost:55000 >/dev/null || curl -fsS http://localhost:55000 >/dev/null || ss -ltn | grep -q ':1515'"]
-      interval: 15s
-      timeout: 5s
-      retries: 40
+      test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_API_PASSWORD} https://localhost:55000/manager/status >/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   wazuh-dashboard:
     image: wazuh/wazuh-dashboard:4.13.1
     container_name: wazuh-dashboard
-    profiles: ["wazuh"]
     pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
@@ -191,18 +181,24 @@ services:
         condition: service_healthy
       wazuh-manager:
         condition: service_healthy
-    environment:
-      OPENSEARCH_HOSTS: '["http://wazuh-indexer:9200"]'
-      PATH: "/usr/share/wazuh-dashboard/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     ports:
-      - "5601:5601"
+      - "443:5601"
+    environment:
+      OPENSEARCH_HOSTS: '["https://wazuh-indexer:9200"]'
+      OPENSEARCH_USERNAME: admin
+      OPENSEARCH_PASSWORD: ${WAZUH_INDEXER_PASSWORD}
+      OPENSEARCH_DASHBOARDS_USERNAME: admin
+      OPENSEARCH_DASHBOARDS_PASSWORD: ${WAZUH_API_PASSWORD}
+      WAZUH_API_URL: https://wazuh-manager:55000
+      API_USERNAME: admin
+      API_PASSWORD: ${WAZUH_API_PASSWORD}
     volumes:
-      - ./config/wazuh-dashboard:/usr/share/wazuh-dashboard/config:ro
+      - ./config/wazuh-dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q available"]
-      interval: 15s
-      timeout: 5s
-      retries: 40
+      test: ["CMD-SHELL", "curl -fsSk https://localhost:5601/api/status | grep -q available"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   wazuh-agent:
     image: wazuh/wazuh-agent:4.13.1
@@ -225,3 +221,4 @@ services:
 volumes:
   influxdb-data:
   grafana-data:
+  wazuh-indexer-data:
