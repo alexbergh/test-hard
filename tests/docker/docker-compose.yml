@@ -154,7 +154,7 @@ services:
       retries: 40
 
   wazuh-manager:
-    image: wazuh/wazuh-manager:4.14.0
+    image: wazuh/wazuh-manager:4.7.4
     container_name: wazuh-manager
     profiles: ["wazuh"]
     pull_policy: if_not_present
