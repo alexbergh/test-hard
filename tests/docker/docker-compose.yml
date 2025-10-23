@@ -30,6 +30,12 @@
 #     [[inputs.cpu]] percpu=true; totalcpu=true
 #     [[inputs.mem]]
 #     [[inputs.net]]
+#
+#   ./config/wazuh-dashboard/opensearch_dashboards.yml
+#     server.host: "0.0.0.0"
+#     server.name: "wazuh-dashboard"
+#     opensearch.hosts: ["http://wazuh-indexer:9200"]
+#     opensearch.ssl.verificationMode: none
 
 services:
   ##############################################################################
@@ -182,6 +188,8 @@ services:
       OPENSEARCH_HOSTS: '["http://wazuh-indexer:9200"]'
     ports:
       - "5601:5601"
+    volumes:
+      - ./config/wazuh-dashboard:/usr/share/wazuh-dashboard/config:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q available"]
       interval: 15s
