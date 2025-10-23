@@ -3,7 +3,6 @@ hosts:
     port: 55000
   - address: "::"
     port: 55000
-
 https:
   enabled: true
   cert: ssl/server.crt
