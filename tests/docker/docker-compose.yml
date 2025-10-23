@@ -7,6 +7,7 @@
 #     node.name: "indexer01"
 #     network.host: 0.0.0.0
 #     discovery.type: single-node
+#     plugins.security.disabled: true
 #
 #   ./config/wazuh-manager/api.yaml
 #     host: 0.0.0.0
@@ -16,7 +17,9 @@
 #       certificate: /var/ossec/api/configuration/ssl/server.crt
 #       key: /var/ossec/api/configuration/ssl/server.key
 #
-#   ./config/telegraf/telegraf.conf (минимальный рабочий конфиг Telegraf)
+#   ./config/telegraf/telegraf.conf (минимальный рабочий конфиг Telegraf — файл
+#   должен существовать внутри каталога ./config/telegraf, который монтируется
+#   в контейнер)
 #     [agent]
 #       interval = "10s"
 #     [[outputs.influxdb_v2]]
@@ -27,6 +30,12 @@
 #     [[inputs.cpu]] percpu=true; totalcpu=true
 #     [[inputs.mem]]
 #     [[inputs.net]]
+#
+#   ./config/wazuh-dashboard/opensearch_dashboards.yml
+#     server.host: "0.0.0.0"
+#     server.name: "wazuh-dashboard"
+#     opensearch.hosts: ["http://wazuh-indexer:9200"]
+#     opensearch.ssl.verificationMode: none
 
 services:
   ##############################################################################
@@ -83,7 +92,7 @@ services:
       influxdb:
         condition: service_healthy
     volumes:
-      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./config/telegraf:/etc/telegraf:ro
     healthcheck:
       test: ["CMD-SHELL", "telegraf --version >/dev/null 2>&1"]
       interval: 30s
@@ -122,9 +131,6 @@ services:
     pull_policy: if_not_present
     restart: unless-stopped
     environment:
-      # ИСПРАВЛЕНИЕ: Эта переменная отключает плагин безопасности, который
-      # по умолчанию требует SSL-сертификаты и вызывает ошибку прав доступа.
-      # OPENSEARCH_SECURITY_DISABLED: "true"
       DISCOVERY_SEED_HOSTS: "127.0.0.1"
       NETWORK_HOST: "0.0.0.0"
       CLUSTER_NAME: "wazuh"
@@ -182,6 +188,8 @@ services:
       OPENSEARCH_HOSTS: '["http://wazuh-indexer:9200"]'
     ports:
       - "5601:5601"
+    volumes:
+      - ./config/wazuh-dashboard:/usr/share/wazuh-dashboard/config:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status | grep -q available"]
       interval: 15s
