@@ -169,8 +169,7 @@ services:
       API_USERNAME: "admin"
       API_PASSWORD: "SecretPassword!"
     volumes:
-      - ./config/wazuh-manager/api.yaml:/var/ossec/api/configuration/api.yaml:ro
-      - ./config/wazuh-manager/ssl:/var/ossec/api/configuration/ssl:ro
+      - ./config/wazuh-manager:/var/ossec/api/configuration:ro
     ports:
       - "1514:1514/udp"
       - "1515:1515"
