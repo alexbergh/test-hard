@@ -2,6 +2,3 @@ server.host: "0.0.0.0"
 server.name: "wazuh-dashboard"
 opensearch.hosts: ["http://wazuh-indexer:9200"]
 opensearch.ssl.verificationMode: none
-# To enable authentication against a secured indexer, uncomment and set credentials:
-# opensearch.username: "admin"
-# opensearch.password: "SecretPassword!"

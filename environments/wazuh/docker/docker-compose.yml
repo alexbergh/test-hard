@@ -1,12 +1,11 @@
 version: "3.9"
 services:
   wazuh-indexer:
-    image: wazuh/wazuh-indexer:4.7.2
+    image: wazuh/wazuh-indexer:4.13.1
     hostname: wazuh-indexer
     restart: unless-stopped
     environment:
-      - bootstrap.password=changeme
-      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
     ulimits:
       nofile:
         soft: 65536
@@ -15,13 +14,18 @@ services:
       - "9200:9200"
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - ./config/indexer/opensearch.yml:/usr/share/wazuh-indexer/config/opensearch.yml:ro
 
   wazuh-manager:
-    image: wazuh/wazuh-manager:4.7.2
+    image: wazuh/wazuh-manager:4.13.1
     hostname: wazuh-manager
     restart: unless-stopped
     depends_on:
       - wazuh-indexer
+    environment:
+      - INDEXER_URL=http://wazuh-indexer:9200
+      - FILEBEAT_OUTPUT=indexer
+      - INDEXER_SSL_VERIFICATION=false
     ports:
       - "1514:1514/udp"
       - "1515:1515"
@@ -29,22 +33,19 @@ services:
     volumes:
       - wazuh-manager-data:/var/ossec/data
       - ./config/manager/ossec.conf:/var/ossec/etc/ossec.conf:ro
+      - ./config/manager/api:/var/ossec/api/configuration:ro
 
   wazuh-dashboard:
-    image: wazuh/wazuh-dashboard:4.7.2
+    image: wazuh/wazuh-dashboard:4.13.1
     hostname: wazuh-dashboard
     restart: unless-stopped
     depends_on:
       - wazuh-manager
       - wazuh-indexer
-    environment:
-      - DASHBOARD_USERNAME=admin
-      - DASHBOARD_PASSWORD=changeme
-      - WAZUH_API_URL=https://wazuh-manager:55000
-      - WAZUH_API_USER=wazuh-wui
-      - WAZUH_API_PASSWORD=SecretPassword
     ports:
       - "5601:5601"
+    volumes:
+      - ./config/dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
 
 volumes:
   wazuh-indexer-data:
