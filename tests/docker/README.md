@@ -11,12 +11,17 @@
   контейнерный скрипт: `docker exec -it wazuh-dashboard \
   /usr/share/wazuh-dashboard/node/bin/node /usr/share/wazuh-dashboard/wazuh-reset-password.js admin`.
   API менеджера по умолчанию слушает HTTPS на порту 55000 и конфигурируется через файл
-  `config/wazuh-manager/api.yaml`, который должен использовать схему Wazuh 4.13: список `hosts`
-  с протоколами (`protocols: [https]`) и секцию `https` с путями к сертификатам. В репозитории
-  лежит готовый self-signed сертификат в `config/wazuh-manager/ssl/server.crt` (закрытый ключ
-  — `server.key`). При необходимости сгенерируйте новые файлы собственной CA и сохраните их в
-  том же каталоге, чтобы compose-маунт автоматически подхватил их внутри контейнера.
-  Чтобы перейти на HTTP, измените протокол на `http` и выставьте `https.enabled: false`.
+  `config/wazuh-manager/api.yaml`, который должен использовать схему Wazuh 4.13: поле
+  `host` — это список адресов (по умолчанию `['0.0.0.0', '::']`), `port` задаёт порт
+  прослушивания, а блок `https` содержит абсолютные пути к сертификатам
+  (`/var/ossec/api/configuration/ssl/server.crt` и
+  `/var/ossec/api/configuration/ssl/server.key`). В репозитории
+  лежит готовый self-signed сертификат в `config/wazuh-manager/ssl/server.crt`
+  (закрытый ключ — `server.key`). При необходимости сгенерируйте новые файлы собственной CA
+  и сохраните их в том же каталоге, чтобы compose-маунт автоматически подхватил их внутри
+  контейнера. Чтобы перейти на HTTP, оставьте `host: ['0.0.0.0']` и выставьте
+  `https.enabled: false`; маунт каталога `ssl/` можно убрать или заменить на собственные
+  файлы по необходимости.
 
   При повреждённых томах Wazuh (ошибка `Installing /var/ossec/var/multigroups ... Exiting.`)
   удалите контейнер и связанные анонимные volumes: `docker compose rm -sfv wazuh-manager`
