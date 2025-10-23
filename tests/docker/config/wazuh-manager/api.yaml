@@ -1,7 +1,10 @@
-host: 0.0.0.0
-port: 55000
+hosts:
+  - address: 0.0.0.0
+    port: 55000
+    protocols: [https]
 https:
-  enabled: false
+  enabled: true
   cert: /var/ossec/api/configuration/ssl/server.crt
   key: /var/ossec/api/configuration/ssl/server.key
+  use_ca: false
 

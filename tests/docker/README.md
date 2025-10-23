@@ -10,9 +10,10 @@
   В веб-интерфейс Wazuh входите под `admin / SecretPassword!`. Для сброса пароля используйте
   контейнерный скрипт: `docker exec -it wazuh-dashboard \
   /usr/share/wazuh-dashboard/node/bin/node /usr/share/wazuh-dashboard/wazuh-reset-password.js admin`.
-  API менеджера по умолчанию слушает HTTP на порту 55000. Чтобы включить HTTPS, в файле
-  `config/wazuh-manager/api.yaml` переведите `https.enabled` в `true` и убедитесь, что смонтированы
-  сертификаты по путям `https.cert` и `https.key`.
+  API менеджера по умолчанию слушает HTTPS на порту 55000 и конфигурируется через файл
+  `config/wazuh-manager/api.yaml`, который должен использовать схему Wazuh 4.13: список `hosts`
+  с протоколами (`protocols: [https]`) и секцию `https` с путями к сертификатам.
+  Чтобы перейти на HTTP, измените протокол на `http` и выставьте `https.enabled: false`.
 
 Перед запуском убедитесь, что Docker Engine поддерживает Compose V2 (`docker compose`). Если Docker недоступен (например, в CI),
 скрипт `run.sh` автоматически переключится на оффлайн-симуляцию, подготовит базу ФСТЭК через `prepare_fstec_content.py` и сгенерирует примерные отчёты в каталоге `artifacts/`. Учебный архив `scanoval.zip` формируется на лету утилитой `tests/tools/create_sample_fstec_archive.py`, поэтому бинарные файлы не хранятся в репозитории.
