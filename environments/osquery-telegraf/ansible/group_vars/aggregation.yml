@@ -1,3 +1,0 @@
-telegraf_listener_port: 9081
-influxdb_dsn: http://localhost:8086
-kuma_syslog_endpoint: syslog+tls://kuma.internal.example.com:6514

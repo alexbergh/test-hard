@@ -1,8 +1,0 @@
----
-secaudit_profile_map:
-  redos-7.3: redos-73.yml
-  redos-8: redos-8.yml
-  astralinux-1.7: astralinux-17.yml
-  altlinux-8: altlinux-8.yml
-  centos-7: centos-7.yml
-secaudit_target_environment: "{{ target_environment | default('test') }}"

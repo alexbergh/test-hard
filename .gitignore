@@ -1,9 +1,13 @@
-# Generated artifacts from local test environments
-/tests/docker/osquery-simulator/__pycache__/
-/tests/docker/osquery-simulator/.venv/
-/tests/k8s/.kind-config
-/tests/docker/openscap/content/fstec-sample.zip
-/tests/docker/openscap/content/fstec/
+# Environment overrides
+.env
+.env.local
 
-# OpenSSL serial files
-*.srl
+# Prometheus / Grafana data directories
+prometheus_data/
+grafana_data/
+
+# Generated artifacts
+*.arf
+*.html
+*.json
+__pycache__/

@@ -1,7 +1,0 @@
-FROM wazuh/wazuh-indexer:4.13.1
-
-# Копируем сертификаты
-COPY config/wazuh-indexer/certs/ /etc/wazuh-indexer/certs/
-
-# Копируем конфигурационные файлы
-COPY config/wazuh-indexer/opensearch.yml /usr/share/wazuh-indexer/opensearch.yml
