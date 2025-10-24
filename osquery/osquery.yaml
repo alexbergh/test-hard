@@ -1,0 +1,18 @@
+apiVersion: osquery.io/v1
+kind: Config
+metadata:
+  name: base-linux
+spec:
+  options:
+    config_plugin: filesystem
+    logger_plugin: filesystem
+    verbose: false
+  schedule:
+    uptime:
+      query: SELECT * FROM uptime;
+      interval: 3600
+    processes:
+      query: SELECT pid, name, path, cmdline FROM processes;
+      interval: 600
+  packs:
+    - path: ./pack.conf

@@ -1,6 +1,0 @@
-[2025-10-22T09:22:57.110857+00:00] packer simulate build for centos-7 (prod)
-[00:00] downloading iso placeholder
-[00:05] applying kickstart/preseed
-[00:10] running ansible hardening
-[00:15] compliance summary: 100.0% (5/5)
-[00:16] exporting image artifact

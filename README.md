@@ -1,97 +1,73 @@
-# Hardening Monitoring Environments
+# test-hard — Monitoring/Hardening Demo
 
-Репозиторий содержит инфраструктурные шаблоны и автоматизацию для мониторинга hardening-процессов.
+## Цель
+Преобразованный репозиторий поднимает демонстрационную среду мониторинга на базе Prometheus и Grafana, хранит эталонные конфигурации Osquery и Telegraf и включает скрипты для интеграции результатов Lynis, OpenSCAP и Atomic Red Team.
 
-## Окружения
-- [OpenSCAP Pilot](environments/openscap/README.md)
-  - Ansible-плейбук: `environments/openscap/ansible/playbook.yml`.
-- [Osquery + Telegraf](environments/osquery-telegraf/README.md)
-  - Ansible-плейбук агентов: `environments/osquery-telegraf/ansible/playbook.yml`.
-  - Docker Compose-стек для приёмника и визуализации: `environments/osquery-telegraf/docker/docker-compose.yml`.
-  - Готовые шаблоны визуализаций: `tests/docker/artifacts/telemetry/hardening-dashboard.md` и `.../grafana-dashboard.json` (генерируются симуляторами).
-- [Wazuh + Elastic Stack](environments/wazuh/README.md)
-  - Docker Compose all-in-one: `environments/wazuh/docker/docker-compose.yml`.
-  - Ansible-плейбук для агентов: `environments/wazuh/ansible/playbook.yml`.
-
-## Запуск окружений через Docker Compose
-
-Все docker-compose файлы совместимы с Compose V2 (`docker compose`). Убедитесь, что у вас установлены Docker Engine и плагин Compose, а также что выполняются команды из корня репозитория или соответствующего подкаталога.
-
-### Osquery + Telegraf (центральный стек)
-
+## Быстрый старт
 ```bash
-cd environments/osquery-telegraf/docker
+cp .env.example .env
+# при необходимости измените GF_ADMIN_USER/GF_ADMIN_PASSWORD
 docker compose up -d
 ```
 
-Стек поднимает InfluxDB, приёмник Telegraf и Grafana с дефолтными учётными данными `admin/changeme`. Конфигурация слушателя находится в `telegraf/telegraf.conf` — при необходимости скорректируйте выходы перед запуском.
+* Prometheus: http://localhost:9090
+* Grafana: http://localhost:3000 (учётные данные из `.env`)
 
-### Wazuh + Elastic Stack
+## Настройка агентов
+1. Установите Osquery и Telegraf на целевых хостах.
+2. Примените конфигурацию из `telegraf/telegraf.conf` — она открывает эндпоинт `/metrics` на порту `9091` и может выполнять осмысленные запросы Osquery через `[[inputs.exec]]`.
+3. В файле `prometheus/prometheus.yml` замените `<host-ip>` на адреса хостов с Telegraf (например, `host.docker.internal:9091` на Docker Desktop или IP-адрес сервера).
 
-```bash
-cd environments/wazuh/docker
-docker compose up -d
+## Интеграция hardening-инструментов
+Каталог `scripts/` содержит вспомогательные обёртки:
+
+* `run_lynis.sh` и `parse_lynis_report.py` — запускают аудит Lynis и выводят метрики (`lynis_score`, `lynis_warnings_count`, `lynis_suggestions_count`).
+* `run_openscap.sh` и `parse_openscap_report.py` — выполняют профиль OpenSCAP и подсчитывают количество правил по статусам (`openscap_pass_count`, `openscap_fail_count`, ...).
+* `run_atomic_red_team_test.sh` и `parse_atomic_red_team_result.py` — помогают фиксировать бинарный результат атомарных тестов Atomic Red Team (`art_test_result`).
+
+Настройте периодический запуск (cron/systemd timers/Ansible) и сбор метрик через `[[inputs.exec]]`, `[[inputs.file]]` или `[[inputs.socket_listener]]` в Telegraf.
+
+## Дашборды Grafana
+Файлы JSON с дашбордами поместите в `grafana/provisioning/dashboards/` — Grafana автоматически подхватит их при старте согласно `grafana/provisioning/dashboards/default.yml`.
+
+## Структура репозитория
+```
+test-hard/
+├── .env.example               # Пример переменных окружения Grafana
+├── docker-compose.yml         # Prometheus и Grafana
+├── grafana/
+│   └── provisioning/
+│       ├── dashboards/
+│       │   └── default.yml    # Автоматическая загрузка дашбордов
+│       └── datasources/
+│           └── prometheus.yml # Datasource Grafana → Prometheus
+├── osquery/
+│   ├── osquery.conf
+│   ├── osquery.yaml
+│   └── pack.conf
+├── prometheus/
+│   └── prometheus.yml
+├── scripts/
+│   ├── parse_atomic_red_team_result.py
+│   ├── parse_lynis_report.py
+│   ├── parse_openscap_report.py
+│   ├── run_atomic_red_team_test.sh
+│   ├── run_lynis.sh
+│   └── run_openscap.sh
+├── telegraf/
+│   └── telegraf.conf
+└── Makefile                   # Упрощённые команды docker compose
 ```
 
-Будут запущены `wazuh-indexer`, `wazuh-manager` и `wazuh-dashboard`. Индексер принимает только HTTPS-подключения с логином `admin` и паролем из `.env`, менеджер предоставляет HTTPS API (сертификаты лежат в `config/manager/api/ssl/`), а в дашборд вход осуществляется по адресу `https://localhost:443` той же парой `admin/<WAZUH_API_PASSWORD>`. Перед продуктивным запуском обновите `.env` и замените self-signed сертификаты.
-
-### Полный тестовый стенд (все профили)
-
-Для запуска всех контейнеров проекта одним файлом используйте агрегированный Compose в `tests/docker`:
-
+## Makefile
 ```bash
-cd tests/docker
-docker compose --profile openscap --profile telemetry --profile wazuh up -d
+make up      # docker compose up -d
+make down    # docker compose down
+make logs    # docker compose logs -f --tail=200
+make restart # перезапуск стека
 ```
 
-Профили включают OpenSCAP-runner, телеметрический стек (InfluxDB, Telegraf, Grafana, KUMA mock, osquery-simulator) и полный набор сервисов Wazuh. Артефакты и логи сохраняются в `tests/docker/artifacts`. Для остановки выполните:
-
-```bash
-docker compose --profile openscap --profile telemetry --profile wazuh down
-```
-
-> **Совет.** Если доступ к `quay.io` ограничен (ошибка TLS handshake), задайте альтернативный образ перед запуском:
-> 
-> ```bash
-> export OPENSCAP_IMAGE=deepsecurity/openscap-scan:latest
-> docker compose --profile openscap --profile telemetry --profile wazuh up -d
-> ```
-> 
-> Compose подставит значение переменной вместо дефолтного `quay.io/openscap/openscap:1.3.9`. Можно указать собственный реестр или локальный образ (`OPENSCAP_IMAGE=localhost:5000/openscap:custom`) и предварительно выполнить `docker pull`/`docker load`.
-
-> **Пинning версии Wazuh.** Образы `wazuh/wazuh-*` в агрегированном Compose и окружении `environments/wazuh` по умолчанию используют тег `4.13.1`. Если вам нужна другая версия или зеркало, задайте переменные перед запуском:
->
-> ```bash
-> export WAZUH_VERSION=4.13.1        # укажите другой тег при наличии альтернативной сборки
-> export WAZUH_IMAGE_REGISTRY=wazuh # по умолчанию, можно указать registry.example.com/wazuh
-> docker compose --profile openscap --profile telemetry --profile wazuh up -d
-> ```
->
-> Значения распространяются на `wazuh-indexer`, `wazuh-manager`, `wazuh-dashboard` и `wazuh-agent`. При использовании частного реестра выполните `docker login` и `docker pull` заранее.
-
-Если требуется одноразовый запуск сканера без фоновых сервисов, можно ограничиться профилем `openscap`. Скрипт `run.sh` в том же каталоге автоматически переключит систему в оффлайн-симуляцию, если Docker недоступен.
-
-## Сценарии hardening
-- [Общие принципы и поток работ](hardening-scenarios/README.md).
-- Linux-плейбук: `hardening-scenarios/ansible/playbooks/linux.yml` (включая роль `secaudit_profiles` для профилей RedOS/Astra/Alt/CentOS).
-- Windows-плейбук: `hardening-scenarios/ansible/playbooks/windows.yml`.
-- Методические заметки по платформам: [Linux](hardening-scenarios/linux.md), [Windows](hardening-scenarios/windows.md).
-
-Каждое окружение и сценарий интегрированы: результаты OpenSCAP направляют приоритеты ремедиации, а osquery и Wazuh проверяют внедрение настроек. Профили `secaudit` обеспечивают единую базу контролей для тестовых и продуктивных ВМ.
-
-## Тестовые окружения
-- Docker Compose: `tests/docker` для быстрой генерации отчётов и телеметрии. При отсутствии Docker скрипты автоматически
-  переключаются на оффлайн-симуляцию, подготавливают базу ФСТЭК через `prepare_fstec_content.py` и формируют примерные артефакты
-  в `tests/docker/artifacts` (включая Markdown-панель hardening-метрик, экспорт дашборда Grafana и payload для KUMA). Учебный архив `scanoval.zip` собирается на лету утилитой `tests/tools/create_sample_fstec_archive.py`.
-- Kubernetes (kind): `tests/k8s` для эмуляции стека в кластере. Скрипт `setup-kind.sh` создаёт кластер или запускает симуляцию
-  логов и сводок, предварительно извлекая OVAL базу ФСТЭК (архив также формируется утилитой `tests/tools/create_sample_fstec_archive.py`), если бинарник `kind` недоступен.
-- Виртуальные машины: `tests/vms` описывает Packer-шаблон для RedOS 7.3/8, Astra 1.7, Альт 8, CentOS 7 и содержит симуляцию, которая формирует `compliance-report.json`, телеметрию osquery→Grafana/KUMA и журналы сборки для test/prod контуров.
-
-### Детерминированные таймстемпы симуляций
-
-Для воспроизводимых артефактов оффлайн-скрипты (`tests/docker/run.sh`, `tests/k8s/setup-kind.sh`, `tests/vms/run.sh`) автоматически экспортируют переменную `HARDENING_FIXED_TIMESTAMP=2025-01-01T00:00:00+00:00`, если она не задана. Значение считывается всеми симуляторами через общий `TimeSequencer`, поэтому повторные запуски формируют идентичные поля `generated_at` и `collected_at`. При необходимости можно переопределить переменную перед запуском, чтобы получить собственный временной срез.
-
-## Отчёты пробных запусков
-- Результаты текущей проверки оффлайн-симуляций: [reports/2025-10-21-simulation-results.md](reports/2025-10-21-simulation-results.md).
-- Визуализация метрик osquery/Telegraf -> Grafana/KUMA: [reports/2025-10-21-monitoring-dashboard.md](reports/2025-10-21-monitoring-dashboard.md).
-- Проверка артефактов VM и профилей `secaudit`: будет обновлена после запуска `tests/vms/run.sh` (см. каталог `reports/`).
+## Дальнейшие идеи
+* Добавьте правила alerting и Alertmanager в Prometheus.
+* Расширьте Telegraf дополнительными входными плагинами (cpu, disk, net и т.д.).
+* Интегрируйте реальные сценарии Atomic Red Team и храните результаты в отдельном хранилище.

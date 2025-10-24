@@ -1,6 +1,0 @@
----
-- name: Configure OpenSCAP scanners
-  hosts: scanners
-  become: true
-  roles:
-    - openscap_scanner

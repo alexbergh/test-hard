@@ -1,6 +1,0 @@
----
-- name: Deploy osquery and telegraf agents
-  hosts: osquery_agents
-  become: true
-  roles:
-    - osquery_telegraf
