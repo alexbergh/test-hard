@@ -8,17 +8,17 @@ services:
     ports:
       - "9200:9200"
     environment:
-      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g -Djava.security.manager=allow -Djava.security.policy==
-      - WAZUH_INDEXER_PASSWORD=${WAZUH_INDEXER_PASSWORD:-ChangeMe123!}
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
-      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
-      - ./config/wazuh-indexer/certs:/etc/wazuh-indexer/certs:ro
+      - ${PWD}/tests/docker/config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ${PWD}/config/wazuh-indexer/certs:/usr/share/wazuh-indexer/certs:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_INDEXER_PASSWORD:-ChangeMe123!} https://localhost:9200/_cluster/health?pretty || exit 1"]
+      test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
 volumes:
   wazuh-indexer-data:
+  wazuh-indexer-logs:
