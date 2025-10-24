@@ -1,0 +1,14 @@
+FROM wazuh/indexer:4.13.1
+
+USER root
+
+# Copy certificates into the image
+COPY config/wazuh-indexer/certs/ /etc/wazuh-indexer/certs/
+
+# Ensure correct permissions for security plugin
+RUN chown -R 1000:1000 /etc/wazuh-indexer/certs/ && \
+    chmod 644 /etc/wazuh-indexer/certs/*.pem && \
+    chmod 600 /etc/wazuh-indexer/certs/*.key && \
+    ls -la /etc/wazuh-indexer/certs/
+
+USER 1000

@@ -1,0 +1,59 @@
+name: codex-wazuh-indexer-perms-hardening
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'Dockerfile.wazuh-indexer'
+      - 'entrypoint.sh'
+      - 'docker-compose.yml'
+      - 'config/wazuh-indexer/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  validate-indexer:
+    runs-on: ubuntu-latest
+    env:
+      WAZUH_INDEXER_PASSWORD: admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Debug container permissions (host vs container)
+        run: |
+          echo "=== Host permissions ==="
+          ls -la config/wazuh-indexer/certs/ || true
+          echo "=== Container view (bind) ==="
+          docker run --rm -v "$(pwd)/config/wazuh-indexer/certs:/certs" wazuh/indexer:4.13.1 sh -lc 'id && ls -la /certs || true'
+
+      - name: Build custom image
+        run: docker build -t local/wazuh-indexer:dev -f Dockerfile.wazuh-indexer .
+
+      - name: Compose up
+        run: |
+          docker compose down --volumes --remove-orphans || true
+          docker compose up -d
+          sleep 20
+          docker ps
+
+      - name: Sanity checks
+        run: |
+          echo "=== Logs (first 200 lines) ==="
+          docker logs wazuh-indexer | sed -n '1,200p' || true
+          echo "=== Assert: no AccessControlException ==="
+          if docker logs wazuh-indexer 2>&1 | grep -q 'AccessControlException'; then
+            echo "AccessControlException still present"; exit 1
+          fi
+          echo "=== Cluster health ==="
+          curl -fsSk -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty
+
+      - name: Collect logs
+        if: always()
+        run: docker logs wazuh-indexer 2>&1 | tee /tmp/indexer.log
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: indexer-logs
+          path: /tmp/indexer.log
