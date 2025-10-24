@@ -11,7 +11,12 @@ docker compose up -d
 ```
 
 * Prometheus: http://localhost:9090
+* Alertmanager: http://localhost:9093
 * Grafana: http://localhost:3000 (учётные данные из `.env`)
+
+## Alerting
+Prometheus загружает правила из `prometheus/alert.rules.yml` и пересылает сработавшие оповещения в Alertmanager.
+Настройте webhook в `prometheus/alertmanager.yml`, чтобы направлять уведомления в нужную систему (Grafana, Slack, PagerDuty и т.д.).
 
 ## Настройка агентов
 1. Установите Osquery и Telegraf на целевых хостах.
@@ -46,6 +51,8 @@ test-hard/
 │   ├── osquery.yaml
 │   └── pack.conf
 ├── prometheus/
+│   ├── alert.rules.yml
+│   ├── alertmanager.yml
 │   └── prometheus.yml
 ├── scripts/
 │   ├── parse_atomic_red_team_result.py
@@ -68,6 +75,6 @@ make restart # перезапуск стека
 ```
 
 ## Дальнейшие идеи
-* Добавьте правила alerting и Alertmanager в Prometheus.
+* Настройте интеграцию Alertmanager с выбранной системой уведомлений.
 * Расширьте Telegraf дополнительными входными плагинами (cpu, disk, net и т.д.).
 * Интегрируйте реальные сценарии Atomic Red Team и храните результаты в отдельном хранилище.
