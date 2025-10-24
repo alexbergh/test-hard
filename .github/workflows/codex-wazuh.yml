@@ -9,78 +9,91 @@ jobs:
   codex:
     runs-on: ubuntu-latest
     env:
-      # УНИКАЛЬНОЕ имя проекта compose, чтобы гарантированно отбросить старые сущности
       COMPOSE_PROJECT_NAME: wazuh-new
       WAZUH_INDEXER_PASSWORD: ${{ secrets.WAZUH_INDEXER_PASSWORD }}
-      WAZUH_API_PASSWORD:     ${{ secrets.WAZUH_API_PASSWORD }}
+      WAZUH_API_PASSWORD: ${{ secrets.WAZUH_API_PASSWORD }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure docker compose
+      - name: Ensure Docker Compose
         run: |
           docker version
           docker compose version
 
-      # --- Готовим конфиги и политику безопасности для OpenSearch ---
-      - name: Prepare config files
+      - name: Prepare configs (indexer opensearch.yml + folders)
         run: |
-          mkdir -p config/wazuh-indexer config/wazuh-indexer/certs config/wazuh-manager
-          # Политика даёт явное право читать /etc/wazuh-indexer/certs/*
-          cat > config/wazuh-indexer/opensearch-custom.yml << 'EOF_POLICY'
-          opensearch.security.manager.java.policy: |
-            grant {
-              permission java.io.FilePermission "/usr/share/wazuh-indexer/config/-", "read";
-              permission java.io.FilePermission "/etc/wazuh-indexer/certs/-", "read";
-            };
-          EOF_POLICY
+          mkdir -p config/wazuh-indexer/certs config/wazuh-manager
+          cat > config/wazuh-indexer/opensearch.yml <<'YAML'
+          cluster.name: wazuh
+          node.name: node-1
+          network.host: 0.0.0.0
 
-      # --- Нормализуем права на сертификаты (фикc №1) ---
-      - name: Fix certificate ownership and permissions (host side)
+          plugins.security.ssl.transport.pemcert_filepath: /usr/share/wazuh-indexer/config/certs/indexer.pem
+          plugins.security.ssl.transport.pemkey_filepath: /usr/share/wazuh-indexer/config/certs/indexer-key.pem
+          plugins.security.ssl.transport.pemtrustedcas_filepath: /usr/share/wazuh-indexer/config/certs/root-ca.pem
+
+          plugins.security.ssl.http.enabled: true
+          plugins.security.ssl.http.pemcert_filepath: /usr/share/wazuh-indexer/config/certs/indexer.pem
+          plugins.security.ssl.http.pemkey_filepath: /usr/share/wazuh-indexer/config/certs/indexer-key.pem
+          plugins.security.ssl.http.pemtrustedcas_filepath: /usr/share/wazuh-indexer/config/certs/root-ca.pem
+
+          plugins.security.allow_unsafe_democertificates: false
+          plugins.security.unsupported.restapi.allow_securityconfig_modification: true
+          YAML
+
+      - name: Debug certificates permissions (before)
         run: |
-          # если файлов нет — пропускаем; в вашем пайплайне сюда кладутся реальные *.pem/*.key
+          echo "=== BEFORE ==="
+          ls -la config/wazuh-indexer/certs || true
+
+      - name: Fix certificates permissions
+        run: |
           shopt -s nullglob
-          for f in config/wazuh-indexer/certs/*.pem; do chmod 644 "$f"; done
-          for f in config/wazuh-indexer/certs/*.key; do chmod 600 "$f"; done
-          # uid/gid 1000 — типичная учётка процесса внутри контейнера wazuh-indexer
+          for f in config/wazuh-indexer/certs/*.pem; do sudo chmod 644 "$f"; done
+          for f in config/wazuh-indexer/certs/*.key; do sudo chmod 600 "$f"; done
           sudo chown -R 1000:1000 config/wazuh-indexer/certs || true
 
-      # --- Полная зачистка старых контейнеров/томов/осиротевших ресурсов (фикc №2) ---
+      - name: Debug certificates permissions (after)
+        run: |
+          echo "=== AFTER ==="
+          ls -la config/wazuh-indexer/certs || true
+
       - name: Hard cleanup
         run: |
-          docker compose -f docker-compose.yml down --volumes --remove-orphans || true
+          docker compose down --volumes --remove-orphans || true
           docker volume prune -f || true
           docker network prune -f || true
 
-      # --- Создаём/обновляем docker-compose c НОВЫМИ именами контейнеров (фикc №3) ---
-      - name: Write compose file with new container names
+      - name: Write docker-compose.yml
         run: |
-          cat > docker-compose.yml << 'YAML'
+          cat > docker-compose.yml <<'YAML'
           version: '3.8'
           services:
             wazuh-indexer:
               image: wazuh/wazuh-indexer:4.13.1
               container_name: wazuh-indexer-new
               restart: unless-stopped
-              ports: ["9200:9200"]
+              ports:
+                - "9200:9200"
               environment:
                 - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
                 - DISABLE_SECURITY_PLUGIN=false
               volumes:
+                - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+                - ./config/wazuh-indexer/certs:/usr/share/wazuh-indexer/config/certs:ro
                 - wazuh-indexer-data:/var/lib/opensearch/data
-                - ./config/wazuh-indexer/opensearch-custom.yml:/etc/wazuh-indexer/opensearch.yml:ro
-                - ./config/wazuh-indexer/certs:/etc/wazuh-indexer/certs:ro
-              # Доп. страховка: фиксим права внутри контейнера (если host chown не сработал)
               user: "0:0"
               command: >
                 sh -c "
-                  chown -R 1000:1000 /etc/wazuh-indexer/certs || true &&
-                  chmod -R a+r /etc/wazuh-indexer/certs || true &&
-                  exec /usr/share/wazuh-indexer/bin/opensearch
+                  chown -R 1000:1000 /usr/share/wazuh-indexer/config/certs || true &&
+                  chmod 644 /usr/share/wazuh-indexer/config/certs/*.pem || true &&
+                  chmod 600 /usr/share/wazuh-indexer/config/certs/*.key || true &&
+                  exec gosu 1000:1000 /usr/share/wazuh-indexer/bin/opensearch
                 "
               healthcheck:
-                test: ["CMD-SHELL", "curl -fsSL -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty || exit 1"]
+                test: ["CMD-SHELL", "curl -fsSL -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty -k || exit 1"]
                 interval: 30s
                 timeout: 10s
                 retries: 10
@@ -115,7 +128,11 @@ jobs:
               image: wazuh/wazuh-dashboard:4.13.1
               container_name: wazuh-dashboard-new
               restart: unless-stopped
-              ports: ["443:5601"]
+              depends_on:
+                wazuh-manager:
+                  condition: service_healthy
+              ports:
+                - "443:5601"
               environment:
                 - OPENSEARCH_HOSTS=["https://wazuh-indexer-new:9200"]
                 - OPENSEARCH_USERNAME=admin
@@ -123,9 +140,6 @@ jobs:
                 - OPENSEARCH_DASHBOARDS_USERNAME=admin
                 - OPENSEARCH_DASHBOARDS_PASSWORD=${WAZUH_API_PASSWORD}
                 - WAZUH_API_URL=https://wazuh-manager-new:55000
-              depends_on:
-                wazuh-manager:
-                  condition: service_healthy
               healthcheck:
                 test: ["CMD-SHELL", "curl -fsSk https://localhost:5601/api/status || exit 1"]
                 interval: 30s
@@ -137,13 +151,11 @@ jobs:
             wazuh-manager-data:
           YAML
 
-      # --- Старт стекa ---
       - name: Compose up
         run: |
           docker compose up -d
           docker compose ps
 
-      # --- Ожидание здоровья indexer/manager/dashboard ---
       - name: Wait for indexer health
         run: |
           for i in {1..30}; do
@@ -152,7 +164,9 @@ jobs:
             fi
             sleep 10
           done
-          echo "Indexer failed to become healthy"; docker compose logs wazuh-indexer; exit 1
+          echo "Indexer failed to become healthy"
+          docker compose logs wazuh-indexer
+          exit 1
 
       - name: Wait for manager health
         run: |
@@ -162,7 +176,9 @@ jobs:
             fi
             sleep 10
           done
-          echo "Manager failed to become healthy"; docker compose logs wazuh-manager; exit 1
+          echo "Manager failed to become healthy"
+          docker compose logs wazuh-manager
+          exit 1
 
       - name: Wait for dashboard health
         run: |
@@ -172,12 +188,12 @@ jobs:
             fi
             sleep 10
           done
-          echo "Dashboard failed to become healthy"; docker compose logs wazuh-dashboard; exit 1
+          echo "Dashboard failed to become healthy"
+          docker compose logs wazuh-dashboard
+          exit 1
 
-      # --- Диагностика на случай нештатных ситуаций ---
       - name: Dump logs on failure
         if: failure()
         run: |
           docker compose logs --no-color > compose-logs.txt || true
           tail -n +1 compose-logs.txt | sed -n '1,400p'
-
