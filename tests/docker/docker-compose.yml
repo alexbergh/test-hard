@@ -84,11 +84,11 @@ services:
   # Wazuh stack
   ##############################################################################
   wazuh-indexer:
-    image: local/wazuh-indexer:dev          # локальный образ с уже исправленными правами на сертификаты
+    image: local/wazuh-indexer:dev
     container_name: wazuh-indexer
     pull_policy: if_not_present
     restart: unless-stopped
-    user: "1000:1000"                       # запускаем от пользователя wazuh (UID/GID 1000)
+    user: "1000:1000"
     environment:
       - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
       - DISABLE_SECURITY_PLUGIN=false
@@ -96,6 +96,7 @@ services:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
       # корректный путь для конфига — в корень, не в "config/"
       - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ./config/wazuh-indexer/certs:/usr/share/wazuh-indexer/certs:ro
       - wazuh-indexer-logs:/var/log/wazuh-indexer
     ports:
       - "9200:9200"
