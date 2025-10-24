@@ -1,13 +1,25 @@
-cluster.name: wazuh-indexer
-node.name: node-1
+cluster.name: "wazuh"
+node.name: "node-1"
+
 network.host: 0.0.0.0
 http.port: 9200
+discovery.type: single-node
 
 plugins.security.ssl.http.enabled: true
-plugins.security.ssl.http.pemcert_filepath: /etc/wazuh-indexer/certs/wazuh-indexer.pem
-plugins.security.ssl.http.pemkey_filepath: /etc/wazuh-indexer/certs/wazuh-indexer-key.pem
-plugins.security.ssl.http.pemtrustedcas_filepath: /etc/wazuh-indexer/certs/root-ca.pem
 
-plugins.security.ssl.transport.pemcert_filepath: /etc/wazuh-indexer/certs/wazuh-indexer.pem
-plugins.security.ssl.transport.pemkey_filepath: /etc/wazuh-indexer/certs/wazuh-indexer-key.pem
-plugins.security.ssl.transport.pemtrustedcas_filepath: /etc/wazuh-indexer/certs/root-ca.pem
+plugins.security.ssl.http.pemcert_filepath: /usr/share/wazuh-indexer/certs/admin.pem
+plugins.security.ssl.http.pemkey_filepath: /usr/share/wazuh-indexer/certs/admin.key
+plugins.security.ssl.http.pemtrustedcas_filepath: /usr/share/wazuh-indexer/certs/root-ca.pem
+
+plugins.security.ssl.transport.pemcert_filepath: /usr/share/wazuh-indexer/certs/node-1.pem
+plugins.security.ssl.transport.pemkey_filepath: /usr/share/wazuh-indexer/certs/node-1.key
+plugins.security.ssl.transport.pemtrustedcas_filepath: /usr/share/wazuh-indexer/certs/root-ca.pem
+
+plugins.security.authcz.admin_dn:
+  - "CN=admin,OU=Wazuh,O=Organization,L=City,ST=State,C=US"
+
+plugins.security.nodes_dn:
+  - "CN=node-1,OU=Wazuh,O=Organization,L=City,ST=State,C=US"
+
+plugins.security.audit.type: internal_opensearch
+compatibility.override_main_response_version: true
