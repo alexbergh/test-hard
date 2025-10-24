@@ -37,12 +37,11 @@
 
 services:
   ##############################################################################
-  # OpenSCAP (profile: openscap)
+  # OpenSCAP
   ##############################################################################
   openscap-runner:
     image: deepsecurity/openscap-scan:1.2.83
     container_name: openscap-runner
-    profiles: ["openscap"]
     pull_policy: if_not_present
     restart: unless-stopped
     command: ["sh", "-lc", "sleep infinity"]
@@ -55,12 +54,11 @@ services:
       retries: 5
 
   ##############################################################################
-  # Telemetry stack (profile: telemetry)
+  # Telemetry stack
   ##############################################################################
   influxdb:
     image: influxdb:2.7
     container_name: influxdb
-    profiles: ["telemetry"]
     pull_policy: if_not_present
     restart: unless-stopped
     environment:
@@ -83,7 +81,6 @@ services:
   telegraf-listener:
     image: telegraf:1.29
     container_name: telegraf-listener
-    profiles: ["telemetry"]
     pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
@@ -100,7 +97,6 @@ services:
   grafana:
     image: grafana/grafana:10.4.1
     container_name: grafana
-    profiles: ["telemetry"]
     pull_policy: if_not_present
     restart: unless-stopped
     depends_on:
@@ -120,7 +116,7 @@ services:
       retries: 30
 
   ##############################################################################
-  # Wazuh stack (profile: wazuh)
+  # Wazuh stack
   ##############################################################################
   wazuh-indexer:
     image: wazuh/wazuh-indexer:4.13.1
@@ -160,7 +156,10 @@ services:
       INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD}
       INDEXER_SSL_VERIFICATION: "false"
     volumes:
+      # Монтируем каталог с api.yaml и ssl сертификатами
       - ./config/wazuh-manager:/var/ossec/api/configuration:ro
+      # Используем том для сохранения состояния менеджера
+      - wazuh-manager-data:/var/ossec/data
     ports:
       - "1514:1514/udp"
       - "1515:1515"
@@ -207,15 +206,15 @@ services:
     restart: unless-stopped
     depends_on:
       wazuh-manager:
-        condition: service_started
+        condition: service_healthy
     environment:
-      MANAGER_IP: "wazuh-manager"
-      WAZUH_AGENT_NAME: "test-agent-01"
+      - WAZUH_MANAGER=wazuh-manager
+      - WAZUH_AGENT_NAME=docker-test-agent
     healthcheck:
-      test: ["CMD-SHELL", "sleep 5; ps aux | grep -q '[w]azuh-agentd'"]
+      test: ["CMD-SHELL", "ps aux | grep -q '[w]azuh-agentd'"]
       interval: 30s
       timeout: 5s
-      retries: 10
+      retries: 5
 
 volumes:
   influxdb-data:
