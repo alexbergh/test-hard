@@ -92,6 +92,8 @@ services:
       - "DISABLE_SECURITY_PLUGIN=false" # Безопасность ВКЛЮЧЕНА
     volumes:
       - wazuh-indexer-data:/var/lib/opensearch/data
+      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ./config/wazuh-indexer/certs:/usr/share/wazuh-indexer/certs:ro
     ports:
       - "9200:9200"
     healthcheck:
