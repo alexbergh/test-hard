@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  wazuh-indexer:
+    build:
+      context: .
+      dockerfile: Dockerfile.wazuh-indexer
+    container_name: wazuh-indexer
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+    environment:
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+    volumes:
+      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - wazuh-indexer-data:/usr/share/wazuh-indexer/data
+      - wazuh-indexer-logs:/var/log/wazuh-indexer
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  wazuh-indexer-data:
+  wazuh-indexer-logs:
