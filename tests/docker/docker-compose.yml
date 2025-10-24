@@ -85,7 +85,7 @@ services:
   ##############################################################################
   wazuh-indexer:
     build:
-      context: .
+      context: ../..
       dockerfile: Dockerfile.wazuh-indexer
     container_name: wazuh-indexer
     restart: unless-stopped
