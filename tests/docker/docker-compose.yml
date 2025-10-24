@@ -219,4 +219,6 @@ services:
 volumes:
   influxdb-data:
   grafana-data:
+  wazuh-manager-data:
   wazuh-indexer-data:
+  
