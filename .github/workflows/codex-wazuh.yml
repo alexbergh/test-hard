@@ -1,0 +1,199 @@
+name: codex-wazuh
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  codex:
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: wazuh-new
+      WAZUH_INDEXER_PASSWORD: ${{ secrets.WAZUH_INDEXER_PASSWORD }}
+      WAZUH_API_PASSWORD: ${{ secrets.WAZUH_API_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Docker Compose
+        run: |
+          docker version
+          docker compose version
+
+      - name: Prepare configs (indexer opensearch.yml + folders)
+        run: |
+          mkdir -p config/wazuh-indexer/certs config/wazuh-manager
+          cat > config/wazuh-indexer/opensearch.yml <<'YAML'
+          cluster.name: wazuh
+          node.name: node-1
+          network.host: 0.0.0.0
+
+          plugins.security.ssl.transport.pemcert_filepath: /usr/share/wazuh-indexer/config/certs/indexer.pem
+          plugins.security.ssl.transport.pemkey_filepath: /usr/share/wazuh-indexer/config/certs/indexer-key.pem
+          plugins.security.ssl.transport.pemtrustedcas_filepath: /usr/share/wazuh-indexer/config/certs/root-ca.pem
+
+          plugins.security.ssl.http.enabled: true
+          plugins.security.ssl.http.pemcert_filepath: /usr/share/wazuh-indexer/config/certs/indexer.pem
+          plugins.security.ssl.http.pemkey_filepath: /usr/share/wazuh-indexer/config/certs/indexer-key.pem
+          plugins.security.ssl.http.pemtrustedcas_filepath: /usr/share/wazuh-indexer/config/certs/root-ca.pem
+
+          plugins.security.allow_unsafe_democertificates: false
+          plugins.security.unsupported.restapi.allow_securityconfig_modification: true
+          YAML
+
+      - name: Debug certificates permissions (before)
+        run: |
+          echo "=== BEFORE ==="
+          ls -la config/wazuh-indexer/certs || true
+
+      - name: Fix certificates permissions
+        run: |
+          shopt -s nullglob
+          for f in config/wazuh-indexer/certs/*.pem; do sudo chmod 644 "$f"; done
+          for f in config/wazuh-indexer/certs/*.key; do sudo chmod 600 "$f"; done
+          sudo chown -R 1000:1000 config/wazuh-indexer/certs || true
+
+      - name: Debug certificates permissions (after)
+        run: |
+          echo "=== AFTER ==="
+          ls -la config/wazuh-indexer/certs || true
+
+      - name: Hard cleanup
+        run: |
+          docker compose down --volumes --remove-orphans || true
+          docker volume prune -f || true
+          docker network prune -f || true
+
+      - name: Write docker-compose.yml
+        run: |
+          cat > docker-compose.yml <<'YAML'
+          version: '3.8'
+          services:
+            wazuh-indexer:
+              image: wazuh/wazuh-indexer:4.13.1
+              container_name: wazuh-indexer-new
+              restart: unless-stopped
+              ports:
+                - "9200:9200"
+              environment:
+                - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+                - DISABLE_SECURITY_PLUGIN=false
+              volumes:
+                - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+                - ./config/wazuh-indexer/certs:/usr/share/wazuh-indexer/config/certs:ro
+                - wazuh-indexer-data:/var/lib/opensearch/data
+              user: "0:0"
+              command: >
+                sh -c "
+                  chown -R 1000:1000 /usr/share/wazuh-indexer/config/certs || true &&
+                  chmod 644 /usr/share/wazuh-indexer/config/certs/*.pem || true &&
+                  chmod 600 /usr/share/wazuh-indexer/config/certs/*.key || true &&
+                  exec gosu 1000:1000 /usr/share/wazuh-indexer/bin/opensearch
+                "
+              healthcheck:
+                test: ["CMD-SHELL", "curl -fsSL -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty -k || exit 1"]
+                interval: 30s
+                timeout: 10s
+                retries: 10
+
+            wazuh-manager:
+              image: wazuh/wazuh-manager:4.13.1
+              container_name: wazuh-manager-new
+              restart: unless-stopped
+              depends_on:
+                wazuh-indexer:
+                  condition: service_healthy
+              ports:
+                - "1514:1514/udp"
+                - "1515:1515"
+                - "55000:55000"
+              environment:
+                - WAZUH_INDEXER_URL=https://wazuh-indexer-new:9200
+                - WAZUH_INDEXER_USER=admin
+                - WAZUH_INDEXER_PASSWORD=${WAZUH_INDEXER_PASSWORD}
+                - WAZUH_API_USER=admin
+                - WAZUH_API_PASSWORD=${WAZUH_API_PASSWORD}
+              volumes:
+                - ./config/wazuh-manager:/var/ossec/api/configuration:ro
+                - wazuh-manager-data:/var/ossec/data
+              healthcheck:
+                test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_API_PASSWORD} https://localhost:55000/manager/status || exit 1"]
+                interval: 30s
+                timeout: 10s
+                retries: 10
+
+            wazuh-dashboard:
+              image: wazuh/wazuh-dashboard:4.13.1
+              container_name: wazuh-dashboard-new
+              restart: unless-stopped
+              depends_on:
+                wazuh-manager:
+                  condition: service_healthy
+              ports:
+                - "443:5601"
+              environment:
+                - OPENSEARCH_HOSTS=["https://wazuh-indexer-new:9200"]
+                - OPENSEARCH_USERNAME=admin
+                - OPENSEARCH_PASSWORD=${WAZUH_INDEXER_PASSWORD}
+                - OPENSEARCH_DASHBOARDS_USERNAME=admin
+                - OPENSEARCH_DASHBOARDS_PASSWORD=${WAZUH_API_PASSWORD}
+                - WAZUH_API_URL=https://wazuh-manager-new:55000
+              healthcheck:
+                test: ["CMD-SHELL", "curl -fsSk https://localhost:5601/api/status || exit 1"]
+                interval: 30s
+                timeout: 10s
+                retries: 10
+
+          volumes:
+            wazuh-indexer-data:
+            wazuh-manager-data:
+          YAML
+
+      - name: Compose up
+        run: |
+          docker compose up -d
+          docker compose ps
+
+      - name: Wait for indexer health
+        run: |
+          for i in {1..30}; do
+            if curl -fsSL -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty -k >/dev/null; then
+              echo "Indexer is healthy"; exit 0
+            fi
+            sleep 10
+          done
+          echo "Indexer failed to become healthy"
+          docker compose logs wazuh-indexer
+          exit 1
+
+      - name: Wait for manager health
+        run: |
+          for i in {1..30}; do
+            if curl -fsSk -u admin:${WAZUH_API_PASSWORD} https://localhost:55000/manager/status >/dev/null; then
+              echo "Manager is healthy"; exit 0
+            fi
+            sleep 10
+          done
+          echo "Manager failed to become healthy"
+          docker compose logs wazuh-manager
+          exit 1
+
+      - name: Wait for dashboard health
+        run: |
+          for i in {1..30}; do
+            if curl -fsSk https://localhost:5601/api/status >/dev/null; then
+              echo "Dashboard is healthy"; exit 0
+            fi
+            sleep 10
+          done
+          echo "Dashboard failed to become healthy"
+          docker compose logs wazuh-dashboard
+          exit 1
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose logs --no-color > compose-logs.txt || true
+          tail -n +1 compose-logs.txt | sed -n '1,400p'

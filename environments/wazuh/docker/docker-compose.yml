@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   wazuh-indexer:
-    image: wazuh/wazuh-indexer:4.13.1
+    image: ${WAZUH_IMAGE_REGISTRY:-wazuh}/wazuh-indexer:${WAZUH_VERSION:-4.13.1}
     hostname: wazuh-indexer
     restart: unless-stopped
     environment:
@@ -14,11 +14,21 @@ services:
     ports:
       - "9200:9200"
     volumes:
+      - ./config/indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ./config/indexer/certs:/usr/share/wazuh-indexer/config/certs:ro
       - wazuh-indexer-data:/var/lib/wazuh-indexer
-      - ./config/indexer/opensearch.yml:/usr/share/wazuh-indexer/config/opensearch.yml:ro
+      - wazuh-indexer-logs:/var/log/wazuh-indexer
+    user: "0:0"
+    command: >
+      sh -c "
+        chown -R 1000:1000 /usr/share/wazuh-indexer/config/certs || true &&
+        chmod 644 /usr/share/wazuh-indexer/config/certs/*.pem || true &&
+        chmod 600 /usr/share/wazuh-indexer/config/certs/*.key || true &&
+        exec gosu 1000:1000 /usr/share/wazuh-indexer/bin/opensearch
+      "
 
   wazuh-manager:
-    image: wazuh/wazuh-manager:4.13.1
+    image: ${WAZUH_IMAGE_REGISTRY:-wazuh}/wazuh-manager:${WAZUH_VERSION:-4.13.1}
     hostname: wazuh-manager
     restart: unless-stopped
     depends_on:
@@ -40,10 +50,11 @@ services:
     volumes:
       - wazuh-manager-data:/var/ossec/data
       - ./config/manager/ossec.conf:/var/ossec/etc/ossec.conf:ro
-      - ./config/manager/api:/var/ossec/api/configuration:ro
+      - ./config/manager/api/ssl:/var/ossec/api/configuration/ssl:ro
+      - ./config/manager/api/api.yaml:/var/ossec/api/configuration/api.yaml:ro
 
   wazuh-dashboard:
-    image: wazuh/wazuh-dashboard:4.13.1
+    image: ${WAZUH_IMAGE_REGISTRY:-wazuh}/wazuh-dashboard:${WAZUH_VERSION:-4.13.1}
     hostname: wazuh-dashboard
     restart: unless-stopped
     depends_on:
@@ -62,7 +73,9 @@ services:
       API_PASSWORD: ${WAZUH_API_PASSWORD}
     volumes:
       - ./config/dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
+      - ./config/dashboard/certs:/usr/share/wazuh-dashboard/certs:ro
 
 volumes:
   wazuh-indexer-data:
+  wazuh-indexer-logs:
   wazuh-manager-data:
