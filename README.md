@@ -13,6 +13,10 @@
   - Docker Compose all-in-one: `environments/wazuh/docker/docker-compose.yml`.
   - Ansible-плейбук для агентов: `environments/wazuh/ansible/playbook.yml`.
 
+## Индекс конфигураций
+
+- [CONFIGURATION_INDEX.md](CONFIGURATION_INDEX.md) — сводная таблица с путями до основных конфигурационных файлов, сертификатов и шаблонов переменных окружения, а также с кратким описанием ключевых параметров.
+
 ## Запуск окружений через Docker Compose
 
 Все docker-compose файлы совместимы с Compose V2 (`docker compose`). Убедитесь, что у вас установлены Docker Engine и плагин Compose, а также что выполняются команды из корня репозитория или соответствующего подкаталога.

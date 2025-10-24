@@ -1,4 +1,4 @@
-Рабочий конфиг 
+Рабочий конфиг
 
 services:
   wazuh-indexer:
@@ -10,11 +10,12 @@ services:
     ports:
       - "9200:9200"
     environment:
-      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g -Djava.security.policy=file:///usr/share/wazuh-indexer/security.policy"
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
-      - ${PWD}/tests/docker/config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
-      - ${PWD}/config/wazuh-indexer/certs:/usr/share/wazuh-indexer/certs:ro
+      - ${PWD}/config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ${PWD}/config/wazuh-indexer/security.policy:/usr/share/wazuh-indexer/security.policy:ro
+      - ${PWD}/config/wazuh-indexer/certs:/etc/wazuh-indexer/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty || exit 1"]
       interval: 30s

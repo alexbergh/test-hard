@@ -1,0 +1,14 @@
+grant {
+    // Разрешаем доступ к сертификатам и конфигурации OpenSearch
+    permission java.io.FilePermission "/etc/wazuh-indexer/certs/-", "read";
+    permission java.io.FilePermission "/usr/share/wazuh-indexer/-", "read";
+    permission java.io.FilePermission "/var/lib/wazuh-indexer/-", "read,write";
+    permission java.io.FilePermission "/var/log/wazuh-indexer/-", "read,write";
+    permission java.io.FilePermission "/tmp/-", "read,write";
+
+    // Разрешаем сетевые операции
+    permission java.net.SocketPermission "*", "connect,resolve";
+
+    // Разрешаем чтение и изменение системных свойств (требуется для некоторых плагинов OpenSearch)
+    permission java.util.PropertyPermission "*", "read,write";
+};
