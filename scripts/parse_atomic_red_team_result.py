@@ -1,29 +1,21 @@
 #!/usr/bin/env python3
-import json
-import os
-import sys
-from pathlib import Path
+import sys, json, os
 
+# Заготовка: если у вас есть JSON-вывод из своего раннера — преобразуйте его.
+# Ожидается распечатка строк в стиле Prometheus:
+# art_test_result{host="host", test="Txxxx"} 0|1
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print("Usage: parse_atomic_red_team_result.py <result.json>", file=sys.stderr)
-        sys.exit(1)
-
-    result_path = Path(sys.argv[1])
-    if not result_path.exists():
-        print(f"Result file {result_path} does not exist", file=sys.stderr)
-        sys.exit(1)
-
-    with result_path.open("r", encoding="utf-8") as handle:
-        data = json.load(handle)
-
+def main(path):
+    with open(path, "r") as f:
+        data = json.load(f)
     host = data.get("host", os.uname().nodename)
-    for test in data.get("tests", []):
-        test_id = test.get("id", "unknown")
-        result = 1 if not test.get("passed", False) else 0
-        print(f"art_test_result{{host=\"{host}\",test=\"{test_id}\"}} {result}")
-
+    for t in data.get("tests", []):
+        test_id = t.get("id", "unknown")
+        result = 1 if t.get("passed", False) is False else 0
+        print(f'art_test_result{{host="{host}",test="{test_id}"}} {result}')
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        print("Usage: parse_atomic_red_team_result.py <result.json>", file=sys.stderr)
+        sys.exit(1)
+    main(sys.argv[1])

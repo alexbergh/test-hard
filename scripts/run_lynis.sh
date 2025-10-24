@@ -1,15 +1,14 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
+#!/bin/bash
 REPORT_FILE="/tmp/lynis-report-$(hostname).json"
+METRICS_FILE="/tmp/lynis-metrics-$(hostname).txt"
 
-if ! command -v lynis >/dev/null 2>&1; then
-  echo "lynis not found; install it first." >&2
-  exit 1
-fi
+# Запуск Lynis
+lynis audit system --json --report-file "$REPORT_FILE"
 
-# Run the audit (requires sudo for a full system scan).
-sudo lynis audit system --quiet --no-colors --json --report-file "$REPORT_FILE"
+# Парсинг отчета и отправка метрик через Telegraf (через socat или curl)
+/usr/bin/python3 "$(dirname "$0")/parse_lynis_report.py" "$REPORT_FILE" > "$METRICS_FILE"
 
-# Emit metrics in Prometheus exposition format.
-/usr/bin/env python3 "$(dirname "$0")/parse_lynis_report.py" "$REPORT_FILE"
+# Отправка метрик в Telegraf (если Telegraf настроен на input.socket_listener)
+# Или Telegraf может сам читать этот файл через input.file
+# Пример для input.file:
+# mv "$METRICS_FILE" "/var/lib/telegraf/lynis_metrics.txt" # Telegraf будет читать из /var/lib/telegraf
