@@ -84,27 +84,21 @@ services:
   # Wazuh stack
   ##############################################################################
   wazuh-indexer:
-    image: local/wazuh-indexer:dev
+    build:
+      context: .
+      dockerfile: Dockerfile.wazuh-indexer
     container_name: wazuh-indexer
-    pull_policy: if_not_present
     restart: unless-stopped
-    user: "1000:1000"
-    environment:
-      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
-      - DISABLE_SECURITY_PLUGIN=false
-    volumes:
-      - wazuh-indexer-data:/var/lib/wazuh-indexer
-      # корректный путь для конфига — в корень, не в "config/"
-      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
-      - ./config/wazuh-indexer/certs:/usr/share/wazuh-indexer/certs:ro
-      - wazuh-indexer-logs:/var/log/wazuh-indexer
     ports:
       - "9200:9200"
+    environment:
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - ${PWD}/tests/docker/config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ${PWD}/config/wazuh-indexer/certs:/usr/share/wazuh-indexer/certs:ro
     healthcheck:
-      test: >
-        CMD-SHELL curl -fsS --cacert /etc/wazuh-indexer/certs/root-ca.pem
-        -u admin:${WAZUH_INDEXER_PASSWORD}
-        https://localhost:9200/_cluster/health?pretty >/dev/null || exit 1
+      test: ["CMD-SHELL", "curl -fsSk -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
