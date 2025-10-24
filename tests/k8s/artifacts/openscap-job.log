@@ -1,4 +1,0 @@
-OpenSCAP Kubernetes Job (симуляция)
-Timestamp: 2025-01-01T00:01:00+00:00
-Results:
-- Verify /etc/os-release is present: passed (Определение oval:org.hardening:def:1 для платформ n/a)
