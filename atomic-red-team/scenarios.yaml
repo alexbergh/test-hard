@@ -1,0 +1,59 @@
+scenarios:
+  - id: linux_system_discovery
+    name: "Linux system discovery baseline"
+    technique: T1082
+    technique_name: "System Information Discovery"
+    description: |
+      Collect operating system and environment metadata using Atomic Red Team
+      tests that emulate adversary reconnaissance on Linux hosts. These
+      executions provide realistic telemetry for validating detections around
+      OS fingerprinting and environment discovery.
+    supported_platforms: [linux]
+    detection:
+      - Monitor chained invocations of `uname`, `lsb_release`, `/etc/os-release`,
+        and other host fingerprinting commands executed by untrusted users.
+      - Alert when environment variables are enumerated outside administrative
+        maintenance windows.
+    tests:
+      - number: 3
+        description: "List OS information via uname and release files"
+      - number: 8
+        description: "Hostname discovery using built-in utilities"
+      - number: 12
+        description: "Enumerate environment variables from shell"
+
+  - id: linux_network_enumeration
+    name: "Linux network enumeration via netstat"
+    technique: T1049
+    technique_name: "System Network Connections Discovery"
+    description: |
+      Execute a lightweight network-discovery scenario that captures the
+      behaviour of adversaries enumerating listening sockets and active
+      connections on Linux systems.
+    supported_platforms: [linux]
+    detection:
+      - Baseline legitimate `netstat`, `ss`, or `lsof` usage and alert when
+        enumeration utilities are executed by unusual accounts or at odd hours.
+    tests:
+      - number: 3
+        description: "Discover network connections with shell utilities"
+
+  - id: windows_collection_baseline
+    name: "Windows automated collection primitives"
+    technique: T1119
+    technique_name: "Automated Collection"
+    description: |
+      Demonstrate native collection behaviours by staging data with Command
+      Prompt and PowerShell. The scenario produces telemetry suitable for tuning
+      detections around bulk data staging prior to exfiltration.
+    supported_platforms: [windows]
+    detection:
+      - Watch for invocations of archive utilities (zip, tar) from temporary
+        directories combined with wildcard collection patterns.
+      - Inspect PowerShell transcript logs for scripted staging of user profiles
+        or document folders.
+    tests:
+      - number: 1
+        description: "Automated collection with Command Prompt"
+      - number: 2
+        description: "Automated collection with PowerShell"
