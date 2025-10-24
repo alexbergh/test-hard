@@ -1,0 +1,14 @@
+# Alerting rules for Prometheus.
+groups:
+  - name: telegraf-health
+    rules:
+      - alert: TelegrafScrapeDown
+        expr: up{job="telegraf"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Telegraf endpoint is unreachable"
+          description: |
+            Prometheus has failed to scrape the Telegraf job for more than two minutes.
+            Verify that the Telegraf agent is running and accessible on the configured host/port.
