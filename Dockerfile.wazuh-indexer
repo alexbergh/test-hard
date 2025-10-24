@@ -1,18 +1,13 @@
-# Dockerfile.wazuh-indexer
 FROM wazuh/wazuh-indexer:4.13.1
 
-USER root
-
-# Копируем сертификаты в образ
 COPY config/wazuh-indexer/certs/ /etc/wazuh-indexer/certs/
 
-# Универсально чиним владельца и права:
-# - все *.pem читаемы (644)
-# - приватные ключи (*/-key.pem или *.key) — 600
+COPY config/wazuh-indexer/opensearch.yml /usr/share/wazuh-indexer/opensearch.yml
+
 RUN set -eux; \
     chown -R 1000:1000 /etc/wazuh-indexer/certs/; \
+    chmod -R 755 /etc/wazuh-indexer/certs/; \
     find /etc/wazuh-indexer/certs -type f -name '*.pem' -exec chmod 644 {} +; \
-    find /etc/wazuh-indexer/certs -type f \( -name '*-key.pem' -o -name '*.key' \) -exec chmod 600 {} +; \
-    ls -la /etc/wazuh-indexer/certs/
-
-USER 1000
+    find /etc/wazuh-indexer/certs -type f -name '*.key' -exec chmod 644 {} +; \
+    chown 1000:1000 /usr/share/wazuh-indexer/opensearch.yml; \
+    chmod 644 /usr/share/wazuh-indexer/opensearch.yml
