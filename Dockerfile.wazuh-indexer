@@ -5,15 +5,3 @@ COPY config/wazuh-indexer/certs/ /etc/wazuh-indexer/certs/
 
 # Копируем конфигурационные файлы
 COPY config/wazuh-indexer/opensearch.yml /usr/share/wazuh-indexer/opensearch.yml
-
-# Копируем политику безопасности
-COPY config/wazuh-indexer/security/security.policy /usr/share/wazuh-indexer/config/opensearch-security.policy
-
-# Устанавливаем правильные права
-USER root
-RUN chown -R 1000:1000 /etc/wazuh-indexer/certs/ && \
-    chmod -R 644 /etc/wazuh-indexer/certs/*.pem && \
-    chmod -R 644 /etc/wazuh-indexer/certs/*.key && \
-    chown 1000:1000 /usr/share/wazuh-indexer/opensearch.yml && \
-    chown 1000:1000 /usr/share/wazuh-indexer/config/opensearch-security.policy
-USER 1000
