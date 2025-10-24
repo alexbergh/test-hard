@@ -4,3 +4,6 @@
 /tests/k8s/.kind-config
 /tests/docker/openscap/content/fstec-sample.zip
 /tests/docker/openscap/content/fstec/
+
+# OpenSSL serial files
+*.srl

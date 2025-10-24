@@ -1,0 +1,131 @@
+name: codex-wazuh
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  codex:
+    runs-on: ubuntu-latest
+    env:
+      WAZUH_INDEXER_PASSWORD: ${{ secrets.WAZUH_INDEXER_PASSWORD }}
+      WAZUH_API_PASSWORD: ${{ secrets.WAZUH_API_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Docker Compose
+        run: |
+          docker version
+          docker compose version
+
+      - name: Inspect certificate permissions on host
+        run: |
+          echo "=== host certificate permissions ==="
+          ls -la environments/wazuh/docker/config/wazuh-indexer/certs || true
+
+      - name: Inspect certificate permissions via bind mount
+        run: |
+          docker run --rm -v "$PWD/environments/wazuh/docker/config/wazuh-indexer/certs:/certs:ro" \
+            wazuh/wazuh-indexer:4.13.1 sh -lc 'id && ls -la /certs || true'
+
+      - name: Build hardened wazuh-indexer image
+        working-directory: environments/wazuh/docker
+        run: |
+          docker build \
+            --build-arg WAZUH_IMAGE_REGISTRY=${WAZUH_IMAGE_REGISTRY:-wazuh} \
+            --build-arg WAZUH_VERSION=${WAZUH_VERSION:-4.13.1} \
+            -t wazuh-indexer-custom:latest \
+            -f Dockerfile.wazuh-indexer .
+
+      - name: Start stack
+        working-directory: environments/wazuh/docker
+        env:
+          WAZUH_INDEXER_PASSWORD: ${{ env.WAZUH_INDEXER_PASSWORD }}
+          WAZUH_API_PASSWORD: ${{ env.WAZUH_API_PASSWORD }}
+        run: |
+          set -e
+          export WAZUH_IMAGE_REGISTRY=${WAZUH_IMAGE_REGISTRY:-wazuh}
+          export WAZUH_VERSION=${WAZUH_VERSION:-4.13.1}
+          export WAZUH_INDEXER_PASSWORD=${WAZUH_INDEXER_PASSWORD:-admin}
+          export WAZUH_API_PASSWORD=${WAZUH_API_PASSWORD:-admin}
+          docker compose down --volumes --remove-orphans || true
+          docker compose up -d
+          docker compose ps
+
+      - name: Wait for indexer health
+        working-directory: environments/wazuh/docker
+        env:
+          WAZUH_INDEXER_PASSWORD: ${{ env.WAZUH_INDEXER_PASSWORD }}
+        run: |
+          export WAZUH_INDEXER_PASSWORD=${WAZUH_INDEXER_PASSWORD:-admin}
+          for attempt in $(seq 1 30); do
+            if curl -fsSk -u admin:${WAZUH_INDEXER_PASSWORD} https://localhost:9200/_cluster/health?pretty >/dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+          docker compose logs wazuh-indexer
+          exit 1
+
+      - name: Wait for manager health
+        working-directory: environments/wazuh/docker
+        env:
+          WAZUH_API_PASSWORD: ${{ env.WAZUH_API_PASSWORD }}
+        run: |
+          export WAZUH_API_PASSWORD=${WAZUH_API_PASSWORD:-admin}
+          for attempt in $(seq 1 30); do
+            if curl -fsSk -u admin:${WAZUH_API_PASSWORD} https://localhost:55000/manager/status >/dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+          docker compose logs wazuh-manager
+          exit 1
+
+      - name: Wait for dashboard health
+        working-directory: environments/wazuh/docker
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsSk https://localhost:5601/api/status >/dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+          docker compose logs wazuh-dashboard
+          exit 1
+
+      - name: Assert indexer logs are clean
+        working-directory: environments/wazuh/docker
+        run: |
+          docker compose logs wazuh-indexer | tee /tmp/indexer.log
+          if grep -q 'AccessControlException' /tmp/indexer.log; then
+            echo 'AccessControlException detected in wazuh-indexer logs'
+            exit 1
+          fi
+
+      - name: Upload indexer logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wazuh-indexer-logs
+          path: /tmp/indexer.log
+          if-no-files-found: ignore
+
+      - name: Dump compose logs on failure
+        if: failure()
+        working-directory: environments/wazuh/docker
+        run: |
+          docker compose logs --no-color > compose-logs.txt || true
+          sed -n '1,400p' compose-logs.txt
+          cp compose-logs.txt /tmp/compose-logs.txt || true
+
+      - name: Upload compose logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-logs
+          path: /tmp/compose-logs.txt
+          if-no-files-found: ignore

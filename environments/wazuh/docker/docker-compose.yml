@@ -1,7 +1,13 @@
 version: "3.9"
 services:
   wazuh-indexer:
-    image: wazuh/wazuh-indexer:4.13.1
+    build:
+      context: .
+      dockerfile: Dockerfile.wazuh-indexer
+      args:
+        WAZUH_IMAGE_REGISTRY: ${WAZUH_IMAGE_REGISTRY:-wazuh}
+        WAZUH_VERSION: ${WAZUH_VERSION:-4.13.1}
+    image: wazuh-indexer-custom:latest
     hostname: wazuh-indexer
     restart: unless-stopped
     environment:
@@ -14,11 +20,12 @@ services:
     ports:
       - "9200:9200"
     volumes:
+      - ./config/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
       - wazuh-indexer-data:/var/lib/wazuh-indexer
-      - ./config/indexer/opensearch.yml:/usr/share/wazuh-indexer/config/opensearch.yml:ro
+      - wazuh-indexer-logs:/var/log/wazuh-indexer
 
   wazuh-manager:
-    image: wazuh/wazuh-manager:4.13.1
+    image: ${WAZUH_IMAGE_REGISTRY:-wazuh}/wazuh-manager:${WAZUH_VERSION:-4.13.1}
     hostname: wazuh-manager
     restart: unless-stopped
     depends_on:
@@ -40,10 +47,11 @@ services:
     volumes:
       - wazuh-manager-data:/var/ossec/data
       - ./config/manager/ossec.conf:/var/ossec/etc/ossec.conf:ro
-      - ./config/manager/api:/var/ossec/api/configuration:ro
+      - ./config/manager/api/ssl:/var/ossec/api/configuration/ssl:ro
+      - ./config/manager/api/api.yaml:/var/ossec/api/configuration/api.yaml:ro
 
   wazuh-dashboard:
-    image: wazuh/wazuh-dashboard:4.13.1
+    image: ${WAZUH_IMAGE_REGISTRY:-wazuh}/wazuh-dashboard:${WAZUH_VERSION:-4.13.1}
     hostname: wazuh-dashboard
     restart: unless-stopped
     depends_on:
@@ -62,7 +70,9 @@ services:
       API_PASSWORD: ${WAZUH_API_PASSWORD}
     volumes:
       - ./config/dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
+      - ./config/dashboard/certs:/usr/share/wazuh-dashboard/certs:ro
 
 volumes:
   wazuh-indexer-data:
+  wazuh-indexer-logs:
   wazuh-manager-data:
