@@ -1,4 +1,9 @@
 #!/bin/bash
+
+if [[ "${LYNIS_ALREADY_ESCALATED:-0}" != "1" && "$(id -u)" -ne 0 ]]; then
+  exec sudo -E LYNIS_ALREADY_ESCALATED=1 "$0" "$@"
+fi
+
 REPORT_FILE="/tmp/lynis-report-$(hostname).json"
 METRICS_FILE="/tmp/lynis-metrics-$(hostname).txt"
 
