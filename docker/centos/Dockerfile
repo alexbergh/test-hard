@@ -5,11 +5,11 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=on \
     HARDENING_RESULTS_DIR=/var/lib/hardening/results \
     HARDENING_ART_STORAGE=/var/lib/hardening/art-storage
 
-RUN yum install -y epel-release \
-    && (yum remove -y curl-minimal || true) \
-    && yum install -y sudo python3 python3-pip git curl wget ca-certificates \
+RUN dnf install -y epel-release \
+    && crb enable \
+    && dnf install -y --allowerasing sudo python3 python3-pip git curl wget ca-certificates \
         openscap-scanner scap-security-guide lynis \
-    && yum clean all \
+    && dnf clean all \
     && pip install --no-cache-dir atomic-operator attrs click pyyaml \
     && useradd --create-home --shell /bin/bash agent \
     && echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent \
