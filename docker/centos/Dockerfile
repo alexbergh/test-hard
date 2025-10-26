@@ -6,6 +6,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=on \
     HARDENING_ART_STORAGE=/var/lib/hardening/art-storage
 
 RUN yum install -y epel-release \
+    && (yum remove -y curl-minimal || true) \
     && yum install -y sudo python3 python3-pip git curl wget ca-certificates \
         openscap-scanner scap-security-guide lynis \
     && yum clean all \
