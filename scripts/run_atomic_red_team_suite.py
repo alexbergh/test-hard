@@ -507,10 +507,15 @@ def write_outputs(
     return history_path
 
 
+def _escape_label_value(value: str) -> str:
+    """Return a Prometheus-safe label value."""
+
+    return str(value).replace("\\", "\\\\").replace('"', '\\"')
+
+
 def render_metric(name: str, labels: Dict[str, str], value: int) -> str:
     encoded_labels = ",".join(
-        f"{key}=\"{str(val).replace('\\\\', '\\\\').replace('\"', '\\\"')}\""
-        for key, val in sorted(labels.items())
+        f"{key}=\"{_escape_label_value(val)}\"" for key, val in sorted(labels.items())
     )
     return f"{name}{{{encoded_labels}}} {value}"
 
