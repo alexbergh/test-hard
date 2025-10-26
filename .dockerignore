@@ -1,3 +1,5 @@
 .git
 art-storage/history
+art-storage/results
+art-storage/prometheus
 __pycache__
