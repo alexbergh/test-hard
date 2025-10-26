@@ -18,6 +18,11 @@ fi
 
 compose_bin=${COMPOSE_BIN:-docker compose}
 
+if ! command -v "${compose_bin%% *}" >/dev/null 2>&1; then
+  echo "[suite] Required command '${compose_bin}' is not available. Install Docker Compose or set COMPOSE_BIN." >&2
+  exit 1
+fi
+
 ${compose_bin} build "${SERVICES[@]}"
 ${compose_bin} up -d "${SERVICES[@]}"
 
