@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Only include agents with publicly accessible base images by default.
 SERVICES=(
   debian-agent
   ubuntu-agent
   fedora-agent
   centos-agent
-  redos-agent
-  altlinux-agent
-  astra-agent
 )
 
 if [[ "${1:-}" == "--list" ]]; then

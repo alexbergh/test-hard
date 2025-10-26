@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   prometheus:
     image: prom/prometheus:latest
@@ -103,51 +101,6 @@ services:
       RUN_HARDENING_ON_START: ${RUN_HARDENING_ON_START:-false}
       ATOMIC_DRY_RUN: ${ATOMIC_DRY_RUN:-true}
       HARDENING_RESULTS_DIR: /var/lib/hardening/results/centos
-
-  redos-agent:
-    build:
-      context: .
-      dockerfile: docker/redos/Dockerfile
-    hostname: redos-agent
-    volumes:
-      - ./scripts:/opt/hardening/scripts:ro
-      - ./atomic-red-team:/opt/hardening/atomic-red-team:ro
-      - ./art-storage:/var/lib/hardening/art-storage
-      - ./art-storage/results:/var/lib/hardening/results
-    environment:
-      RUN_HARDENING_ON_START: ${RUN_HARDENING_ON_START:-false}
-      ATOMIC_DRY_RUN: ${ATOMIC_DRY_RUN:-true}
-      HARDENING_RESULTS_DIR: /var/lib/hardening/results/redos
-
-  altlinux-agent:
-    build:
-      context: .
-      dockerfile: docker/altlinux/Dockerfile
-    hostname: altlinux-agent
-    volumes:
-      - ./scripts:/opt/hardening/scripts:ro
-      - ./atomic-red-team:/opt/hardening/atomic-red-team:ro
-      - ./art-storage:/var/lib/hardening/art-storage
-      - ./art-storage/results:/var/lib/hardening/results
-    environment:
-      RUN_HARDENING_ON_START: ${RUN_HARDENING_ON_START:-false}
-      ATOMIC_DRY_RUN: ${ATOMIC_DRY_RUN:-true}
-      HARDENING_RESULTS_DIR: /var/lib/hardening/results/altlinux
-
-  astra-agent:
-    build:
-      context: .
-      dockerfile: docker/astra/Dockerfile
-    hostname: astra-agent
-    volumes:
-      - ./scripts:/opt/hardening/scripts:ro
-      - ./atomic-red-team:/opt/hardening/atomic-red-team:ro
-      - ./art-storage:/var/lib/hardening/art-storage
-      - ./art-storage/results:/var/lib/hardening/results
-    environment:
-      RUN_HARDENING_ON_START: ${RUN_HARDENING_ON_START:-false}
-      ATOMIC_DRY_RUN: ${ATOMIC_DRY_RUN:-true}
-      HARDENING_RESULTS_DIR: /var/lib/hardening/results/astra
 
 volumes:
   prometheus_data:

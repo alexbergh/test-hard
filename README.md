@@ -16,7 +16,7 @@ docker compose up -d
 
 ## Демонстрационная мультидистрибутивная среда
 
-В каталоге `docker/` подготовлены Dockerfile'ы для Debian, Ubuntu, Fedora, CentOS Stream, РедОС, Альт Линукс и Astra Linux 1.7. Контейнеры
+В каталоге `docker/` подготовлены Dockerfile'ы для Debian, Ubuntu, Fedora и CentOS Stream. Контейнеры
 собираются через общий `docker-compose.yml` и монтируют каталоги `scripts/`, `atomic-red-team/` и `art-storage/`, чтобы использовать
 одинаковые сценарии hardening-аудита.
 
@@ -32,8 +32,8 @@ docker compose up -d
 установите переменную окружения при запуске `docker compose`, например: `ATOMIC_DRY_RUN=false docker compose up`. Для немедленного запуска
 проверок при старте контейнера добавьте `RUN_HARDENING_ON_START=true`.
 
-> **Важно:** Docker-образы РедОС, Альт и Astra Linux публикуются в вендорских реестрах. Убедитесь, что у вас есть доступ к нужным
-> registry и при необходимости скорректируйте базовые образы в `docker/*/Dockerfile` (например, под локальный mirror).
+По умолчанию `docker-compose.yml` и `scripts/run_hardening_suite.sh` запускают дистрибутивы с публично доступными образами
+(Debian, Ubuntu, Fedora, CentOS).
 
 ## Alerting
 Prometheus загружает правила из `prometheus/alert.rules.yml` и пересылает сработавшие оповещения в Alertmanager.
@@ -97,16 +97,13 @@ pip install atomic-operator attrs click pyyaml
 ```
 test-hard/
 ├── .env.example               # Пример переменных окружения Grafana
-├── docker-compose.yml         # Prometheus и Grafana
+├── docker-compose.yml         # Prometheus, Grafana и доступные агенты
 ├── docker/
 │   ├── common/                # Общие entrypoint-скрипты для агентов
 │   ├── debian/                # Dockerfile для Debian 12
 │   ├── ubuntu/                # Dockerfile для Ubuntu 22.04
 │   ├── fedora/                # Dockerfile для Fedora 39
-│   ├── centos/                # Dockerfile для CentOS Stream 9
-│   ├── redos/                 # Dockerfile для РедОС 7
-│   ├── altlinux/              # Dockerfile для Альт Линукс p10
-│   └── astra/                 # Dockerfile для Astra Linux 1.7
+│   └── centos/                # Dockerfile для CentOS Stream 9
 ├── grafana/
 │   └── provisioning/
 │       ├── dashboards/
