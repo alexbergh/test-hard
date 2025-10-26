@@ -9,7 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         sudo python3 python3-pip python3-venv git curl wget ca-certificates \
-        openscap-scanner scap-security-guide lynis \
+        lynis \
     && pip install --no-cache-dir atomic-operator attrs click pyyaml \
     && useradd --create-home --shell /bin/bash agent \
     && echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent \
