@@ -14,6 +14,27 @@ docker compose up -d
 * Alertmanager: http://localhost:9093
 * Grafana: http://localhost:3000 (учётные данные из `.env`)
 
+## Демонстрационная мультидистрибутивная среда
+
+В каталоге `docker/` подготовлены Dockerfile'ы для Debian, Ubuntu, Fedora, CentOS Stream, РедОС, Альт Линукс и Astra Linux 1.7. Контейнеры
+собираются через общий `docker-compose.yml` и монтируют каталоги `scripts/`, `atomic-red-team/` и `art-storage/`, чтобы использовать
+одинаковые сценарии hardening-аудита.
+
+```bash
+# сборка и запуск всех контейнеров + выполнение проверок внутри
+./scripts/run_hardening_suite.sh
+
+# только перечислить доступные сервисы
+./scripts/run_hardening_suite.sh --list
+```
+
+По умолчанию проверки Atomic Red Team выполняются в режиме dry-run (`ATOMIC_DRY_RUN=true`). Чтобы запускать реальные техники,
+установите переменную окружения при запуске `docker compose`, например: `ATOMIC_DRY_RUN=false docker compose up`. Для немедленного запуска
+проверок при старте контейнера добавьте `RUN_HARDENING_ON_START=true`.
+
+> **Важно:** Docker-образы РедОС, Альт и Astra Linux публикуются в вендорских реестрах. Убедитесь, что у вас есть доступ к нужным
+> registry и при необходимости скорректируйте базовые образы в `docker/*/Dockerfile` (например, под локальный mirror).
+
 ## Alerting
 Prometheus загружает правила из `prometheus/alert.rules.yml` и пересылает сработавшие оповещения в Alertmanager.
 Настройте webhook в `prometheus/alertmanager.yml`, чтобы направлять уведомления в нужную систему (Grafana, Slack, PagerDuty и т.д.).
@@ -77,6 +98,15 @@ pip install atomic-operator attrs click pyyaml
 test-hard/
 ├── .env.example               # Пример переменных окружения Grafana
 ├── docker-compose.yml         # Prometheus и Grafana
+├── docker/
+│   ├── common/                # Общие entrypoint-скрипты для агентов
+│   ├── debian/                # Dockerfile для Debian 12
+│   ├── ubuntu/                # Dockerfile для Ubuntu 22.04
+│   ├── fedora/                # Dockerfile для Fedora 39
+│   ├── centos/                # Dockerfile для CentOS Stream 9
+│   ├── redos/                 # Dockerfile для РедОС 7
+│   ├── altlinux/              # Dockerfile для Альт Линукс p10
+│   └── astra/                 # Dockerfile для Astra Linux 1.7
 ├── grafana/
 │   └── provisioning/
 │       ├── dashboards/
@@ -97,10 +127,13 @@ test-hard/
 │   ├── parse_atomic_red_team_result.py
 │   ├── parse_lynis_report.py
 │   ├── parse_openscap_report.py
+│   ├── run_all_checks.sh
 │   ├── run_atomic_red_team_test.sh
+│   ├── run_hardening_suite.sh
 │   ├── run_lynis.sh
 │   └── run_openscap.sh
 ├── art-storage/               # Хранилище результатов Atomic Red Team (latest.json, history/, prometheus/)
+│   └── results/               # Метрики и итоги комплексных проверок
 ├── telegraf/
 │   └── telegraf.conf
 └── Makefile                   # Упрощённые команды docker compose
