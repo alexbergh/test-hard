@@ -3,12 +3,15 @@ FROM ghcr.io/altlinux/base:p10
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on \
     PYTHONUNBUFFERED=1 \
     HARDENING_RESULTS_DIR=/var/lib/hardening/results \
-    HARDENING_ART_STORAGE=/var/lib/hardening/art-storage
+    HARDENING_ART_STORAGE=/var/lib/hardening/art-storage \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 RUN apt-get update \
-    && apt-get install -y sudo python3 python3-pip git curl wget ca-certificates \
+    && apt-get install -y sudo python3 python3-pip python3-venv git curl wget ca-certificates \
         openscap-scanner scap-security-guide lynis \
-    && pip install --no-cache-dir atomic-operator attrs click pyyaml \
+    && python3 -m venv "${VIRTUAL_ENV}" \
+    && "${VIRTUAL_ENV}/bin/pip" install --no-cache-dir atomic-operator attrs click pyyaml \
     && useradd --create-home --shell /bin/bash agent \
     && echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent \
     && chmod 440 /etc/sudoers.d/agent \

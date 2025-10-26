@@ -5,14 +5,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     HARDENING_RESULTS_DIR=/var/lib/hardening/results \
     HARDENING_ART_STORAGE=/var/lib/hardening/art-storage \
-    PATH="/opt/venv/bin:${PATH}"
+    VIRTUAL_ENV=/opt/venv \
+    PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         sudo python3 python3-pip python3-venv git curl wget ca-certificates \
         lynis \
-    && python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir atomic-operator attrs click pyyaml \
+    && python3 -m venv "${VIRTUAL_ENV}" \
+    && "${VIRTUAL_ENV}/bin/pip" install --no-cache-dir atomic-operator attrs click pyyaml \
     && useradd --create-home --shell /bin/bash agent \
     && echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent \
     && chmod 440 /etc/sudoers.d/agent \
