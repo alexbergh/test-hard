@@ -5,8 +5,9 @@
 
 ## Быстрый старт
 ```bash
+# (опционально) создайте .env, чтобы переопределить учетные данные Grafana
 cp .env.example .env
-# при необходимости измените GF_ADMIN_USER/GF_ADMIN_PASSWORD
+# можно пропустить этот шаг — docker compose использует admin/admin по умолчанию
 make up
 ```
 
