@@ -14,13 +14,13 @@ run_install() {
   local name="$1"
   case "$name" in
     target-fedora)
-      docker exec "$name" sh -c "dnf -y update && dnf -y install lynis"
+      docker exec "$name" sh -c "dnf -y update && dnf -y install lynis procps-ng"
       ;;
     target-centos)
-      docker exec "$name" sh -c "dnf -y update && dnf -y install epel-release && dnf -y install lynis"
+      docker exec "$name" sh -c "dnf -y update && dnf -y install epel-release && dnf -y install lynis procps-ng"
       ;;
     target-debian|target-ubuntu)
-      docker exec "$name" sh -c "apt-get update && apt-get install -y lynis"
+      docker exec "$name" sh -c "apt-get update && apt-get install -y lynis procps"
       ;;
     *)
       echo "Unknown container $name for Lynis install" >&2
@@ -33,6 +33,10 @@ audit_container() {
   local name="$1"
   local logfile="/reports/lynis/${name}.log"
   echo "[Lynis] Running audit for ${name}" >&2
+  
+  # Удалить старые PID и lock файлы
+  docker exec "$name" sh -c "rm -f /var/run/lynis.pid /var/run/lynis.lock" 2>/dev/null || true
+  
   if ! docker exec "$name" lynis audit system --quiet --logfile /tmp/lynis.log --report-file /tmp/lynis-report.dat; then
     echo "Lynis audit failed inside ${name}" >&2
     return 1

@@ -44,11 +44,13 @@ services:
     build: ./scanners/openscap
     image: test-hard/openscap-scanner:${VERSION:-latest}
     container_name: openscap-scanner
+    privileged: true
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - ./reports:/reports
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - default
       - scanner-net
@@ -67,11 +69,13 @@ services:
     build: ./scanners/lynis
     image: test-hard/lynis-scanner:${VERSION:-latest}
     container_name: lynis-scanner
+    privileged: true
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - ./reports:/reports
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - default
       - scanner-net
