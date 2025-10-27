@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 STATUS_TO_VALUE = {"passed": 0, "failed": 1, "skipped": 2, "error": 3, "unknown": 4}
 
@@ -14,20 +21,32 @@ STATUS_TO_VALUE = {"passed": 0, "failed": 1, "skipped": 2, "error": 3, "unknown"
 def main(path: str) -> None:
     result_path = Path(path)
     if not result_path.exists():
-        print(f"Result file {result_path} not found; skipping", file=sys.stderr)
+        logger.warning("Result file %s not found; skipping", result_path)
         return
 
-    with result_path.open("r", encoding="utf-8") as handle:
-        data = json.load(handle)
+    try:
+        with result_path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except json.JSONDecodeError as exc:
+        logger.error("Failed to parse JSON from %s: %s", result_path, exc)
+        return
+    except Exception as exc:
+        logger.error("Error reading file %s: %s", result_path, exc)
+        return
 
     host = data.get("host", os.uname().nodename)
 
-    if "scenarios" in data:
-        emit_modern_format(host, data)
-    elif "tests" in data:
-        emit_legacy_format(host, data)
-    else:
-        raise ValueError("Unsupported Atomic Red Team result schema")
+    try:
+        if "scenarios" in data:
+            emit_modern_format(host, data)
+        elif "tests" in data:
+            emit_legacy_format(host, data)
+        else:
+            logger.error("Unsupported result schema in %s", result_path)
+            raise ValueError("Unsupported Atomic Red Team result schema")
+    except Exception as exc:
+        logger.error("Error emitting metrics: %s", exc)
+        raise
 
 
 def emit_modern_format(host: str, data: Dict[str, Any]) -> None:
@@ -105,6 +124,10 @@ def render_metric(name: str, labels: Dict[str, Any], value: Any) -> str:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: parse_atomic_red_team_result.py <result.json>", file=sys.stderr)
+        logger.error("Usage: parse_atomic_red_team_result.py <result.json>")
         sys.exit(1)
-    main(sys.argv[1])
+    try:
+        main(sys.argv[1])
+    except Exception as exc:
+        logger.error("Fatal error: %s", exc)
+        sys.exit(1)

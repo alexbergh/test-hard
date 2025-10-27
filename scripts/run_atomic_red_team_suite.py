@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import socket
 import sys
@@ -12,19 +13,26 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
 try:
     from atomic_operator.atomic_operator import AtomicOperator
 except ImportError as exc:  # pragma: no cover - dependency check
-    print(
-        "atomic_operator is required. Install with 'pip install atomic-operator attrs click'.",
-        file=sys.stderr,
+    logger.error(
+        "atomic_operator is required. Install with 'pip install atomic-operator attrs click'."
     )
     raise
 
 try:
     import yaml
 except ImportError as exc:  # pragma: no cover - dependency check
-    print("PyYAML is required. Install with 'pip install pyyaml'.", file=sys.stderr)
+    logger.error("PyYAML is required. Install with 'pip install pyyaml'.")
     raise
 
 STATUS_ORDER = {"passed": 0, "skipped": 1, "failed": 2, "error": 3, "unknown": 4}
@@ -137,6 +145,7 @@ def parse_args() -> argparse.Namespace:
 
 def load_scenarios(args: argparse.Namespace) -> List[ScenarioSpec]:
     if args.technique:
+        logger.info("Loading technique %s from CLI", args.technique)
         tests = []
         if args.test_numbers:
             for number in args.test_numbers:
@@ -151,7 +160,9 @@ def load_scenarios(args: argparse.Namespace) -> List[ScenarioSpec]:
         return [scenario]
 
     scenario_path = Path(args.scenarios)
+    logger.info("Loading scenarios from %s", scenario_path)
     if not scenario_path.exists():
+        logger.error("Scenario file not found: %s", scenario_path)
         raise FileNotFoundError(f"Scenario file {scenario_path} does not exist")
     with scenario_path.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle) or {}
@@ -187,7 +198,9 @@ def load_scenarios(args: argparse.Namespace) -> List[ScenarioSpec]:
             )
         )
     if not scenarios:
+        logger.error("No scenarios found in %s", scenario_path)
         raise ValueError(f"No scenarios declared in {scenario_path}")
+    logger.info("Loaded %d scenario(s)", len(scenarios))
     return scenarios
 
 
@@ -196,24 +209,38 @@ def ensure_repo(operator: AtomicOperator, args: argparse.Namespace) -> Path:
 
     if args.atomics_path:
         provided = Path(args.atomics_path).expanduser().resolve()
+        logger.info("Using provided atomics path: %s", provided)
         resolved = find_atomics_root(provided)
         if resolved:
+            logger.info("Found atomics directory at: %s", resolved)
             return resolved
+        logger.error("Unable to locate atomics directory at: %s", provided)
         raise FileNotFoundError(
             f"Unable to locate an 'atomics' directory beneath {provided}."
         )
 
     cache_root = Path(os.path.expanduser(args.cache_dir)).resolve()
     cache_root.mkdir(parents=True, exist_ok=True)
+    logger.info("Using cache directory: %s", cache_root)
 
     resolved = find_atomics_root(cache_root)
     if resolved:
+        logger.info("Found existing atomics at: %s", resolved)
         return resolved
 
-    download_hint = operator.download_atomic_red_team_repo(str(cache_root))
+    logger.info("Downloading Atomic Red Team repository to cache")
+    try:
+        download_hint = operator.download_atomic_red_team_repo(str(cache_root))
+    except Exception as exc:
+        logger.error("Failed to download repository: %s", exc)
+        raise
+    
     resolved = find_atomics_root(cache_root, download_hint)
     if resolved:
+        logger.info("Successfully downloaded atomics to: %s", resolved)
         return resolved
+    
+    logger.error("Failed to locate downloaded repository")
     raise FileNotFoundError(
         "Failed to download Atomic Red Team repository. Specify --atomics-path manually."
     )
@@ -314,6 +341,7 @@ def execute_test(
             response = {}
             status = "error"
             error_message = str(exc)
+            logger.error("Test %s execution error: %s", guid, exc)
         else:
             response_data = response.get(guid, {})
             payload = parse_response_payload(response_data)
@@ -321,12 +349,16 @@ def execute_test(
             if response_data.get("error"):
                 status = "error"
                 error_message = response_data["error"]
+                logger.warning("Test %s reported error: %s", guid, error_message)
             elif return_code is None:
                 status = "skipped"
+                logger.debug("Test %s skipped", guid)
             elif return_code == 0:
                 status = "passed"
+                logger.info("Test %s passed", guid)
             else:
                 status = "failed"
+                logger.warning("Test %s failed with code %s", guid, return_code)
 
             response_data = payload
 
@@ -354,12 +386,16 @@ def run_scenario(
     timeout: int,
     dry_run: bool,
 ) -> ScenarioResult:
+    logger.info("Running scenario: %s (technique: %s, mode: %s)", 
+                scenario.name or scenario.id, scenario.technique, mode)
+    
     tech_data = operator.run(
         techniques=[scenario.technique],
         atomics_path=str(repo_path),
         return_atomics=True,
     )
     if not tech_data:
+        logger.error("Technique %s not found in repository", scenario.technique)
         raise ValueError(f"Technique {scenario.technique} not found in repository")
     technique = tech_data[0]
 
@@ -375,6 +411,8 @@ def run_scenario(
         try:
             test_obj = technique.atomic_tests[spec.number - 1]
         except IndexError as exc:
+            logger.error("Test number %d not found in technique %s", 
+                        spec.number, scenario.technique)
             raise IndexError(
                 f"Technique {scenario.technique} does not have test number {spec.number}"
             ) from exc
@@ -392,6 +430,7 @@ def run_scenario(
         results.append(test_result)
         scenario_status = combine_status(scenario_status, test_result.status)
 
+    logger.info("Scenario %s completed with status: %s", scenario.id, scenario_status)
     return ScenarioResult(
         spec=scenario,
         technique_name=getattr(technique, "display_name", None),
@@ -489,6 +528,7 @@ def write_outputs(
     }
 
     history_path = history_dir / f"{timestamp}.json"
+    logger.info("Writing results to %s", history_path)
     with history_path.open("w", encoding="utf-8") as handle:
         json.dump(document, handle, indent=2)
 
@@ -497,6 +537,7 @@ def write_outputs(
         json.dump(document, handle, indent=2)
 
     prom_path = prom_dir / "art_results.prom"
+    logger.info("Writing Prometheus metrics to %s", prom_path)
     with prom_path.open("w", encoding="utf-8") as handle:
         handle.write("\n".join(prom_lines + prom_scenario_lines) + "\n")
 
@@ -504,6 +545,7 @@ def write_outputs(
     with latest_prom.open("w", encoding="utf-8") as handle:
         handle.write("\n".join(prom_lines + prom_scenario_lines) + "\n")
 
+    logger.info("Results written successfully")
     return history_path
 
 
@@ -522,35 +564,54 @@ def render_metric(name: str, labels: Dict[str, str], value: int) -> str:
 
 def main() -> None:
     args = parse_args()
-    scenarios = load_scenarios(args)
-    operator = AtomicOperator()
-    repo_path = ensure_repo(operator, args)
-    hostname = socket.gethostname()
-    output_dir = Path(args.output).expanduser().resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Set log level from args if available
+    if hasattr(args, 'verbose') and args.verbose:
+        logger.setLevel(logging.DEBUG)
+    
+    logger.info("Starting Atomic Red Team execution (mode: %s, dry_run: %s)", 
+                args.mode, args.dry_run)
+    
+    try:
+        scenarios = load_scenarios(args)
+        operator = AtomicOperator()
+        repo_path = ensure_repo(operator, args)
+        hostname = socket.gethostname()
+        output_dir = Path(args.output).expanduser().resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        logger.info("Output directory: %s", output_dir)
 
-    results: List[ScenarioResult] = []
-    for scenario in scenarios:
-        results.append(
-            run_scenario(
-                operator=operator,
-                repo_path=repo_path,
-                scenario=scenario,
-                mode=args.mode,
-                timeout=args.timeout,
-                dry_run=args.dry_run,
-            )
+        results: List[ScenarioResult] = []
+        for scenario in scenarios:
+            try:
+                results.append(
+                    run_scenario(
+                        operator=operator,
+                        repo_path=repo_path,
+                        scenario=scenario,
+                        mode=args.mode,
+                        timeout=args.timeout,
+                        dry_run=args.dry_run,
+                    )
+                )
+            except Exception as exc:
+                logger.error("Failed to run scenario %s: %s", scenario.id, exc)
+                raise
+
+        history_path = write_outputs(
+            output_dir=output_dir,
+            hostname=hostname,
+            mode=args.mode,
+            repo_path=repo_path,
+            scenario_results=results,
         )
 
-    history_path = write_outputs(
-        output_dir=output_dir,
-        hostname=hostname,
-        mode=args.mode,
-        repo_path=repo_path,
-        scenario_results=results,
-    )
-
-    print(f"Wrote Atomic Red Team results to {history_path}")
+        logger.info("✓ Atomic Red Team execution completed successfully")
+        print(f"Wrote Atomic Red Team results to {history_path}")
+    
+    except Exception as exc:
+        logger.error("Fatal error: %s", exc, exc_info=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

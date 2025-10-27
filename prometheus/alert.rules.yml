@@ -1,6 +1,6 @@
 # Alerting rules for Prometheus.
 groups:
-  - name: telegraf-health
+  - name: monitoring-health
     rules:
       - alert: TelegrafScrapeDown
         expr: up{job="telegraf"} == 0
@@ -12,3 +12,146 @@ groups:
           description: |
             Prometheus has failed to scrape the Telegraf job for more than two minutes.
             Verify that the Telegraf agent is running and accessible on the configured host/port.
+
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus self-monitoring failed"
+          description: "Prometheus cannot scrape itself for {{ $value }} seconds"
+
+  - name: security-hardening
+    rules:
+      - alert: LynisScoreLow
+        expr: lynis_score < 60
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low Lynis hardening score on {{ $labels.host }}"
+          description: |
+            Lynis hardening score is {{ $value }} (threshold: 60)
+            Host: {{ $labels.host }}
+            Review Lynis suggestions to improve security posture.
+
+      - alert: LynisScoreCritical
+        expr: lynis_score < 40
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical Lynis hardening score on {{ $labels.host }}"
+          description: |
+            Lynis hardening score is {{ $value }} (threshold: 40)
+            Host: {{ $labels.host }}
+            Immediate action required to improve security configuration.
+
+      - alert: HighLynisWarnings
+        expr: lynis_warnings_count > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of Lynis warnings on {{ $labels.host }}"
+          description: |
+            {{ $value }} warnings detected by Lynis audit
+            Host: {{ $labels.host }}
+            Review and address security warnings.
+
+      - alert: OpenSCAPHighFailures
+        expr: openscap_fail_count > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High OpenSCAP failure count on {{ $labels.host }}"
+          description: |
+            {{ $value }} failed security checks detected by OpenSCAP
+            Host: {{ $labels.host }}
+            Review OpenSCAP report and remediate failing controls.
+
+      - alert: OpenSCAPCriticalFailures
+        expr: openscap_fail_count > 100
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical OpenSCAP failure count on {{ $labels.host }}"
+          description: |
+            {{ $value }} failed security checks detected by OpenSCAP
+            Host: {{ $labels.host }}
+            Immediate remediation required for compliance.
+
+  - name: atomic-red-team
+    rules:
+      - alert: AtomicTestFailure
+        expr: art_test_result{status="failed"} == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Atomic Red Team test failed: {{ $labels.test }}"
+          description: |
+            Test {{ $labels.test }} ({{ $labels.technique }}) failed
+            Scenario: {{ $labels.scenario }}
+            Host: {{ $labels.host }}
+            Executor: {{ $labels.executor }}
+
+      - alert: AtomicTestError
+        expr: art_test_result{status="error"} == 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Atomic Red Team test error: {{ $labels.test }}"
+          description: |
+            Test {{ $labels.test }} ({{ $labels.technique }}) encountered an error
+            Scenario: {{ $labels.scenario }}
+            Host: {{ $labels.host }}
+            Check test configuration and dependencies.
+
+      - alert: AtomicScenarioFailure
+        expr: art_scenario_status{status="failed"} == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Atomic Red Team scenario failed: {{ $labels.scenario }}"
+          description: |
+            Scenario {{ $labels.scenario }} ({{ $labels.technique }}) has failing tests
+            Host: {{ $labels.host }}
+            Review individual test results and remediate issues.
+
+  - name: system-resources
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(host) (rate(cpu_usage_idle[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.host }}"
+          description: "CPU usage is above 80% for more than 10 minutes on {{ $labels.host }}"
+
+      - alert: HighMemoryUsage
+        expr: (mem_used / mem_total) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.host }}"
+          description: "Memory usage is above 85% on {{ $labels.host }}"
+
+      - alert: DiskSpaceLow
+        expr: (disk_free / disk_total) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.host }}"
+          description: |
+            Less than 15% disk space remaining on {{ $labels.host }}
+            Path: {{ $labels.path }}
+            Free: {{ $value }}%

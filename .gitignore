@@ -1,13 +1,62 @@
 # Environment overrides
 .env
 .env.local
+.env.*.local
 
 # Prometheus / Grafana data directories
 prometheus_data/
 grafana_data/
 
-# Generated artifacts
+# Generated artifacts and reports
+reports/
 *.arf
 *.html
 *.json
+!grafana/dashboards/*.json
+!atomic-red-team/*.yaml
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Atomic Red Team storage
+art-storage/history/
+art-storage/latest.json
+art-storage/latest.prom
+art-storage/prometheus/
+
+# Logs
+*.log
+logs/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Diagnostic bundles
+diagnostics/
+diagnostics-*.tar.gz
+
+# Temporary files
+tmp/
+temp/
+.tmp/

@@ -1,32 +1,70 @@
 #!/usr/bin/env python3
 import json
+import logging
 import sys
+from pathlib import Path
 
-def parse_lynis_report(report_path):
-    with open(report_path, 'r') as f:
-        report = json.load(f)
+logging.basicConfig(
+    level=logging.WARNING,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+def parse_lynis_report(report_path: str) -> None:
+    """Parse Lynis JSON report and output Prometheus metrics."""
+    path = Path(report_path)
+    
+    if not path.exists():
+        logger.error("Report file not found: %s", path)
+        sys.exit(1)
+    
+    try:
+        with path.open('r', encoding='utf-8') as f:
+            report = json.load(f)
+    except json.JSONDecodeError as exc:
+        logger.error("Failed to parse JSON from %s: %s", path, exc)
+        sys.exit(1)
+    except Exception as exc:
+        logger.error("Error reading file %s: %s", path, exc)
+        sys.exit(1)
 
     metrics = {}
-    # Пример парсинга: Lynis Score
+    hostname = report.get('general', {}).get('hostname', 'unknown')
+    
+    # Lynis Score (hardening index)
     if 'general' in report and 'hardening_index' in report['general']:
-        metrics['lynis_score'] = int(report['general']['hardening_index'])
+        try:
+            metrics['lynis_score'] = int(report['general']['hardening_index'])
+        except (ValueError, TypeError) as exc:
+            logger.warning("Invalid hardening_index value: %s", exc)
 
-    # Пример парсинга: Количество предупреждений
+    # Количество предупреждений
     if 'warnings' in report:
         metrics['lynis_warnings_count'] = len(report['warnings'])
     
-    # Пример парсинга: Количество предложений
+    # Количество предложений
     if 'suggestions' in report:
         metrics['lynis_suggestions_count'] = len(report['suggestions'])
+    
+    # Тесты: выполнено/пропущено
+    if 'tests' in report:
+        metrics['lynis_tests_performed'] = len(report['tests'])
+    
+    # Плагины
+    if 'plugins' in report:
+        metrics['lynis_plugins_count'] = len(report['plugins'])
 
-    # Добавьте больше парсинга по мере необходимости (failed_audits, plugin_results и т.д.)
+    logger.info("Parsed Lynis report from %s: %d metrics", path, len(metrics))
 
-    # Вывод метрик в формате Prometheus/InfluxDB Line Protocol
+    # Вывод метрик в формате Prometheus
     for key, value in metrics.items():
-        print(f"{key}{{host=\"{report['general'].get('hostname', 'unknown')}\"}} {value}")
+        print(f"{key}{{host=\"{hostname}\"}} {value}")
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: parse_lynis_report.py <path_to_lynis_json_report>")
+        logger.error("Usage: parse_lynis_report.py <path_to_lynis_json_report>")
+        print("Usage: parse_lynis_report.py <path_to_lynis_json_report>", file=sys.stderr)
         sys.exit(1)
     parse_lynis_report(sys.argv[1])
