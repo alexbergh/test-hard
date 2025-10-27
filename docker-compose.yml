@@ -133,6 +133,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.52.0
     container_name: prometheus
+    hostname: prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -149,7 +150,9 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - default
+      default:
+        aliases:
+          - prometheus
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
       interval: 30s
