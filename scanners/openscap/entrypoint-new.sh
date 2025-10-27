@@ -22,10 +22,10 @@ install_openscap() {
       docker exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
       ;;
     target-debian)
-      docker exec "$name" sh -c "apt-get update -qq && apt-get install -y -qq libopenscap8 ssg-debian 2>&1 | grep -v 'already the newest' || true"
+      docker exec "$name" sh -c "apt-get update -qq && apt-get install -y -qq libopenscap25 ssg-debian 2>&1 | grep -v 'already the newest' || true"
       ;;
     target-ubuntu)
-      docker exec "$name" sh -c "apt-get update -qq && apt-get install -y -qq libopenscap8 ssg-debderived 2>&1 | grep -v 'already the newest' || true"
+      docker exec "$name" sh -c "apt-get update -qq && apt-get install -y -qq libopenscap25 ssg-base ssg-debderived 2>&1 | grep -v 'already the newest' || true"
       ;;
     *)
       echo "Unknown container $name for OpenSCAP install" >&2
