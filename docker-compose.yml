@@ -172,13 +172,15 @@ services:
       GF_AUTH_BASIC_ENABLED: ${GF_AUTH_BASIC_ENABLED:-true}
       GF_AUTH_DISABLE_LOGIN_FORM: ${GF_AUTH_DISABLE_LOGIN_FORM:-false}
       # GF_INSTALL_PLUGINS: grafana-piechart-panel  # Temporarily disabled due to network timeout
-      GF_LOG_LEVEL: ${GF_LOG_LEVEL:-info}
+      GF_LOG_LEVEL: ${GF_LOG_LEVEL:-debug}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
+      - prometheus
+    links:
       - prometheus
     ports:
       - "${GRAFANA_HOST_PORT:-3000}:3000"
