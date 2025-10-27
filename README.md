@@ -111,6 +111,36 @@ pip install atomic-operator attrs click pyyaml
 ## Дашборды Grafana
 Файлы JSON с дашбордами поместите в `grafana/provisioning/dashboards/` — Grafana автоматически подхватит их при старте согласно `grafana/provisioning/dashboards/default.yml`.
 
+### Диагностика 401 при обращении к Grafana API
+
+`401 Unauthorized` чаще всего появляется, когда вы попадаете не в тот экземпляр Grafana — например, порт `3000` уже занят другой
+службой, и браузер/API-клиент стучится не в контейнер из этого compose-файла. Прежде чем сбрасывать пароли, выполните последовательность
+проверок:
+
+1. **Убедитесь, что порт 3000 не занят чужой Grafana.**
+   ```bash
+   docker ps --filter "publish=3000" --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
+   sudo ss -tulpn | grep ':3000'           # или lsof -iTCP:3000 -sTCP:LISTEN
+   ```
+   Если в выводе видны другие контейнеры или процессы, либо версию `/api/health` отвечает не `11.0.0`, остановите конфликтующий сервис
+   или смените порт в `.env` (`GRAFANA_HOST_PORT=3300`) и перезапустите `docker compose`.
+2. **Проверьте, что работает именно нужный контейнер.**
+   ```bash
+   docker compose ps grafana
+   docker compose exec grafana grafana-cli -v
+   docker compose exec grafana env | grep '^GF_'
+   ```
+   Так вы увидите имя контейнера, версию Grafana и актуальные переменные окружения.
+3. **Убедитесь, что не отключены basic-auth и форма логина.** В `docker-compose.yml` заданы переменные
+   `GF_AUTH_BASIC_ENABLED=true` и `GF_AUTH_DISABLE_LOGIN_FORM=false`. При необходимости переопределите их в `.env` перед запуском.
+4. **Перезапустите контейнер после изменения настроек или порта.**
+   ```bash
+   docker compose up -d grafana
+   ```
+
+При включённом [provisioning](grafana/provisioning/datasources/prometheus.yml) стандартный datasource Prometheus создаётся
+автоматически без дополнительных запросов к API.
+
 ## Структура репозитория
 ```
 test-hard/
