@@ -1,19 +1,23 @@
 #!/bin/bash
+set -euo pipefail
 
 if [[ "${LYNIS_ALREADY_ESCALATED:-0}" != "1" && "$(id -u)" -ne 0 ]]; then
   exec sudo -E LYNIS_ALREADY_ESCALATED=1 "$0" "$@"
 fi
 
-REPORT_FILE="/tmp/lynis-report-$(hostname).json"
-METRICS_FILE="/tmp/lynis-metrics-$(hostname).txt"
+HOSTNAME="$(hostname 2>/dev/null || echo "unknown-host")"
+RESULT_ROOT="${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}"
+RESULT_DIR="${RESULT_ROOT%/}/lynis"
+TIMESTAMP="$(date +%Y%m%dT%H%M%S)"
+REPORT_FILE="${RESULT_DIR}/lynis-${HOSTNAME}-${TIMESTAMP}.txt"
 
-# Запуск Lynis
-lynis audit system --json --report-file "$REPORT_FILE"
+install -d -m 0775 "$RESULT_DIR"
 
-# Парсинг отчета и отправка метрик через Telegraf (через socat или curl)
-/usr/bin/python3 "$(dirname "$0")/parse_lynis_report.py" "$REPORT_FILE" > "$METRICS_FILE"
+echo "[hardening] Running Lynis"
 
-# Отправка метрик в Telegraf (если Telegraf настроен на input.socket_listener)
-# Или Telegraf может сам читать этот файл через input.file
-# Пример для input.file:
-# mv "$METRICS_FILE" "/var/lib/telegraf/lynis_metrics.txt" # Telegraf будет читать из /var/lib/telegraf
+if ! lynis audit system --no-colors --quiet --nolog | tee "$REPORT_FILE"; then
+  echo "[hardening] Lynis execution failed" >&2
+  exit 1
+fi
+
+echo "[hardening] Lynis scan completed (JSON output not available in this version)"
