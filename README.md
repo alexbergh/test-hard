@@ -10,6 +10,22 @@ cp .env.example .env
 docker compose up -d
 ```
 
+### Автоматические сканы контейнеров
+
+В корне репозитория добавлен отдельный `docker-compose.yml`, который поднимает четыре тестовых
+контейнера (Fedora, Debian, CentOS Stream, Ubuntu) и два сервисных сканера (OpenSCAP и Lynis).
+Все сканы выполняются через Docker API, а отчёты складываются в `./reports/`.
+
+```bash
+make up    # поднимает целевые контейнеры и собирает образы сканеров
+make scan  # запускает OpenSCAP и Lynis внутри сервисных контейнеров
+```
+
+* OpenSCAP сохраняет как HTML-, так и XML-отчёты в `reports/openscap/`.
+* Lynis устанавливается внутрь целевых контейнеров и выгружает журналы в `reports/lynis/`.
+
+После завершения можно остановить инфраструктуру `make down` и очистить отчёты `make clean`.
+
 * Prometheus: http://localhost:9090
 * Alertmanager: http://localhost:9093
 * Grafana: http://localhost:3000 (учётные данные из `.env`)
