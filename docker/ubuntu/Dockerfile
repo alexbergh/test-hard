@@ -11,13 +11,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         sudo python3 python3-pip python3-venv git curl wget ca-certificates \
-        lynis \
+        lynis procps passwd openscap-scanner \
     && python3 -m venv "${VIRTUAL_ENV}" \
     && "${VIRTUAL_ENV}/bin/pip" install --no-cache-dir atomic-operator attrs click pyyaml \
     && useradd --create-home --shell /bin/bash agent \
     && echo "agent ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/agent \
     && chmod 440 /etc/sudoers.d/agent \
-    && mkdir -p /opt/hardening /var/lib/hardening/results /var/lib/hardening/art-storage \
+    && install -d -m 0775 /opt/hardening /var/lib/hardening/results /var/lib/hardening/art-storage \
+    && chown -R agent:agent /opt/hardening /var/lib/hardening \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

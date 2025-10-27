@@ -3,8 +3,13 @@ set -euo pipefail
 
 PROFILE="${1:-xccdf_org.ssgproject.content_profile_cis}"
 HOSTNAME="$(hostname 2>/dev/null || echo "unknown-host")"
-REPORT_HTML="/tmp/openscap-${HOSTNAME}.html"
-REPORT_ARF="/tmp/openscap-${HOSTNAME}.arf"
+RESULT_ROOT="${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}"
+RESULT_DIR="${RESULT_ROOT%/}/openscap"
+TIMESTAMP="$(date +%Y%m%dT%H%M%S)"
+REPORT_HTML="${RESULT_DIR}/openscap-${HOSTNAME}-${TIMESTAMP}.html"
+REPORT_ARF="${RESULT_DIR}/openscap-${HOSTNAME}-${TIMESTAMP}.arf"
+
+install -d -m 0775 "$RESULT_DIR"
 
 if ! command -v oscap >/dev/null 2>&1; then
   echo "OpenSCAP (oscap) not found; install it first." >&2

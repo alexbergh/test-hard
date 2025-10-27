@@ -3,8 +3,33 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESULT_ROOT="${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}"
+ART_STORAGE="${HARDENING_ART_STORAGE:-/var/lib/hardening/art-storage}"
 LOG_SUFFIX="$(date +%Y%m%dT%H%M%S)"
-mkdir -p "$RESULT_ROOT"
+
+ensure_dir() {
+  local path="$1"
+  [[ -z "$path" ]] && return 0
+
+  if install -d -m 0775 "$path" 2>/dev/null; then
+    return 0
+  fi
+
+  if command -v sudo >/dev/null 2>&1; then
+    if sudo install -d -m 0775 "$path"; then
+      sudo chown "$(id -u)":"$(id -g)" "$path"
+      return 0
+    fi
+  fi
+
+  echo "[hardening] Unable to prepare directory $path" >&2
+  return 1
+}
+
+ensure_dir "$RESULT_ROOT"
+ensure_dir "$RESULT_ROOT/lynis"
+ensure_dir "$RESULT_ROOT/openscap"
+ensure_dir "$RESULT_ROOT/atomic"
+ensure_dir "$ART_STORAGE"
 
 status=0
 
