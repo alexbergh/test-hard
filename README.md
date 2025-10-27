@@ -66,7 +66,7 @@ Prometheus загружает правила из `prometheus/alert.rules.yml` �
 Каталог `scripts/` содержит вспомогательные обёртки:
 
 * `run_lynis.sh` и `parse_lynis_report.py` — запускают аудит Lynis и выводят метрики (`lynis_score`, `lynis_warnings_count`, `lynis_suggestions_count`).
-* `run_openscap.sh` и `parse_openscap_report.py` — выполняют профиль OpenSCAP и подсчитывают количество правил по статусам (`openscap_pass_count`, `openscap_fail_count`, ...).
+* `run_openscap.sh` и `parse_openscap_report.py` — выполняют профиль OpenSCAP и подсчитывают количество правил по статусам (`openscap_pass_count`, `openscap_fail_count`, ...). Если парсеру не передать путь до ARF-файла, он попытается взять самый свежий отчёт из каталога `${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}/openscap`.
 * `run_atomic_red_team_test.sh` и `parse_atomic_red_team_result.py` — запускают реальные сценарии Atomic Red Team и преобразуют результаты (`art_test_result`, `art_scenario_status`, `art_summary_total`).
 
 Настройте периодический запуск (cron/systemd timers/Ansible) и сбор метрик через `[[inputs.exec]]`, `[[inputs.file]]` или `[[inputs.socket_listener]]` в Telegraf.
