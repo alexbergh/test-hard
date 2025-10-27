@@ -1,7 +1,18 @@
-# test-hard — Monitoring/Hardening Demo
+# test-hard — Security Hardening & Monitoring Platform
 
 ## Цель
-Преобразованный репозиторий поднимает демонстрационную среду мониторинга на базе Prometheus и Grafana, хранит эталонные конфигурации Osquery и Telegraf и включает скрипты для интеграции результатов Lynis, OpenSCAP и Atomic Red Team.
+Автоматизированная платформа для security hardening и мониторинга контейнеров. Включает security сканирование (OpenSCAP, Lynis), мониторинг (Prometheus, Grafana), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
+
+## Возможности
+
+* **Security Scanning** — автоматическое сканирование контейнеров (OpenSCAP, Lynis)
+* **Monitoring Stack** — Prometheus + Grafana + Alertmanager для визуализации метрик безопасности
+* **Atomic Red Team** — тестирование техник MITRE ATT&CK в режиме dry-run
+* **Multi-Environment** — поддержка dev/staging/prod через Docker Compose
+* **CI/CD Ready** — GitHub Actions для автоматического тестирования и сканирования
+* **Multi-Distribution** — сканирование Debian, Ubuntu, Fedora, CentOS Stream
+* **Metrics Collection** — Telegraf для сбора и экспорта метрик в Prometheus
+* **Docker Security** — изолированный доступ к Docker API через security proxy
 
 ## Быстрый старт
 ```bash
@@ -194,7 +205,57 @@ make logs        # docker compose logs -f --tail=200
 make restart     # перезапуск стека
 ```
 
+## Документация
+
+**Полная документация доступна в каталоге [`docs/`](docs/)**:
+
+* **[Quick Start Guide](docs/QUICK-USAGE.md)** — быстрое руководство по запуску
+* **[Security Scanning](docs/README-SECURITY-SCANNING.md)** — подробное описание security сканирования
+* **[Troubleshooting](docs/TROUBLESHOOTING.md)** — решение проблем
+* **[User Guide](docs/USER-GUIDE.md)** — полное руководство пользователя
+* **[Changelog](docs/CHANGELOG.md)** — история изменений
+* **[Security Policy](docs/SECURITY.md)** — политика безопасности
+
+## Тестирование
+
+```bash
+# Запустить полный набор тестов (unit + integration)
+make test
+
+# Только unit тесты
+make test-unit
+
+# Только integration тесты
+make test-integration
+
+# Проверить покрытие кода
+make test-coverage
+```
+
+## CI/CD
+
+Проект включает GitHub Actions workflows:
+
+* **Security Scanning** — автоматическое сканирование при каждом push
+* **Docker Build** — проверка сборки образов
+* **Pytest Tests** — запуск unit и integration тестов
+* **Secret Scanning** — поиск случайно закоммиченных секретов
+
+## Kubernetes
+
+Manifests для развертывания в Kubernetes доступны в `k8s/`:
+
+```bash
+# Deploy в dev окружение
+kubectl apply -k k8s/overlays/dev
+
+# Deploy в production
+kubectl apply -k k8s/overlays/prod
+```
+
 ## Дальнейшие идеи
-* Настройте интеграцию Alertmanager с выбранной системой уведомлений.
-* Расширьте Telegraf дополнительными входными плагинами (cpu, disk, net и т.д.).
-* Интегрируйте реальные сценарии Atomic Red Team и храните результаты в отдельном хранилище.
+
+* Настройте интеграцию Alertmanager с выбранной системой уведомлений
+* Расширить Telegraf дополнительными входными плагинами (cpu, disk, net)
+* Добавить собственные дашборды Grafana для специфичных метрик
+* Интеграция с CI/CD системой для автоматического security scanning

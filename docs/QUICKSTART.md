@@ -200,7 +200,7 @@ receivers:
 
 ### Run Real Atomic Red Team Tests
 
-**⚠️ WARNING**: Only in isolated test environments!
+**WARNING**: Only in isolated test environments!
 
 ```bash
 # Disable dry-run

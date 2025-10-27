@@ -464,7 +464,7 @@ jobs:
 
 ## Best Practices
 
-### ✅ Do
+### Do
 
 - Run `make ci` before pushing
 - Write meaningful commit messages
@@ -473,7 +473,7 @@ jobs:
 - Test deployments in staging first
 - Monitor CI/CD metrics
 
-### ❌ Don't
+### Don't
 
 - Skip CI checks
 - Commit broken code
