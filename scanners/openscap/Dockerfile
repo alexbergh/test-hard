@@ -1,11 +1,11 @@
 FROM registry.fedoraproject.org/fedora:40
 
 RUN dnf -y update && \
-    dnf -y install openscap-scanner scap-security-guide docker && \
+    dnf -y install openscap-scanner scap-security-guide docker python3 && \
     dnf clean all && \
     rm -rf /var/cache/dnf
 
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY entrypoint.py /usr/local/bin/openscap_entrypoint.py
+RUN chmod +x /usr/local/bin/openscap_entrypoint.py
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/env", "python3", "/usr/local/bin/openscap_entrypoint.py"]
