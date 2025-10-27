@@ -1,0 +1,70 @@
+# Development environment overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  prometheus:
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"  # Shorter retention for dev
+      - "--storage.tsdb.retention.size=2GB"
+      - "--web.enable-lifecycle"  # Allow config reload via API
+      - "--log.level=debug"
+    environment:
+      - ENV=development
+
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin  # OK for dev
+      GF_LOG_LEVEL: debug
+      GF_SERVER_ROUTER_LOGGING: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      # Dev: mount local dev dashboards
+      - ./grafana/dev-dashboards:/var/lib/grafana/dev-dashboards:ro
+
+  telegraf:
+    environment:
+      - ENV=development
+      - DEBUG=true
+    volumes:
+      - ./art-storage:/var/lib/atomic-results:ro
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+  alertmanager:
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--log.level=debug"
+    environment:
+      - ENV=development
+
+  # Development-only services
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mailhog
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    networks:
+      - default
+
+  # Optional: Portainer for container management
+  portainer:
+    image: portainer/portainer-ce:2.19.4
+    container_name: portainer-dev
+    command: -H unix:///var/run/docker.sock
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer-data:/data
+    networks:
+      - default
+
+volumes:
+  portainer-data:

@@ -1,0 +1,128 @@
+# Production environment overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+# 
+# IMPORTANT: 
+# - Set all passwords in .env file
+# - Configure TLS certificates
+# - Review security settings
+# - Set up proper backup strategy
+
+services:
+  prometheus:
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d}"
+      - "--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-10GB}"
+      - "--log.level=info"
+      - "--web.enable-admin-api=false"  # Disable admin API in prod
+    environment:
+      - ENV=production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Prometheus needs write access to /prometheus
+    tmpfs:
+      - /tmp
+
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+      GF_LOG_LEVEL: warn
+      GF_SERVER_DOMAIN: ${GRAFANA_DOMAIN}
+      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Viewer
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY: "true"
+      GF_LOG_CONSOLE_FORMAT: json
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    user: "472:472"  # Grafana user
+    read_only: false  # Grafana needs write access
+    tmpfs:
+      - /tmp
+
+  telegraf:
+    environment:
+      - ENV=production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    user: "telegraf:telegraf"
+
+  alertmanager:
+    environment:
+      - ENV=production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+
+  docker-proxy:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+
+  # Remove container_name in prod for potential scaling
+  # Note: This requires removing container_name from base docker-compose.yml
+  # or using docker swarm/kubernetes for orchestration
+
+# Production-specific networks
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: test-hard-prod
+  scanner-net:
+    driver: bridge
+    internal: true  # Scanner network isolated in prod
