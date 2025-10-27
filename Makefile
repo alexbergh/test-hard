@@ -1,9 +1,19 @@
 COMPOSE ?= docker compose
 
-.PHONY: up down logs restart hardening-suite scan clean
+TARGET_SERVICES = target-fedora target-debian target-centos target-ubuntu
+SCANNER_SERVICES = openscap-scanner lynis-scanner
+MONITORING_SERVICES = prometheus alertmanager grafana telegraf
+
+.PHONY: up up-targets monitor down logs restart hardening-suite scan clean
 
 up:
-	$(COMPOSE) up -d
+        $(COMPOSE) up -d $(TARGET_SERVICES) $(SCANNER_SERVICES) $(MONITORING_SERVICES)
+
+up-targets:
+        $(COMPOSE) up -d $(TARGET_SERVICES) $(SCANNER_SERVICES)
+
+monitor:
+        $(COMPOSE) up -d $(MONITORING_SERVICES)
 
 down:
 	$(COMPOSE) down
