@@ -1,15 +1,25 @@
-.PHONY: up down logs restart hardening-suite
+COMPOSE ?= docker compose
+
+.PHONY: up down logs restart hardening-suite scan clean
 
 up:
-	docker compose up -d
+$(COMPOSE) up -d
 
 down:
-	docker compose down
+$(COMPOSE) down
 
 logs:
-	docker compose logs -f --tail=200
+$(COMPOSE) logs -f --tail=200
 
 restart: down up
 
 hardening-suite:
-	./scripts/run_hardening_suite.sh
+./scripts/run_hardening_suite.sh
+
+scan:
+$(COMPOSE) run --rm openscap-scanner
+$(COMPOSE) run --rm lynis-scanner
+
+clean:
+rm -rf reports/*
+mkdir -p reports
