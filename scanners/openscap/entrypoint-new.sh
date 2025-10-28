@@ -126,28 +126,25 @@ extract_openscap_metrics() {
   local fail_count
   local notselected_count
   
-  pass_count=$(grep -o 'result="pass"' "$xml_file" | wc -l || echo "0")
-  fail_count=$(grep -o 'result="fail"' "$xml_file" | wc -l || echo "0") 
-  notselected_count=$(grep -o 'result="notselected"' "$xml_file" | wc -l || echo "0")
+  pass_count=$(grep -o 'result="pass"' "$xml_file" | wc -l | tr -d ' ' || echo "0")
+  fail_count=$(grep -o 'result="fail"' "$xml_file" | wc -l | tr -d ' ' || echo "0") 
+  notselected_count=$(grep -o 'result="notselected"' "$xml_file" | wc -l | tr -d ' ' || echo "0")
   
-  # Извлечь score если есть
-  local score
-  score=$(grep -o 'score="[0-9.]*"' "$xml_file" | head -1 | cut -d'"' -f2 || echo "0")
+  # Вычислить score из pass/fail
+  local total=$((pass_count + fail_count))
+  local score=0
+  if [ "$total" -gt 0 ]; then
+    score=$((pass_count * 100 / total))
+  fi
   
   # Создать Prometheus metrics файл
   cat > "$metrics_file" <<EOF
 # HELP openscap_pass_count OpenSCAP passed rules count
 # TYPE openscap_pass_count gauge
 openscap_pass_count{host="${name}"} ${pass_count}
-
 # HELP openscap_fail_count OpenSCAP failed rules count
 # TYPE openscap_fail_count gauge
 openscap_fail_count{host="${name}"} ${fail_count}
-
-# HELP openscap_notselected_count OpenSCAP not selected rules count
-# TYPE openscap_notselected_count gauge
-openscap_notselected_count{host="${name}"} ${notselected_count}
-
 # HELP openscap_score OpenSCAP compliance score
 # TYPE openscap_score gauge
 openscap_score{host="${name}"} ${score}

@@ -72,11 +72,9 @@ extract_lynis_metrics() {
 # HELP lynis_score Lynis hardening score
 # TYPE lynis_score gauge
 lynis_score{host="${name}"} ${score}
-
 # HELP lynis_warnings Lynis warnings count
-# TYPE lynis_warnings gauge  
+# TYPE lynis_warnings gauge
 lynis_warnings{host="${name}"} ${warnings}
-
 # HELP lynis_suggestions Lynis suggestions count
 # TYPE lynis_suggestions gauge
 lynis_suggestions{host="${name}"} ${suggestions}
