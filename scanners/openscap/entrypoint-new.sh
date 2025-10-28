@@ -126,9 +126,9 @@ extract_openscap_metrics() {
   local fail_count
   local notselected_count
   
-  pass_count=$(grep -o 'result="pass"' "$xml_file" | wc -l | tr -d ' ' || echo "0")
-  fail_count=$(grep -o 'result="fail"' "$xml_file" | wc -l | tr -d ' ' || echo "0") 
-  notselected_count=$(grep -o 'result="notselected"' "$xml_file" | wc -l | tr -d ' ' || echo "0")
+  pass_count=$(grep -o 'result="pass"' "$xml_file" | wc -l | xargs || echo "0")
+  fail_count=$(grep -o 'result="fail"' "$xml_file" | wc -l | xargs || echo "0") 
+  notselected_count=$(grep -o 'result="notselected"' "$xml_file" | wc -l | xargs || echo "0")
   
   # Вычислить score из pass/fail
   local total=$((pass_count + fail_count))
