@@ -22,10 +22,30 @@ install_openscap() {
       docker exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
       ;;
     target-debian)
-      docker exec "$name" sh -c "apt-get update -qq && apt-get install -y -qq libopenscap25 ssg-debian 2>&1 | grep -v 'already the newest' || true"
+      # Пробуем разные варианты пакетов
+      docker exec "$name" sh -c "
+        apt-get update -qq
+        if apt-cache show libopenscap25 >/dev/null 2>&1; then
+          apt-get install -y -qq libopenscap25
+        elif apt-cache show libopenscap8 >/dev/null 2>&1; then
+          apt-get install -y -qq libopenscap8
+        else
+          apt-get install -y -qq openscap-utils
+        fi
+      " 2>&1 | grep -v 'already' || true
       ;;
     target-ubuntu)
-      docker exec "$name" sh -c "apt-get update -qq && apt-get install -y -qq libopenscap25 ssg-base ssg-debderived 2>&1 | grep -v 'already the newest' || true"
+      # Для Ubuntu 22.04 используем openscap-scanner
+      docker exec "$name" sh -c "
+        apt-get update -qq
+        if apt-cache show openscap-scanner >/dev/null 2>&1; then
+          apt-get install -y -qq openscap-scanner
+        elif apt-cache show libopenscap25 >/dev/null 2>&1; then
+          apt-get install -y -qq libopenscap25
+        else
+          apt-get install -y -qq openscap-utils
+        fi
+      " 2>&1 | grep -v 'already' || true
       ;;
     *)
       echo "Unknown container $name for OpenSCAP install" >&2
@@ -44,9 +64,11 @@ get_datastream() {
       echo "/usr/share/xml/scap/ssg/content/ssg-cs9-ds.xml"
       ;;
     target-debian)
+      # Пробуем разные пути для datastream
       echo "/usr/share/xml/scap/ssg/content/ssg-debian12-ds.xml"
       ;;
     target-ubuntu)
+      # Пробуем разные пути для datastream
       echo "/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml"
       ;;
     *)
@@ -65,10 +87,21 @@ scan_container() {
     return 0
   fi
   
-  # Проверить что datastream существует внутри контейнера
+  # Проверить что datastream существует, или найти альтернативный путь
   if ! docker exec "$name" test -f "$datastream" 2>/dev/null; then
-    echo "Datastream $datastream not found in $name, skipping" >&2
-    return 0
+    echo "Primary datastream $datastream not found, searching alternatives..." >&2
+    
+    # Искать datastream файлы автоматически
+    local found_datastream
+    found_datastream=$(docker exec "$name" find /usr -name "*ssg*ds.xml" -type f 2>/dev/null | head -1 || true)
+    
+    if [ -z "$found_datastream" ]; then
+      echo "No datastream files found in $name, skipping" >&2
+      return 0
+    fi
+    
+    datastream="$found_datastream"
+    echo "Found alternative datastream: $datastream" >&2
   fi
   
   local result_file="/tmp/openscap-results.xml"
