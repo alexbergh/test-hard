@@ -21,31 +21,9 @@ install_openscap() {
     target-centos)
       docker exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
       ;;
-    target-debian)
-      # Пробуем разные варианты пакетов
-      docker exec "$name" sh -c "
-        apt-get update -qq
-        if apt-cache show libopenscap25 >/dev/null 2>&1; then
-          apt-get install -y -qq libopenscap25
-        elif apt-cache show libopenscap8 >/dev/null 2>&1; then
-          apt-get install -y -qq libopenscap8
-        else
-          apt-get install -y -qq openscap-utils
-        fi
-      " 2>&1 | grep -v 'already' || true
-      ;;
-    target-ubuntu)
-      # Для Ubuntu 22.04 используем openscap-scanner
-      docker exec "$name" sh -c "
-        apt-get update -qq
-        if apt-cache show openscap-scanner >/dev/null 2>&1; then
-          apt-get install -y -qq openscap-scanner
-        elif apt-cache show libopenscap25 >/dev/null 2>&1; then
-          apt-get install -y -qq libopenscap25
-        else
-          apt-get install -y -qq openscap-utils
-        fi
-      " 2>&1 | grep -v 'already' || true
+    target-debian|target-ubuntu)
+      # Для Debian/Ubuntu не устанавливаем - будем использовать host сканер
+      echo "Skipping OpenSCAP install for $name - will use host scanner"
       ;;
     *)
       echo "Unknown container $name for OpenSCAP install" >&2
@@ -117,9 +95,8 @@ scan_container() {
     "$datastream" >/dev/null 2>&1 || true; then
     
     # Скопировать результаты
-    mkdir -p "/reports/openscap/$name"
-    docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null || true
-    docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null || true
+    docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null || echo "Failed to copy XML"
+    docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null || echo "Failed to copy HTML"
     
     echo "[OpenSCAP] Scan completed for $name" >&2
     return 0
