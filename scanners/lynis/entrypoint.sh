@@ -41,8 +41,48 @@ audit_container() {
     echo "Lynis audit failed inside ${name}" >&2
     return 1
   fi
-  docker cp "${name}:/tmp/lynis.log" "$logfile" >/dev/null 2>&1 || docker exec "$name" cat /tmp/lynis.log > "$logfile"
+  docker cp "${name}:/tmp/lynis.log" "$logfile" >/dev/null 2>&1 || docker exec "${name}" cat /tmp/lynis.log > "$logfile"
   docker cp "${name}:/var/log/lynis-report.dat" "/reports/lynis/${name}.dat" >/dev/null 2>&1 || true
+  
+  # Извлечь метрики из отчёта и создать Prometheus metrics
+  extract_lynis_metrics "$name" "$logfile"
+}
+
+extract_lynis_metrics() {
+  local name="$1"
+  local logfile="$2"
+  local metrics_file="/reports/lynis/${name}_metrics.prom"
+  
+  echo "[Lynis] Extracting metrics for ${name}" >&2
+  
+  # Извлечь hardness score
+  local score
+  score=$(grep "hardening index" "$logfile" | grep -o "[0-9]\+" | head -1 || echo "0")
+  
+  # Извлечь количество предупреждений
+  local warnings
+  warnings=$(grep -c "^\s*\[\+\]" "$logfile" 2>/dev/null || echo "0")
+  
+  # Извлечь количество предложений
+  local suggestions
+  suggestions=$(grep -c "^\s*\[\-\]" "$logfile" 2>/dev/null || echo "0")
+  
+  # Создать Prometheus metrics файл
+  cat > "$metrics_file" <<EOF
+# HELP lynis_score Lynis hardening score
+# TYPE lynis_score gauge
+lynis_score{host="${name}"} ${score}
+
+# HELP lynis_warnings Lynis warnings count
+# TYPE lynis_warnings gauge  
+lynis_warnings{host="${name}"} ${warnings}
+
+# HELP lynis_suggestions Lynis suggestions count
+# TYPE lynis_suggestions gauge
+lynis_suggestions{host="${name}"} ${suggestions}
+EOF
+
+  echo "[Lynis] Metrics saved to $metrics_file" >&2
 }
 
 status=0

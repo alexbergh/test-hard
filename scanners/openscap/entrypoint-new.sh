@@ -98,12 +98,62 @@ scan_container() {
     docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null || echo "Failed to copy XML"
     docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null || echo "Failed to copy HTML"
     
+    # Извлечь метрики из XML и создать Prometheus metrics
+    extract_openscap_metrics "$name" "/reports/openscap/${name}.xml"
+    
     echo "[OpenSCAP] Scan completed for $name" >&2
     return 0
   else
     echo "[OpenSCAP] Scan failed for $name" >&2
     return 1
   fi
+}
+
+extract_openscap_metrics() {
+  local name="$1"
+  local xml_file="$2"
+  local metrics_file="/reports/openscap/${name}_metrics.prom"
+  
+  echo "[OpenSCAP] Extracting metrics for ${name}" >&2
+  
+  if [ ! -f "$xml_file" ]; then
+    echo "[OpenSCAP] XML file not found: $xml_file" >&2
+    return 1
+  fi
+  
+  # Извлечь количество passed, failed, notselected правил
+  local pass_count
+  local fail_count
+  local notselected_count
+  
+  pass_count=$(grep -o 'result="pass"' "$xml_file" | wc -l || echo "0")
+  fail_count=$(grep -o 'result="fail"' "$xml_file" | wc -l || echo "0") 
+  notselected_count=$(grep -o 'result="notselected"' "$xml_file" | wc -l || echo "0")
+  
+  # Извлечь score если есть
+  local score
+  score=$(grep -o 'score="[0-9.]*"' "$xml_file" | head -1 | cut -d'"' -f2 || echo "0")
+  
+  # Создать Prometheus metrics файл
+  cat > "$metrics_file" <<EOF
+# HELP openscap_pass_count OpenSCAP passed rules count
+# TYPE openscap_pass_count gauge
+openscap_pass_count{host="${name}"} ${pass_count}
+
+# HELP openscap_fail_count OpenSCAP failed rules count
+# TYPE openscap_fail_count gauge
+openscap_fail_count{host="${name}"} ${fail_count}
+
+# HELP openscap_notselected_count OpenSCAP not selected rules count
+# TYPE openscap_notselected_count gauge
+openscap_notselected_count{host="${name}"} ${notselected_count}
+
+# HELP openscap_score OpenSCAP compliance score
+# TYPE openscap_score gauge
+openscap_score{host="${name}"} ${score}
+EOF
+
+  echo "[OpenSCAP] Metrics saved to $metrics_file" >&2
 }
 
 status=0
