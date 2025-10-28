@@ -13,7 +13,7 @@ RUN chown telegraf:telegraf \
         /etc/telegraf/telegraf.conf \
         /opt/hardening/scripts/parse_atomic_red_team_result.py
 
-USER telegraf
+# USER telegraf  # Запускаем от root для доступа к файлам
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["telegraf"]
