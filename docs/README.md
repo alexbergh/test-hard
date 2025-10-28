@@ -5,8 +5,8 @@
 ## Основная документация
 
 ### Начало работы
-- **[Quick Start Guide](QUICK-USAGE.md)** — быстрый старт за 5 минут
-- **[Quickstart](QUICKSTART.md)** — детальное руководство по первому запуску
+- **[Quick Start Guide](QUICKSTART.md)** — быстрое развертывание за 5-10 минут ⭐
+- **[Deployment Guide](DEPLOYMENT.md)** — полное руководство по развертыванию с troubleshooting
 - **[User Guide](USER-GUIDE.md)** — полное руководство пользователя
 
 ### Security Scanning
@@ -33,28 +33,34 @@
 ## Информация для разработчиков
 
 - **[README Updates](README-UPDATES.md)** — история обновлений README
-- **[Files Created](FILES-CREATED.md)** — список созданных файлов
 - **[Phase 1 Complete](PHASE1-COMPLETE.md)** — статус первой фазы разработки
-- **[Final Summary](FINAL-SUMMARY-FOR-USER.md)** — итоговая сводка для пользователя
+- **[DevOps Improvements](DEVOPS-IMPROVEMENTS.md)** — улучшения DevOps процессов
+- **[CI/CD Guide](CI-CD.md)** — настройка CI/CD pipeline
 
 ## Быстрая навигация
 
 ### По задачам
 
-**Хочу быстро запустить:**
-→ [Quick Start Guide](QUICK-USAGE.md)
+**Хочу быстро развернуть на новом хосте:**
+→ [Quick Start Guide](QUICKSTART.md) ⭐
+
+**Нужна детальная инструкция по установке:**
+→ [Deployment Guide](DEPLOYMENT.md)
 
 **Хочу настроить security сканирование:**
 → [Security Scanning](README-SECURITY-SCANNING.md)
 
 **У меня проблемы с запуском:**
-→ [Troubleshooting](TROUBLESHOOTING.md)
+→ [Troubleshooting](TROUBLESHOOTING.md) или [Deployment Guide - Troubleshooting](DEPLOYMENT.md#troubleshooting)
 
 **Хочу понять архитектуру:**
 → [User Guide](USER-GUIDE.md)
 
 **Хочу интегрировать в CI/CD:**
 → [User Guide - CI/CD Section](USER-GUIDE.md#cicd)
+
+**Хочу понять метрики и дашборды:**
+→ [Metrics Guide](METRICS.md)
 
 ## Диаграммы и схемы
 
@@ -100,5 +106,5 @@
 
 ---
 
-**Обновлено**: 2025-10-27  
-**Версия документации**: 2.0
+**Обновлено**: 2025-10-28  
+**Версия документации**: 2.1
