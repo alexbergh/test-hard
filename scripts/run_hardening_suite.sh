@@ -65,11 +65,25 @@ ${compose_bin} up -d "${scanners[@]}"
 # Запускаем сканирование
 for scanner in "${scanners[@]}"; do
   echo "[suite] Running ${scanner}"
-  if ${compose_bin} exec -T "$scanner" /usr/local/bin/entrypoint.sh || ${compose_bin} exec -T "$scanner" /usr/local/bin/openscap_entrypoint.sh; then
-    echo "[suite] ${scanner} completed successfully"
-  else
-    echo "[suite] ${scanner} reported failures" >&2
-  fi
+  case "$scanner" in
+    lynis-scanner)
+      if ${compose_bin} exec -T "$scanner" /usr/local/bin/entrypoint.sh; then
+        echo "[suite] ${scanner} completed successfully"
+      else
+        echo "[suite] ${scanner} reported failures" >&2
+      fi
+      ;;
+    openscap-scanner)
+      if ${compose_bin} exec -T "$scanner" /usr/local/bin/openscap_entrypoint.sh; then
+        echo "[suite] ${scanner} completed successfully"
+      else
+        echo "[suite] ${scanner} reported failures" >&2
+      fi
+      ;;
+    *)
+      echo "[suite] Unknown scanner: $scanner" >&2
+      ;;
+  esac
 done
 
 # Копируем отчёты из работающих контейнеров
