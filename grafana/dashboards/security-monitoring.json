@@ -69,7 +69,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "security_scanners_security_scanners_lynis_score",
+          "expr": "security_scanners_lynis_score",
           "legendFormat": "{{host}}",
           "range": true,
           "refId": "A"
