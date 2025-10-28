@@ -57,15 +57,15 @@ extract_lynis_metrics() {
   
   # Извлечь hardness score
   local score
-  score=$(grep "hardening index" "$logfile" | grep -o "[0-9]\+" | head -1 || echo "0")
+  score=$(grep -i "hardening index" "$logfile" | grep -oE "\[[0-9]+\]" | grep -oE "[0-9]+" | head -1 || echo "0")
   
   # Извлечь количество предупреждений
   local warnings
-  warnings=$(grep -c "^\s*\[\+\]" "$logfile" 2>/dev/null || echo "0")
+  warnings=$(grep -c "Warning:" "$logfile" 2>/dev/null || echo "0")
   
   # Извлечь количество предложений
   local suggestions
-  suggestions=$(grep -c "^\s*\[\-\]" "$logfile" 2>/dev/null || echo "0")
+  suggestions=$(grep -c "Suggestion:" "$logfile" 2>/dev/null || echo "0")
   
   # Создать Prometheus metrics файл
   cat > "$metrics_file" <<EOF
