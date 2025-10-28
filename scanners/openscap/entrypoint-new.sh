@@ -130,9 +130,13 @@ extract_openscap_metrics() {
   fail_count=$(grep -c 'result="fail"' "$xml_file" 2>/dev/null || echo "0")
   notselected_count=$(grep -c 'result="notselected"' "$xml_file" 2>/dev/null || echo "0")
   
-  # Убрать пробелы и переносы строк
-  pass_count=$(echo "$pass_count" | tr -d '[:space:]')
-  fail_count=$(echo "$fail_count" | tr -d '[:space:]')
+  # Убрать пробелы и переносы строк, оставив только цифры
+  pass_count=$(echo "$pass_count" | tr -cd '0-9')
+  fail_count=$(echo "$fail_count" | tr -cd '0-9')
+  
+  # Если пустые, установить 0
+  pass_count=${pass_count:-0}
+  fail_count=${fail_count:-0}
   
   # Вычислить score из pass/fail
   local total=$((pass_count + fail_count))
