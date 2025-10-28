@@ -52,6 +52,7 @@ extract_lynis_metrics() {
   local name="$1"
   local logfile="$2"
   local metrics_file="/reports/lynis/${name}_metrics.prom"
+  local details_file="/reports/lynis/${name}_details.prom"
   
   echo "[Lynis] Extracting metrics for ${name}" >&2
   
@@ -67,7 +68,7 @@ extract_lynis_metrics() {
   local suggestions
   suggestions=$(grep -c "Suggestion:" "$logfile" 2>/dev/null || echo "0")
   
-  # Создать Prometheus metrics файл
+  # Создать основной Prometheus metrics файл
   cat > "$metrics_file" <<EOF
 # HELP lynis_score Lynis hardening score
 # TYPE lynis_score gauge
@@ -80,7 +81,31 @@ lynis_warnings{host="${name}"} ${warnings}
 lynis_suggestions{host="${name}"} ${suggestions}
 EOF
 
+  # Создать детальный файл с конкретными проблемами
+  {
+    echo "# HELP lynis_test_result Lynis test results (1=issue found, 0=passed)"
+    echo "# TYPE lynis_test_result gauge"
+    
+    # Извлечь warnings с test ID
+    grep "Warning:" "$logfile" | grep -oE "\[test:[A-Z]+-[0-9]+\]" | sed 's/\[test://;s/\]//' | sort -u | while read -r test_id; do
+      if [ -n "$test_id" ]; then
+        # Получить описание warning
+        description=$(grep "Warning:.*\[test:${test_id}\]" "$logfile" | head -1 | sed 's/.*Warning: //;s/ \[test:.*$//' | sed 's/"//g' | cut -c1-100)
+        echo "lynis_test_result{host=\"${name}\",test_id=\"${test_id}\",type=\"warning\",description=\"${description}\"} 1"
+      fi
+    done
+    
+    # Извлечь suggestions с test ID (топ-20)
+    grep "Suggestion:" "$logfile" | grep -oE "\[test:[A-Z]+-[0-9]+\]" | sed 's/\[test://;s/\]//' | sort -u | head -20 | while read -r test_id; do
+      if [ -n "$test_id" ]; then
+        description=$(grep "Suggestion:.*\[test:${test_id}\]" "$logfile" | head -1 | sed 's/.*Suggestion: //;s/ \[test:.*$//' | sed 's/"//g' | cut -c1-100)
+        echo "lynis_test_result{host=\"${name}\",test_id=\"${test_id}\",type=\"suggestion\",description=\"${description}\"} 1"
+      fi
+    done
+  } > "$details_file"
+
   echo "[Lynis] Metrics saved to $metrics_file" >&2
+  echo "[Lynis] Details saved to $details_file" >&2
 }
 
 status=0

@@ -142,7 +142,7 @@ extract_openscap_metrics() {
     score=$((pass_count * 100 / total))
   fi
   
-  # Создать Prometheus metrics файл
+  # Создать основной Prometheus metrics файл
   cat > "$metrics_file" <<EOF
 # HELP openscap_pass_count OpenSCAP passed rules count
 # TYPE openscap_pass_count gauge
@@ -155,7 +155,45 @@ openscap_fail_count{host="${name}"} ${fail_count}
 openscap_score{host="${name}"} ${score}
 EOF
 
+  # Создать детальный файл с failed rules
+  local details_file="/reports/openscap/${name}_details.prom"
+  {
+    echo "# HELP openscap_rule_result OpenSCAP rule results (0=fail, 1=pass)"
+    echo "# TYPE openscap_rule_result gauge"
+    
+    # Извлечь failed rules с severity и title
+    grep -A 5 '<result>fail</result>' "$xml_file" | grep -E '<rule-result|severity>|<result>|idref=' | \
+    awk '
+      /<rule-result.*idref=/ {
+        match($0, /idref="([^"]+)"/, arr)
+        rule_id = arr[1]
+        # Сократить rule_id для читаемости
+        gsub(/^xccdf_org\.ssgproject\.content_rule_/, "", rule_id)
+      }
+      /<result>fail<\/result>/ {
+        result = "fail"
+      }
+      /severity="/ {
+        match($0, /severity="([^"]+)"/, arr)
+        severity = arr[1]
+        if (rule_id && result == "fail") {
+          # Получить title из XML
+          cmd = "grep -A 2 \"id=\\\"" rule_id "\\\"\" \"'"$xml_file"'\" | grep \"<title>\" | sed \"s/<[^>]*>//g\" | sed \"s/^[[:space:]]*//\" | cut -c1-80"
+          cmd | getline title
+          close(cmd)
+          if (title == "") title = rule_id
+          gsub(/"/, "", title)
+          print "openscap_rule_result{host=\"'"${name}"'\",rule_id=\"" rule_id "\",severity=\"" severity "\",title=\"" title "\"} 0"
+          rule_id = ""
+          result = ""
+          severity = ""
+        }
+      }
+    ' | head -30
+  } > "$details_file"
+
   echo "[OpenSCAP] Metrics saved to $metrics_file" >&2
+  echo "[OpenSCAP] Details saved to $details_file" >&2
 }
 
 status=0
