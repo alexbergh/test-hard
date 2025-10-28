@@ -126,13 +126,10 @@ extract_openscap_metrics() {
   local fail_count
   local notselected_count
   
-  pass_count=$(grep -c 'result="pass"' "$xml_file" 2>/dev/null || echo "0")
-  fail_count=$(grep -c 'result="fail"' "$xml_file" 2>/dev/null || echo "0")
-  notselected_count=$(grep -c 'result="notselected"' "$xml_file" 2>/dev/null || echo "0")
-  
-  # Убрать пробелы и переносы строк, оставив только цифры
-  pass_count=$(echo "$pass_count" | tr -cd '0-9')
-  fail_count=$(echo "$fail_count" | tr -cd '0-9')
+  # Использовать grep -o для подсчета всех вхождений
+  pass_count=$(grep -o '<result>pass</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
+  fail_count=$(grep -o '<result>fail</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
+  notselected_count=$(grep -o '<result>notselected</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
   
   # Если пустые, установить 0
   pass_count=${pass_count:-0}
