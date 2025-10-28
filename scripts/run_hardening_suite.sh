@@ -89,38 +89,35 @@ done
 # Копируем отчёты из работающих контейнеров
 echo "[suite] Copying reports from containers..."
 
-# OpenSCAP отчёты
+# Сначала проверяем что файлы существуют в контейнерах
+echo "[suite] Checking files in containers..."
+
+echo "[suite] OpenSCAP container files:"
+docker exec openscap-scanner find /reports -type f 2>/dev/null || echo "No files in openscap-scanner"
+
+echo "[suite] Lynis container files:"
+docker exec lynis-scanner find /reports -type f 2>/dev/null || echo "No files in lynis-scanner"
+
+# OpenSCAP отчёты - копируем через docker cp
 for target in "${targets[@]}"; do
   echo "[suite] Copying OpenSCAP report for $target"
   mkdir -p reports/openscap
-  ${compose_bin} exec -T openscap-scanner sh -c "
-    if [ -f /reports/openscap/${target}.xml ]; then
-      cat /reports/openscap/${target}.xml
-    fi
-  " > "reports/openscap/${target}.xml" 2>/dev/null || true
   
-  ${compose_bin} exec -T openscap-scanner sh -c "
-    if [ -f /reports/openscap/${target}.html ]; then
-      cat /reports/openscap/${target}.html  
-    fi
-  " > "reports/openscap/${target}.html" 2>/dev/null || true
+  # Копируем напрямую через docker cp
+  docker cp openscap-scanner:/reports/openscap/${target}.xml "reports/openscap/${target}.xml" 2>/dev/null || echo "No XML for $target"
+  docker cp openscap-scanner:/reports/openscap/${target}.html "reports/openscap/${target}.html" 2>/dev/null || echo "No HTML for $target"
+  docker cp openscap-scanner:/reports/openscap/${target}_metrics.prom "reports/openscap/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
 done
 
-# Lynis отчёты  
+# Lynis отчёты - копируем через docker cp
 for target in "${targets[@]}"; do
   echo "[suite] Copying Lynis report for $target"
   mkdir -p reports/lynis
-  ${compose_bin} exec -T lynis-scanner sh -c "
-    if [ -f /reports/lynis/${target}.log ]; then
-      cat /reports/lynis/${target}.log
-    fi
-  " > "reports/lynis/${target}.log" 2>/dev/null || true
   
-  ${compose_bin} exec -T lynis-scanner sh -c "
-    if [ -f /reports/lynis/${target}.dat ]; then
-      cat /reports/lynis/${target}.dat
-    fi
-  " > "reports/lynis/${target}.dat" 2>/dev/null || true
+  # Копируем напрямую через docker cp
+  docker cp lynis-scanner:/reports/lynis/${target}.log "reports/lynis/${target}.log" 2>/dev/null || echo "No log for $target"
+  docker cp lynis-scanner:/reports/lynis/${target}.dat "reports/lynis/${target}.dat" 2>/dev/null || echo "No dat for $target"
+  docker cp lynis-scanner:/reports/lynis/${target}_metrics.prom "reports/lynis/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
 done
 
 # Останавливаем сканеры
