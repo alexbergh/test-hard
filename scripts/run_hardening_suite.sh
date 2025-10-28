@@ -120,8 +120,21 @@ for target in "${targets[@]}"; do
   docker cp lynis-scanner:/reports/lynis/${target}_metrics.prom "reports/lynis/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
 done
 
+# Проверить финальные файлы перед остановкой
+echo "[suite] Final check of files before stopping containers..."
+
+echo "[suite] Final OpenSCAP files:"
+docker exec openscap-scanner find /reports -type f 2>/dev/null || echo "No files"
+
+echo "[suite] Final Lynis files:"
+docker exec lynis-scanner find /reports -type f 2>/dev/null || echo "No files"
+
 # Останавливаем сканеры
 echo "[suite] Stopping scanner services..."
 ${compose_bin} stop "${scanners[@]}" 2>/dev/null || true
 
 printf '\n[suite] Reports saved under %s\n' "$(realpath reports)"
+
+# Проверить скопированные файлы
+echo "[suite] Checking copied files:"
+find reports -type f -name "*" | sort
