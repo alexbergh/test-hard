@@ -161,35 +161,23 @@ EOF
     echo "# HELP openscap_rule_result OpenSCAP rule results (0=fail, 1=pass)"
     echo "# TYPE openscap_rule_result gauge"
     
-    # Извлечь failed rules с severity и title
-    grep -A 5 '<result>fail</result>' "$xml_file" | grep -E '<rule-result|severity>|<result>|idref=' | \
-    awk '
-      /<rule-result.*idref=/ {
-        match($0, /idref="([^"]+)"/, arr)
-        rule_id = arr[1]
-        # Сократить rule_id для читаемости
-        gsub(/^xccdf_org\.ssgproject\.content_rule_/, "", rule_id)
-      }
-      /<result>fail<\/result>/ {
-        result = "fail"
-      }
-      /severity="/ {
-        match($0, /severity="([^"]+)"/, arr)
-        severity = arr[1]
-        if (rule_id && result == "fail") {
-          # Получить title из XML
-          cmd = "grep -A 2 \"id=\\\"" rule_id "\\\"\" \"'"$xml_file"'\" | grep \"<title>\" | sed \"s/<[^>]*>//g\" | sed \"s/^[[:space:]]*//\" | cut -c1-80"
-          cmd | getline title
-          close(cmd)
-          if (title == "") title = rule_id
-          gsub(/"/, "", title)
-          print "openscap_rule_result{host=\"'"${name}"'\",rule_id=\"" rule_id "\",severity=\"" severity "\",title=\"" title "\"} 0"
-          rule_id = ""
-          result = ""
-          severity = ""
-        }
-      }
-    ' | head -30
+    # Извлечь failed rules напрямую из XML
+    grep -B 2 '<result>fail</result>' "$xml_file" | grep 'rule-result' | head -30 | while read -r line; do
+      # Извлечь rule_id
+      rule_id=$(echo "$line" | sed -n 's/.*idref="\([^"]*\)".*/\1/p' | sed 's/xccdf_org\.ssgproject\.content_rule_//')
+      # Извлечь severity
+      severity=$(echo "$line" | sed -n 's/.*severity="\([^"]*\)".*/\1/p')
+      
+      if [ -n "$rule_id" ] && [ -n "$severity" ]; then
+        # Получить title для этого rule (используем короткий rule_id как title)
+        title=$(echo "$rule_id" | sed 's/_/ /g' | cut -c1-60)
+        
+        # Экранировать кавычки
+        title=$(echo "$title" | sed 's/"//g')
+        
+        echo "openscap_rule_result{host=\"${name}\",rule_id=\"${rule_id}\",severity=\"${severity}\",title=\"${title}\"} 0"
+      fi
+    done
   } > "$details_file"
 
   echo "[OpenSCAP] Metrics saved to $metrics_file" >&2
