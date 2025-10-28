@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        
       },
       "fieldConfig": {
         "defaults": {
@@ -136,7 +136,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            
           },
           "editorMode": "code",
           "expr": "security_scanners_lynis_test_result",
@@ -179,7 +179,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        
       },
       "fieldConfig": {
         "defaults": {
@@ -323,7 +323,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            
           },
           "editorMode": "code",
           "expr": "security_scanners_openscap_rule_result",
