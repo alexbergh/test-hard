@@ -97,7 +97,6 @@ services:
     image: test-hard/telegraf:${VERSION:-latest}
     container_name: telegraf
     volumes:
-      - /Users/a.hellberg/Documents/GitHub/test-hard/art-storage:/var/lib/atomic-results:ro
       - /Users/a.hellberg/Documents/GitHub/test-hard/reports:/reports:ro
     ports:
       - "9091:9091"
