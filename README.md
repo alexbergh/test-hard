@@ -1,4 +1,4 @@
-# test-hard — Security Hardening & Monitoring Platform
+# test-hard — Платформа Security Hardening & Monitoring
 
 ## Цель
 Автоматизированная платформа для security hardening и мониторинга контейнеров. Включает security сканирование (OpenSCAP, Lynis), мониторинг (Prometheus, Grafana), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
@@ -264,7 +264,7 @@ kubectl apply -k k8s/overlays/prod
 
 ## Дальнейшие идеи
 
-* Настройте интеграцию Alertmanager с выбранной системой уведомлений
+* Настроить интеграцию Alertmanager с выбранной системой уведомлений
 * Расширить Telegraf дополнительными входными плагинами (cpu, disk, net)
 * Добавить собственные дашборды Grafana для специфичных метрик
 * Интеграция с CI/CD системой для автоматического security scanning
