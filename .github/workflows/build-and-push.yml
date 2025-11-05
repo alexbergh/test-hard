@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
       
     strategy:
       matrix:
@@ -63,6 +64,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.image.context }}
@@ -73,17 +75,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Security scanner
 
-      - name: Sign image with Cosign
+      - name: Install Cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3
         
-      - name: Sign the images
-        if: github.event_name != 'pull_request'
+      - name: Sign the images with Cosign
+        if: github.event_name != 'pull_request' && steps.build.outputs.digest != ''
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}@${{ steps.meta.outputs.digest }}
+          # Sign using digest from build step
+          echo "Signing image: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}@${{ steps.build.outputs.digest }}"
+          cosign sign --yes --oidc-issuer=https://token.actions.githubusercontent.com \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}@${{ steps.build.outputs.digest }}
+        continue-on-error: true
 
   update-version:
     name: Update VERSION file

@@ -247,6 +247,7 @@ make restart     # перезапуск стека
 ### Начало работы
 * **[Быстрый старт (QUICKSTART.md)](docs/QUICKSTART.md)** — развертывание за 5-10 минут
 * **[Полное руководство (DEPLOYMENT.md)](docs/DEPLOYMENT.md)** — детальная инструкция с troubleshooting
+* **[Установка без Docker (NATIVE-INSTALLATION.md)](docs/NATIVE-INSTALLATION.md)** — установка на Linux/BSD без контейнеров
 
 ### Безопасность
 * **[Создание пользователей (USER-SETUP.md)](docs/USER-SETUP.md)** — безопасная настройка пользователей
