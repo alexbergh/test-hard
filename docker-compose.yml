@@ -40,13 +40,21 @@ services:
     image: ubuntu:22.04
     container_name: target-ubuntu
     command: ["sleep", "infinity"]
+  target-alt-c10f2:
+    image: registry.altlinux.org/alt/alt:c10f2
+    container_name: target-alt-c10f2
+    command: ["sleep", "infinity"]
+  target-alt-latest:
+    image: registry.altlinux.org/alt/alt:latest
+    container_name: target-alt-latest
+    command: ["sleep", "infinity"]
   openscap-scanner:
     build: ./scanners/openscap
     image: test-hard/openscap-scanner:${VERSION:-latest}
     container_name: openscap-scanner
     privileged: true
     environment:
-      TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu
+      TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - ./reports:/reports
@@ -60,6 +68,8 @@ services:
       - target-debian
       - target-centos
       - target-ubuntu
+      - target-alt-c10f2
+      - target-alt-latest
     deploy:
       resources:
         limits:
@@ -71,7 +81,7 @@ services:
     container_name: lynis-scanner
     privileged: true
     environment:
-      TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu
+      TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - ./reports:/reports
@@ -85,6 +95,8 @@ services:
       - target-debian
       - target-centos
       - target-ubuntu
+      - target-alt-c10f2
+      - target-alt-latest
     deploy:
       resources:
         limits:

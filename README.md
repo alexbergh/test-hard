@@ -21,7 +21,7 @@
 * **Container Registry** — автоматическая публикация образов в GitHub Container Registry
 * **Multi-Environment** — поддержка dev/staging/prod через Docker Compose
 * **CI/CD Ready** — GitHub Actions для автоматического тестирования и сканирования
-* **Multi-Distribution** — сканирование Debian, Ubuntu, Fedora, CentOS Stream
+* **Multi-Distribution** — сканирование Debian, Ubuntu, Fedora, CentOS Stream, ALT Linux
 * **Metrics Collection** — Telegraf для сбора и экспорта метрик в Prometheus
 * **Docker Security** — изолированный доступ к Docker API через security proxy
 * **High Test Coverage** — 80%+ покрытие тестами (unit, integration, E2E, shell)
@@ -81,7 +81,7 @@ make help              # показать все доступные команд
 
 ## Демонстрационная мультидистрибутивная среда
 
-В каталоге `docker/` подготовлены Dockerfile'ы для Debian, Ubuntu, Fedora и CentOS Stream. Контейнеры
+В каталоге `docker/` подготовлены Dockerfile'ы для Debian, Ubuntu, Fedora, CentOS Stream и ALT Linux. Контейнеры
 собираются через общий `docker-compose.yml` и монтируют каталоги `scripts/`, `atomic-red-team/` и `art-storage/`, чтобы использовать
 одинаковые сценарии hardening-аудита.
 
@@ -98,7 +98,7 @@ make help              # показать все доступные команд
 проверок при старте контейнера добавьте `RUN_HARDENING_ON_START=true`.
 
 По умолчанию `docker-compose.yml` и `scripts/run_hardening_suite.sh` запускают дистрибутивы с публично доступными образами
-(Debian, Ubuntu, Fedora, CentOS).
+(Debian, Ubuntu, Fedora, CentOS, ALT Linux).
 
 ## Alerting
 Prometheus загружает правила из `prometheus/alert.rules.yml` и пересылает сработавшие оповещения в Alertmanager.
