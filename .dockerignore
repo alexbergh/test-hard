@@ -3,3 +3,29 @@ art-storage/history
 art-storage/results
 art-storage/prometheus
 __pycache__
+
+# Analysis and reports
+reports/
+art-storage/
+*.log
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.backup

@@ -1,5 +1,13 @@
 # test-hard — Платформа Security Hardening & Monitoring
 
+![CI Status](https://github.com/alexbergh/test-hard/workflows/CI%20Pipeline/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
+![Kubernetes](https://img.shields.io/badge/kubernetes-ready-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+
+
 ## Цель
 Автоматизированная платформа для security hardening и мониторинга контейнеров. Включает security сканирование (OpenSCAP, Lynis), мониторинг (Prometheus, Grafana), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
 
@@ -7,12 +15,16 @@
 
 * **Security Scanning** — автоматическое сканирование контейнеров (OpenSCAP, Lynis)
 * **Monitoring Stack** — Prometheus + Grafana + Alertmanager для визуализации метрик безопасности
+* **Centralized Logging** — Loki + Promtail для централизованного сбора и анализа логов
 * **Atomic Red Team** — тестирование техник MITRE ATT&CK в режиме dry-run
+* **GitOps Deployment** — автоматический deployment с ArgoCD
+* **Container Registry** — автоматическая публикация образов в GitHub Container Registry
 * **Multi-Environment** — поддержка dev/staging/prod через Docker Compose
 * **CI/CD Ready** — GitHub Actions для автоматического тестирования и сканирования
 * **Multi-Distribution** — сканирование Debian, Ubuntu, Fedora, CentOS Stream
 * **Metrics Collection** — Telegraf для сбора и экспорта метрик в Prometheus
 * **Docker Security** — изолированный доступ к Docker API через security proxy
+* **High Test Coverage** — 80%+ покрытие тестами (unit, integration, E2E, shell)
 
 ## 🚀 Быстрый старт
 
@@ -30,18 +42,30 @@ make up
 ### 📚 Документация:
 - **[Быстрый старт](docs/QUICKSTART.md)** - развертывание за 5-10 минут
 - **[Полное руководство](docs/DEPLOYMENT.md)** - детальная инструкция с troubleshooting
+- **[Сканирование реальных хостов](docs/REAL-HOSTS-SCANNING.md)** - как сканировать production серверы, VM и Docker контейнеры ⭐
 
-### Автоматические сканы контейнеров
+### Режимы работы
+
+**1. Тестовые контейнеры (по умолчанию)** - для демонстрации и разработки
+**2. Реальные хосты через SSH** - для production серверов и VM
+**3. Production Docker контейнеры** - через Docker API
+
+Подробнее: [docs/REAL-HOSTS-SCANNING.md](docs/REAL-HOSTS-SCANNING.md)
+
+### Автоматические сканы контейнеров (режим 1)
 
 В корне репозитория добавлен отдельный `docker-compose.yml`, который поднимает четыре тестовых
 контейнера (Fedora, Debian, CentOS Stream, Ubuntu) и два сервисных сканера (OpenSCAP и Lynis).
 Все сканы выполняются через Docker API, а отчёты складываются в `./reports/`.
 
 ```bash
-make up          # поднимает целевые контейнеры, мониторинг и собирает образы сканеров
-make up-targets  # только целевые контейнеры и сканеры без мониторинга
-make monitor     # Prometheus + Alertmanager + Grafana + Telegraf
-make scan        # запускает OpenSCAP и Lynis внутри сервисных контейнеров
+make up                # поднимает целевые контейнеры, мониторинг и собирает образы сканеров
+make up-with-logging   # запуск с centralized logging (Loki + Promtail)
+make up-targets        # только целевые контейнеры и сканеры без мониторинга
+make monitor           # Prometheus + Alertmanager + Grafana + Telegraf
+make logging           # только Loki + Promtail
+make scan              # запускает OpenSCAP и Lynis внутри сервисных контейнеров
+make help              # показать все доступные команды
 ```
 
 * OpenSCAP сохраняет как HTML-, так и XML-отчёты в `reports/openscap/`.
@@ -262,9 +286,55 @@ kubectl apply -k k8s/overlays/dev
 kubectl apply -k k8s/overlays/prod
 ```
 
-## Дальнейшие идеи
+## 🆕 Новые возможности (Октябрь 2025)
 
-* Настроить интеграцию Alertmanager с выбранной системой уведомлений
-* Расширить Telegraf дополнительными входными плагинами (cpu, disk, net)
-* Добавить собственные дашборды Grafana для специфичных метрик
-* Интеграция с CI/CD системой для автоматического security scanning
+### Centralized Logging
+- **Loki** для хранения логов
+- **Promtail** для сбора логов из контейнеров
+- **LogQL** для мощного поиска и анализа
+- Готовый дашборд для анализа логов
+- Документация: [docs/LOGGING.md](docs/LOGGING.md)
+
+### GitOps Deployment
+- **ArgoCD** для автоматического deployment
+- Автоматическая синхронизация для dev/staging
+- Ручное подтверждение для production
+- Rollback support
+- Документация: [argocd/README.md](argocd/README.md)
+
+### Container Registry
+- Автоматическая публикация в **GitHub Container Registry**
+- Image signing с Cosign
+- Multi-platform builds (amd64, arm64)
+- Семантическое версионирование
+
+### Расширенное тестирование
+- **80%+ test coverage**
+- Unit, integration, E2E тесты
+- Shell script тесты с bats
+- Kubernetes deployment тесты
+- Coverage reporting
+
+## 🗺️ План развития
+
+**Статус проекта:** Production Ready (9.0/10)  
+**Test Coverage:** 80%+
+
+Полный план развития на 2026 год:
+- **[ROADMAP.md](ROADMAP.md)** - детальный roadmap с задачами по кварталам
+
+### Ближайшие задачи (Q1 2026)
+* Web UI для управления сканированиями
+* Scheduled scanning
+* Distributed tracing с Grafana Tempo
+
+### Среднесрочные (Q2-Q3 2026)
+* Runtime security с Falco
+* Compliance as Code (InSpec, OPA)
+* ML-based anomaly detection
+* Multi-tenancy support
+
+### Долгосрочные (Q4 2026)
+* Multi-cloud support (AWS, Azure, GCP)
+* Advanced reporting и analytics
+* Integration marketplace

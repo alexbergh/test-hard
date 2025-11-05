@@ -1,0 +1,37 @@
+# Ansible inventory для сканирования реальных хостов
+# Скопируйте в hosts.ini и настройте под свою инфраструктуру
+
+[production_web_servers]
+web-01 ansible_host=192.168.1.10 ansible_user=scanner
+web-02 ansible_host=192.168.1.11 ansible_user=scanner
+
+[production_db_servers]
+db-01 ansible_host=192.168.1.20 ansible_user=scanner
+db-02 ansible_host=192.168.1.21 ansible_user=scanner
+
+[production_app_servers]
+app-01 ansible_host=192.168.1.30 ansible_user=scanner
+app-02 ansible_host=192.168.1.31 ansible_user=scanner
+
+[staging_servers]
+staging-web ansible_host=192.168.2.10 ansible_user=scanner
+staging-db ansible_host=192.168.2.20 ansible_user=scanner
+
+[development_servers]
+dev-01 ansible_host=192.168.3.10 ansible_user=scanner
+
+# Группировка
+[production:children]
+production_web_servers
+production_db_servers
+production_app_servers
+
+[all:vars]
+# SSH настройки
+ansible_ssh_private_key_file=~/.ssh/scanner_key
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+# Таймауты
+ansible_timeout=30
+ansible_connect_timeout=10

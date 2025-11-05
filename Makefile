@@ -1,3 +1,12 @@
+.PHONY: help
+help: ## Show this help message
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Available targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+.DEFAULT_GOAL := help
+
 COMPOSE ?= docker compose
 PYTHON ?= python3
 
@@ -8,14 +17,20 @@ MONITORING_SERVICES = docker-proxy prometheus alertmanager grafana telegraf
 .PHONY: up up-targets monitor down logs restart hardening-suite scan clean check-deps health validate test \
 	test-unit test-integration test-all coverage install-dev ci lint format
 
-up:
+up: ## Start all services (targets, scanners, monitoring)
 	$(COMPOSE) up -d $(TARGET_SERVICES) $(SCANNER_SERVICES) $(MONITORING_SERVICES)
 
-up-targets:
+up-targets: ## Start only target containers and scanners
 	$(COMPOSE) up -d $(TARGET_SERVICES) $(SCANNER_SERVICES)
 
-monitor:
+monitor: ## Start monitoring stack (Prometheus, Grafana, etc)
 	$(COMPOSE) up -d $(MONITORING_SERVICES)
+
+up-with-logging: ## Start all services with centralized logging (Loki)
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.logging.yml up -d
+
+logging: ## Start only logging stack (Loki, Promtail)
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.logging.yml up -d loki promtail
 
 down:
 	$(COMPOSE) down
@@ -78,21 +93,35 @@ install-dev:
 	@pre-commit install
 	@echo "✓ Development environment ready"
 
-test-unit:
+test-unit: ## Run unit tests
 	@echo "Running unit tests..."
 	@$(PYTHON) -m pytest tests/unit/ -v
 
-test-integration:
+test-integration: ## Run integration tests
 	@echo "Running integration tests..."
 	@$(PYTHON) -m pytest tests/integration/ -v -m integration
 
-test-all:
-	@echo "Running all tests..."
-	@$(PYTHON) -m pytest tests/ -v
+test-e2e: ## Run end-to-end tests
+	@echo "Running E2E tests..."
+	@$(PYTHON) -m pytest tests/e2e/ -v -m e2e
 
-coverage:
+test-shell: ## Run shell script tests with bats
+	@echo "Running shell tests..."
+	@./scripts/run_shell_tests.sh
+
+test-all: ## Run all tests (unit, integration, shell)
+	@echo "Running all tests..."
+	@$(PYTHON) -m pytest tests/unit/ tests/integration/ -v
+	@./scripts/run_shell_tests.sh
+
+test-full: ## Run full test suite including E2E
+	@echo "Running full test suite..."
+	@$(PYTHON) -m pytest tests/ -v -m ""
+	@./scripts/run_shell_tests.sh
+
+coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
-	@$(PYTHON) -m pytest tests/ -v --cov=scripts --cov-report=html --cov-report=term
+	@$(PYTHON) -m pytest tests/unit/ tests/integration/ -v --cov=scripts --cov-report=html --cov-report=term --cov-report=xml
 	@echo "Coverage report: htmlcov/index.html"
 
 lint:

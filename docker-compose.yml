@@ -49,7 +49,7 @@ services:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
-      - /Users/a.hellberg/Documents/GitHub/test-hard/reports:/reports
+      - ./reports:/reports
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - default
@@ -74,7 +74,7 @@ services:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
-      - /Users/a.hellberg/Documents/GitHub/test-hard/reports:/reports
+      - ./reports:/reports
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - default
@@ -98,7 +98,7 @@ services:
     container_name: telegraf
     volumes:
       - /tmp/test_metrics:/tmp/test_metrics:ro
-      - /Users/a.hellberg/Documents/GitHub/test-hard/reports:/reports:ro
+      - ./reports:/reports:ro
     ports:
       - "9091:9091"
     networks:

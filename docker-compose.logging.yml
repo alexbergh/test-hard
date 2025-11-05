@@ -1,0 +1,68 @@
+# Centralized logging stack with Loki and Promtail
+# Usage: docker compose -f docker-compose.yml -f docker-compose.logging.yml up -d
+
+services:
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - ./loki/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${REPORTS_DIR:-./reports}:/reports:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - default
+    depends_on:
+      - loki
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+
+  # Update Grafana to include Loki datasource
+  grafana:
+    environment:
+      - GF_FEATURE_TOGGLES_ENABLE=logsInExplore
+    volumes:
+      - ./grafana/provisioning/datasources/loki.yml:/etc/grafana/provisioning/datasources/loki.yml:ro
+
+volumes:
+  loki-data:
+    driver: local
+
+networks:
+  default:
+    name: test-hard_default
+    external: false
