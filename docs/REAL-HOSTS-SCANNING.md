@@ -10,7 +10,7 @@
 
 ---
 
-## 🎯 Режим 1: Тестовые контейнеры (текущий)
+## Режим 1: Тестовые контейнеры (текущий)
 
 **Использование:** Демонстрация, тестирование, разработка
 
@@ -29,7 +29,7 @@ make scan
 
 ---
 
-## 🔧 Режим 2: Реальные хосты и VM через SSH
+## Режим 2: Реальные хосты и VM через SSH
 
 ### Архитектура
 
@@ -174,7 +174,7 @@ scp -i "$SSH_KEY" "$USER@$HOST:/var/log/lynis-report.dat" "./reports/lynis/${HOS
 # Парсить метрики
 python3 scripts/parse_lynis_report.py "./reports/lynis/${HOST}.log" > "./reports/lynis/${HOST}_metrics.prom"
 
-echo "✅ Scan complete for $HOST"
+echo "Scan complete for $HOST"
 ```
 
 Использование:
@@ -193,7 +193,7 @@ done
 
 ---
 
-## 🐳 Режим 3: Production Docker контейнеры
+## Режим 3: Production Docker контейнеры
 
 ### Архитектура
 
@@ -227,7 +227,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart docker
 ```
 
-**⚠️ ВАЖНО:** Для production используйте TLS:
+**ВАЖНО:** Для production используйте TLS:
 
 ```bash
 # Генерировать сертификаты
@@ -282,7 +282,7 @@ while IFS= read -r container; do
   # Парсить метрики
   python3 scripts/parse_lynis_report.py "./reports/lynis/${container}.log" > "./reports/lynis/${container}_metrics.prom"
   
-  echo "✅ $container scanned"
+  echo "$container scanned"
 done < "$CONTAINERS_FILE"
 ```
 
@@ -297,7 +297,7 @@ chmod +x scripts/scan-docker-containers.sh
 
 ---
 
-## 📊 Интеграция с Telegraf
+## Интеграция с Telegraf
 
 После сканирования метрики автоматически подхватываются Telegraf:
 
@@ -313,7 +313,7 @@ chmod +x scripts/scan-docker-containers.sh
 
 ---
 
-## 🔄 Автоматизация
+## Автоматизация
 
 ### Cron (для регулярного сканирования)
 
@@ -359,7 +359,7 @@ spec:
 
 ---
 
-## 🎯 Рекомендации
+## Рекомендации
 
 ### Для Production
 
@@ -408,7 +408,7 @@ groups:
 
 ---
 
-## 📝 Примеры использования
+## Примеры использования
 
 ### Сканировать все production серверы
 
@@ -438,7 +438,7 @@ docker ps --format "{{.Names}}" > running-containers.txt
 
 ---
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### SSH connection refused
 
@@ -473,7 +473,7 @@ sudo dnf install -y lynis
 
 ---
 
-## 📚 Дополнительно
+## Дополнительно
 
 - [Ansible Documentation](https://docs.ansible.com/)
 - [Lynis Documentation](https://cisofy.com/documentation/lynis/)

@@ -1,5 +1,10 @@
 # Security Policy
 
+## Документация по безопасности
+
+- **[Создание пользователей (USER-SETUP.md)](USER-SETUP.md)** - Подробное руководство по безопасному созданию и настройке пользователей
+- **[Сканирование реальных хостов (REAL-HOSTS-SCANNING.md)](REAL-HOSTS-SCANNING.md)** - Безопасное сканирование production систем
+
 ## Security Improvements
 
 This project implements several security enhancements to protect the monitoring infrastructure:
@@ -13,7 +18,26 @@ This project implements several security enhancements to protect the monitoring 
 - Restricted API endpoints (only CONTAINERS, EXEC, IMAGES, INFO)
 - No access to VOLUMES, NETWORKS, or POST operations
 
-### 2. Credential Management
+### 2. User Management and Least Privilege
+
+**КРИТИЧЕСКИ ВАЖНО:** Никогда не запускайте платформу от root или с неограниченными правами!
+
+**Рекомендованные типы пользователей**:
+- `hardening-admin` - Администрирование платформы (ограниченный sudo)
+- `hardening-scanner` - Запуск сканирований (минимальные права)
+- `hardening-service` - Автоматизация через systemd (без sudo)
+- `hardening-readonly` - Просмотр отчетов (только чтение)
+
+**Полное руководство**: См. [USER-SETUP.md](USER-SETUP.md) для детальных инструкций по созданию и настройке пользователей.
+
+**Ключевые принципы**:
+- **НЕ добавляйте** пользователей в docker group (используйте Docker Socket Proxy)
+- **НЕ используйте** полный sudo доступ `ALL=(ALL) ALL`
+- **Используйте** SSH ключи вместо паролей
+- **Настройте** auditd для мониторинга действий
+- **Ротируйте** SSH ключи каждые 90 дней
+
+### 3. Credential Management
 
 **Default Credentials**: Never use default passwords in production!
 
@@ -32,7 +56,7 @@ nano .env  # Change GF_ADMIN_PASSWORD
 - `GF_ADMIN_PASSWORD` - Grafana admin password (change immediately!)
 - All credentials should be stored in `.env` file (not committed to git)
 
-### 3. Resource Limits
+### 4. Resource Limits
 
 All services have CPU and memory limits to prevent resource exhaustion:
 - Telegraf: 0.5 CPU, 256MB RAM
@@ -40,7 +64,7 @@ All services have CPU and memory limits to prevent resource exhaustion:
 - Grafana: 0.5 CPU, 512MB RAM
 - Scanners: 1 CPU, 512MB RAM each
 
-### 4. Health Monitoring
+### 5. Health Monitoring
 
 All critical services implement health checks:
 - Prometheus: `/-/healthy` endpoint
@@ -48,13 +72,13 @@ All critical services implement health checks:
 - Telegraf: `/metrics` endpoint availability
 - Alertmanager: `/-/healthy` endpoint
 
-### 5. Network Isolation
+### 6. Network Isolation
 
 Services are isolated in separate networks:
 - `default` network: Application services
 - `scanner-net` network: Scanner access to Docker proxy
 
-### 6. TLS/SSL Recommendations
+### 7. TLS/SSL Recommendations
 
 **Production Deployment**:
 1. Use reverse proxy (nginx/traefik) with Let's Encrypt certificates
@@ -144,9 +168,22 @@ If you discover a security vulnerability:
 
 ## Security Checklist for Production
 
+### User Management
+- [ ] Создан выделенный пользователь (не root)
+- [ ] Пользователи НЕ добавлены в docker group
+- [ ] Настроены ограниченные sudo права (см. [USER-SETUP.md](USER-SETUP.md))
+- [ ] Настроена SSH аутентификация по ключам
+- [ ] Включен auditd для мониторинга действий
+- [ ] Настроена периодическая ротация SSH ключей
+
+### Credentials & Access
 - [ ] Change all default passwords
 - [ ] Enable TLS/SSL for all external services
 - [ ] Restrict network access (firewall rules)
+- [ ] Review and restrict sudo permissions
+- [ ] Use Docker Socket Proxy (not direct socket access)
+
+### Monitoring & Maintenance
 - [ ] Enable audit logging
 - [ ] Regular security scans (weekly)
 - [ ] Monitor alert channels
