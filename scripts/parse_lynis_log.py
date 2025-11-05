@@ -30,20 +30,20 @@ def parse_lynis_log(log_path: str, hostname: str = "localhost") -> None:
     tests_done = len(re.findall(r'Performing test ID', content))
     
     # Generate Prometheus metrics
-    print(f"# HELP lynis_score Lynis hardening score")
-    print(f"# TYPE lynis_score gauge")
+    print("# HELP lynis_score Lynis hardening score")
+    print("# TYPE lynis_score gauge")
     print(f'lynis_score{{host="{hostname}"}} {score}')
     print()
-    print(f"# HELP lynis_warnings_count Lynis warnings count")
-    print(f"# TYPE lynis_warnings_count gauge")
+    print("# HELP lynis_warnings_count Lynis warnings count")
+    print("# TYPE lynis_warnings_count gauge")
     print(f'lynis_warnings_count{{host="{hostname}"}} {warnings}')
     print()
-    print(f"# HELP lynis_suggestions_count Lynis suggestions count")
-    print(f"# TYPE lynis_suggestions_count gauge")
+    print("# HELP lynis_suggestions_count Lynis suggestions count")
+    print("# TYPE lynis_suggestions_count gauge")
     print(f'lynis_suggestions_count{{host="{hostname}"}} {suggestions}')
     print()
-    print(f"# HELP lynis_tests_performed Lynis tests performed")
-    print(f"# TYPE lynis_tests_performed gauge")
+    print("# HELP lynis_tests_performed Lynis tests performed")
+    print("# TYPE lynis_tests_performed gauge")
     print(f'lynis_tests_performed{{host="{hostname}"}} {tests_done}')
 
 if __name__ == "__main__":

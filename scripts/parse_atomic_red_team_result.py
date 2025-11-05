@@ -115,8 +115,12 @@ def emit_legacy_format(host: str, data: Dict[str, Any]) -> None:
 
 
 def render_metric(name: str, labels: Dict[str, Any], value: Any) -> str:
+    def escape_label_value(val: str) -> str:
+        """Escape backslashes and quotes in label values."""
+        return str(val).replace("\\", "\\\\").replace('"', '\\"')
+    
     encoded = ",".join(
-        f"{key}=\"{str(val).replace('\\\\', '\\\\').replace('\"', '\\\"')}\""
+        f'{key}="{escape_label_value(val)}"'
         for key, val in sorted(labels.items())
     )
     return f"{name}{{{encoded}}} {value}"

@@ -23,15 +23,16 @@ logger = logging.getLogger(__name__)
 
 try:
     from atomic_operator.atomic_operator import AtomicOperator
-except ImportError as exc:  # pragma: no cover - dependency check
+except ImportError:  # pragma: no cover - dependency check
     logger.error(
-        "atomic_operator is required. Install with 'pip install atomic-operator attrs click'."
+        "atomic_operator is required. "
+        "Install with 'pip install atomic-operator attrs click'."
     )
     raise
 
 try:
     import yaml
-except ImportError as exc:  # pragma: no cover - dependency check
+except ImportError:  # pragma: no cover - dependency check
     logger.error("PyYAML is required. Install with 'pip install pyyaml'.")
     raise
 
