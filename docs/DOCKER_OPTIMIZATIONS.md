@@ -321,12 +321,12 @@ BUILDKIT_PROGRESS=plain docker build -f docker/ubuntu/Dockerfile .
 ## Changelog
 
 ### 2024-11-21
-- ✅ Добавлены специфичные .dockerignore файлы для всех Dockerfile
-- ✅ Добавлен HEALTHCHECK в telegraf/Dockerfile
-- ✅ Внедрены multi-stage builds для всех основных образов
-- ✅ Добавлены BuildKit cache mounts (apt, dnf, yum, pip)
-- ✅ Оптимизированы GitHub Actions workflows для использования BuildKit
-- ✅ Обновлена документация
+-  Добавлены специфичные .dockerignore файлы для всех Dockerfile
+-  Добавлен HEALTHCHECK в telegraf/Dockerfile
+-  Внедрены multi-stage builds для всех основных образов
+-  Добавлены BuildKit cache mounts (apt, dnf, yum, pip)
+-  Оптимизированы GitHub Actions workflows для использования BuildKit
+-  Обновлена документация
 
 ## Следующие шаги
 
