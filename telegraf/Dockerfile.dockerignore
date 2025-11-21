@@ -1,0 +1,6 @@
+# Исключаем всё кроме необходимого для telegraf
+*
+
+# Разрешаем только необходимые файлы
+!telegraf/telegraf.conf
+!scripts/parse_atomic_red_team_result.py

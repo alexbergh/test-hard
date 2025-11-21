@@ -1,0 +1,5 @@
+# Исключаем всё кроме необходимого для openscap scanner
+*
+
+# Разрешаем только entrypoint скрипт
+!entrypoint-new.sh

@@ -45,6 +45,8 @@ make up
 - **[Сканирование реальных хостов](docs/REAL-HOSTS-SCANNING.md)** - как сканировать production серверы, VM и Docker контейнеры 
 - **[Создание пользователей](docs/USER-SETUP.md)** - безопасная настройка пользователей (полное руководство) 
 - **[Быстрая настройка пользователей](docs/QUICK-USER-SETUP.md)** - шпаргалка по безопасности
+- **[Docker оптимизации](docs/DOCKER_OPTIMIZATIONS.md)** - multi-stage builds, BuildKit cache, метрики
+- **[Docker Quick Start](docs/DOCKER_QUICK_START.md)** - быстрое руководство по оптимизированным образам
 
 ### Режимы работы
 

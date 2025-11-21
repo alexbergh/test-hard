@@ -1,0 +1,5 @@
+# Исключаем всё кроме необходимого для lynis scanner
+*
+
+# Разрешаем только entrypoint скрипт
+!entrypoint.sh
