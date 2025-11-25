@@ -156,7 +156,7 @@ curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_test_r
 
 ---
 
-## 🐛 Troubleshooting
+## Устранение неполадок
 
 ### Проблема: "No data" в Grafana
 
@@ -234,7 +234,7 @@ docker compose up -d lynis-scanner openscap-scanner
 
 ---
 
-## 📈 Мониторинг
+## Мониторинг
 
 ### Проверка ресурсов:
 ```bash

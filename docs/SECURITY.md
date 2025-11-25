@@ -1,22 +1,22 @@
-# Security Policy
+# Политика безопасности
 
 ## Документация по безопасности
 
 - **[Создание пользователей (USER-SETUP.md)](USER-SETUP.md)** - Подробное руководство по безопасному созданию и настройке пользователей
 - **[Сканирование реальных хостов (REAL-HOSTS-SCANNING.md)](REAL-HOSTS-SCANNING.md)** - Безопасное сканирование production систем
 
-## Security Improvements
+## Улучшения безопасности
 
-This project implements several security enhancements to protect the monitoring infrastructure:
+Проект реализует несколько улучшений безопасности для защиты инфраструктуры мониторинга:
 
-### 1. Docker Socket Protection
+### 1. Защита Docker Socket
 
-**Issue**: Direct Docker socket access poses significant security risks.
+**Проблема**: Прямой доступ к Docker socket представляет значительные риски безопасности.
 
-**Solution**: Docker Socket Proxy (`tecnativa/docker-socket-proxy`) is used to limit scanner access:
-- Read-only socket access
-- Restricted API endpoints (only CONTAINERS, EXEC, IMAGES, INFO)
-- No access to VOLUMES, NETWORKS, or POST operations
+**Решение**: Docker Socket Proxy (`tecnativa/docker-socket-proxy`) используется для ограничения доступа сканера:
+- Доступ к socket только для чтения
+- Ограниченные API endpoints (только CONTAINERS, EXEC, IMAGES, INFO)
+- Нет доступа к VOLUMES, NETWORKS или POST операциям
 
 ### 2. User Management and Least Privilege
 
@@ -37,56 +37,56 @@ This project implements several security enhancements to protect the monitoring 
 - **Настройте** auditd для мониторинга действий
 - **Ротируйте** SSH ключи каждые 90 дней
 
-### 3. Credential Management
+### 3. Управление учетными данными
 
-**Default Credentials**: Never use default passwords in production!
+**Учетные данные по умолчанию**: Никогда не используйте пароли по умолчанию в production!
 
-**Recommended practices**:
+**Рекомендуемые практики**:
 ```bash
-# Generate strong password
+# Сгенерировать надежный пароль
 openssl rand -base64 32
 
-# Update .env file
+# Обновить .env файл
 cp .env.example .env
-nano .env  # Change GF_ADMIN_PASSWORD
+nano .env  # Изменить GF_ADMIN_PASSWORD
 ```
 
-**Environment Variables**:
-- `GF_ADMIN_USER` - Grafana admin username
-- `GF_ADMIN_PASSWORD` - Grafana admin password (change immediately!)
-- All credentials should be stored in `.env` file (not committed to git)
+**Переменные окружения**:
+- `GF_ADMIN_USER` - Имя пользователя администратора Grafana
+- `GF_ADMIN_PASSWORD` - Пароль администратора Grafana (немедленно изменить!)
+- Все учетные данные должны храниться в файле `.env` (не коммитить в git)
 
-### 4. Resource Limits
+### 4. Ограничения ресурсов
 
-All services have CPU and memory limits to prevent resource exhaustion:
+Все сервисы имеют ограничения CPU и памяти для предотвращения истощения ресурсов:
 - Telegraf: 0.5 CPU, 256MB RAM
 - Prometheus: 1 CPU, 1GB RAM
 - Grafana: 0.5 CPU, 512MB RAM
-- Scanners: 1 CPU, 512MB RAM each
+- Сканеры: 1 CPU, 512MB RAM каждый
 
-### 5. Health Monitoring
+### 5. Мониторинг здоровья
 
-All critical services implement health checks:
-- Prometheus: `/-/healthy` endpoint
-- Grafana: `/api/health` endpoint
-- Telegraf: `/metrics` endpoint availability
-- Alertmanager: `/-/healthy` endpoint
+Все критические сервисы реализуют проверки состояния:
+- Prometheus: endpoint `/-/healthy`
+- Grafana: endpoint `/api/health`
+- Telegraf: доступность endpoint `/metrics`
+- Alertmanager: endpoint `/-/healthy`
 
-### 6. Network Isolation
+### 6. Сетевая изоляция
 
-Services are isolated in separate networks:
-- `default` network: Application services
-- `scanner-net` network: Scanner access to Docker proxy
+Сервисы изолированы в отдельных сетях:
+- Сеть `default`: Сервисы приложения
+- Сеть `scanner-net`: Доступ сканера к Docker proxy
 
-### 7. TLS/SSL Recommendations
+### 7. Рекомендации по TLS/SSL
 
-**Production Deployment**:
-1. Use reverse proxy (nginx/traefik) with Let's Encrypt certificates
-2. Enable TLS for all external endpoints
-3. Configure Prometheus remote write with TLS
-4. Use mTLS for service-to-service communication
+**Production развертывание**:
+1. Используйте reverse proxy (nginx/traefik) с сертификатами Let's Encrypt
+2. Включите TLS для всех внешних endpoints
+3. Настройте Prometheus remote write с TLS
+4. Используйте mTLS для коммуникации между сервисами
 
-Example nginx config:
+Пример nginx конфигурации:
 ```nginx
 server {
     listen 443 ssl http2;
@@ -103,72 +103,72 @@ server {
 }
 ```
 
-## Security Scanning
+## Сканирование безопасности
 
-### OpenSCAP Profiles
+### Профили OpenSCAP
 
-Available security profiles:
-- `xccdf_org.ssgproject.content_profile_standard` (default)
+Доступные профили безопасности:
+- `xccdf_org.ssgproject.content_profile_standard` (по умолчанию)
 - `xccdf_org.ssgproject.content_profile_cis` (CIS benchmarks)
 - `xccdf_org.ssgproject.content_profile_pci-dss` (PCI-DSS)
 
-Change profile in `OPENSCAP_PROFILE` environment variable.
+Изменить профиль можно через переменную окружения `OPENSCAP_PROFILE`.
 
-### Lynis Auditing
+### Аудит Lynis
 
-Lynis performs comprehensive security audits. Review:
-- Hardening index (target: >70)
-- Warnings (should be <10)
-- Suggestions for improvements
+Lynis выполняет комплексный аудит безопасности. Проверяйте:
+- Индекс hardening (цель: >70)
+- Предупреждения (должно быть <10)
+- Рекомендации по улучшению
 
 ### Atomic Red Team
 
-Tests run in **dry-run mode by default** to prevent system modifications.
+Тесты выполняются в **режиме dry-run по умолчанию** для предотвращения изменений системы.
 
-To enable real execution:
+Для включения реального выполнения:
 ```bash
 ATOMIC_DRY_RUN=false docker compose up
 ```
 
-**Warning**: Only run real tests in isolated test environments!
+**Предупреждение**: Запускайте реальные тесты только в изолированных тестовых окружениях!
 
-## Alert Thresholds
+## Пороги оповещений
 
-### Security Alerts
+### Оповещения безопасности
 
-| Alert | Threshold | Severity |
-|-------|-----------|----------|
-| Lynis Score Low | <60 | Warning |
-| Lynis Score Critical | <40 | Critical |
-| High Lynis Warnings | >10 | Warning |
-| OpenSCAP High Failures | >50 | Warning |
-| OpenSCAP Critical Failures | >100 | Critical |
-| Atomic Test Failure | Any | Warning |
+| Оповещение | Порог | Серьезность |
+|------------|-------|-------------|
+| Низкий Lynis Score | <60 | Warning |
+| Критический Lynis Score | <40 | Critical |
+| Много Lynis предупреждений | >10 | Warning |
+| Много OpenSCAP ошибок | >50 | Warning |
+| Критические OpenSCAP ошибки | >100 | Critical |
+| Ошибка Atomic теста | Любая | Warning |
 
-### System Alerts
+### Системные оповещения
 
-| Alert | Threshold | Severity |
-|-------|-----------|----------|
-| High CPU Usage | >80% for 10m | Warning |
-| High Memory Usage | >85% for 10m | Warning |
-| Low Disk Space | <15% free | Warning |
-| Telegraf Down | 2 minutes | Critical |
+| Оповещение | Порог | Серьезность |
+|------------|-------|-------------|
+| Высокое использование CPU | >80% в течение 10м | Warning |
+| Высокое использование памяти | >85% в течение 10м | Warning |
+| Мало места на диске | <15% свободно | Warning |
+| Telegraf не работает | 2 минуты | Critical |
 
-## Reporting Security Issues
+## Сообщение об уязвимостях безопасности
 
-If you discover a security vulnerability:
+Если вы обнаружили уязвимость безопасности:
 
-1. **Do NOT** open a public issue
-2. Email security concerns to the maintainers
-3. Include:
-   - Description of the vulnerability
-   - Steps to reproduce
-   - Potential impact
-   - Suggested fix (if available)
+1. **НЕ создавайте** публичный issue
+2. Отправьте информацию о проблеме безопасности мейнтейнерам по email
+3. Включите:
+   - Описание уязвимости
+   - Шаги для воспроизведения
+   - Потенциальное влияние
+   - Предлагаемое исправление (если доступно)
 
-## Security Checklist for Production
+## Чеклист безопасности для Production
 
-### User Management
+### Управление пользователями
 - [ ] Создан выделенный пользователь (не root)
 - [ ] Пользователи НЕ добавлены в docker group
 - [ ] Настроены ограниченные sudo права (см. [USER-SETUP.md](USER-SETUP.md))
@@ -176,51 +176,51 @@ If you discover a security vulnerability:
 - [ ] Включен auditd для мониторинга действий
 - [ ] Настроена периодическая ротация SSH ключей
 
-### Credentials & Access
-- [ ] Change all default passwords
-- [ ] Enable TLS/SSL for all external services
-- [ ] Restrict network access (firewall rules)
-- [ ] Review and restrict sudo permissions
-- [ ] Use Docker Socket Proxy (not direct socket access)
+### Учетные данные и доступ
+- [ ] Изменены все пароли по умолчанию
+- [ ] Включен TLS/SSL для всех внешних сервисов
+- [ ] Ограничен сетевой доступ (правила firewall)
+- [ ] Проверены и ограничены sudo права
+- [ ] Используется Docker Socket Proxy (не прямой доступ к socket)
 
-### Monitoring & Maintenance
-- [ ] Enable audit logging
-- [ ] Regular security scans (weekly)
-- [ ] Monitor alert channels
-- [ ] Keep all images updated
-- [ ] Review and act on security findings
-- [ ] Backup configuration and data
-- [ ] Document incident response procedures
+### Мониторинг и обслуживание
+- [ ] Включено логирование аудита
+- [ ] Регулярные сканирования безопасности (еженедельно)
+- [ ] Настроен мониторинг каналов оповещений
+- [ ] Все образы обновлены
+- [ ] Проверяются и обрабатываются находки безопасности
+- [ ] Настроено резервное копирование конфигурации и данных
+- [ ] Документированы процедуры реагирования на инциденты
 
-## Updates and Patching
+## Обновления и патчи
 
-Regularly update:
+Регулярно обновляйте:
 ```bash
-# Pull latest images
+# Загрузить последние образы
 docker compose pull
 
-# Rebuild custom images
+# Пересобрать кастомные образы
 docker compose build --pull
 
-# Restart services
+# Перезапустить сервисы
 docker compose up -d
 ```
 
-## Security Best Practices
+## Лучшие практики безопасности
 
-1. **Principle of Least Privilege**: Grant minimal required permissions
-2. **Defense in Depth**: Multiple security layers
-3. **Regular Audits**: Schedule weekly security scans
-4. **Incident Response**: Prepare for security incidents
-5. **Secure Defaults**: Security enabled by default
-6. **Monitoring**: Continuous security monitoring
-7. **Updates**: Keep all components updated
-8. **Documentation**: Document security configurations
+1. **Принцип наименьших привилегий**: Предоставляйте минимально необходимые права
+2. **Эшелонированная защита**: Множественные уровни безопасности
+3. **Регулярные аудиты**: Планируйте еженедельные сканирования безопасности
+4. **Реагирование на инциденты**: Подготовьтесь к инцидентам безопасности
+5. **Безопасные настройки по умолчанию**: Безопасность включена по умолчанию
+6. **Мониторинг**: Непрерывный мониторинг безопасности
+7. **Обновления**: Поддерживайте все компоненты в актуальном состоянии
+8. **Документация**: Документируйте конфигурации безопасности
 
-## References
+## Справочные материалы
 
-- [Docker Security Best Practices](https://docs.docker.com/engine/security/)
+- [Лучшие практики безопасности Docker](https://docs.docker.com/engine/security/)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks/)
 - [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-- [Prometheus Security](https://prometheus.io/docs/operating/security/)
+- [Безопасность Prometheus](https://prometheus.io/docs/operating/security/)

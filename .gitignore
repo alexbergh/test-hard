@@ -60,3 +60,51 @@ diagnostics-*.tar.gz
 tmp/
 temp/
 .tmp/
+*.tmp
+
+# Test coverage and artifacts
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.pytest_cache/
+.tox/
+.nox/
+*.cover
+.hypothesis/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+
+# Docker artifacts
+.dockerignore.backup
+docker-compose*.backup
+
+# Backups from scripts
+backups/
+*.tar.gz.backup
+
+# Editor temporary files
+.vscode-test/
+*.code-workspace
+.history/
+
+# System files
+desktop.ini
+$RECYCLE.BIN/
+
+# Secret files (double check)
+*.key
+*.pem
+*.crt
+id_rsa*
+*.p12
+secrets.yml
+secrets.yaml
+
+# CI/CD artifacts
+.github/workflows/*.backup

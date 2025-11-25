@@ -1,31 +1,131 @@
-.git
-art-storage/history
-art-storage/results
-art-storage/prometheus
-__pycache__
+# Docker ignore file for test-hard
+# Prevents unnecessary files from being sent to Docker build context
 
-# Analysis and reports
-reports/
-art-storage/
-*.log
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Documentation (not needed in images)
+*.md
+!README.md
+docs/
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+
+# Python cache and artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
 
 # Testing
 .pytest_cache/
+.tox/
+.nox/
 htmlcov/
 .coverage
+.coverage.*
 coverage.xml
+*.cover
+.hypothesis/
+tests/
 
-# IDE
+# Analysis and reports (runtime data)
+reports/
+art-storage/history/
+art-storage/results/
+art-storage/prometheus/
+*.log
+*.log.*
+
+# IDE and editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.classpath
+.settings/
 
-# OS
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # Temporary files
 *.tmp
 *.bak
 *.backup
+*.orig
+tmp/
+temp/
+.tmp/
+
+# Configuration (use .env at runtime)
+.env
+.env.local
+.env.*.local
+.secrets
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# Development tools
+.pre-commit-config.yaml
+.yamllint.yml
+.markdownlint.yaml
+.editorconfig
+.flake8
+.bandit
+pyproject.toml
+setup.py
+MANIFEST.in
+pytest.ini
+mypy.ini
+.mypy_cache/
+
+# Docker artifacts (avoid recursion)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Kubernetes and deployment configs
+k8s/
+argocd/
+helm/
+
+# Backups
+backups/
+scripts_backup*/
+*.tar.gz
+*.zip
+
+# Logs and databases (should not be in image)
+*.sqlite
+*.db
+prometheus-data/
+grafana-data/
+loki-data/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

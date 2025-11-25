@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-echo "🔧 Applying immediate fixes to test-hard repository..."
+echo "[FIX] Applying immediate fixes to test-hard repository..."
 echo ""
 
 # Colors for output
@@ -16,15 +16,15 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_status() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}[OK]${NC} $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 # Check if we're in the right directory
@@ -37,7 +37,7 @@ print_status "Found docker-compose.yml"
 
 # 1. Fix hardcoded paths in docker-compose files
 echo ""
-echo "📝 Fix 1: Removing hardcoded paths from docker-compose files..."
+echo "[NOTE] Fix 1: Removing hardcoded paths from docker-compose files..."
 
 # Backup original files
 for file in docker-compose.yml docker-compose.*.yml; do
@@ -59,7 +59,7 @@ fi
 
 # 2. Improve .dockerignore
 echo ""
-echo "📝 Fix 2: Updating .dockerignore..."
+echo "[NOTE] Fix 2: Updating .dockerignore..."
 
 cat >> .dockerignore << 'EOF'
 
@@ -94,50 +94,50 @@ print_status "Updated .dockerignore"
 
 # 3. Create health check script
 echo ""
-echo "📝 Fix 3: Creating health check script..."
+echo "[NOTE] Fix 3: Creating health check script..."
 
 cat > scripts/health_check.sh << 'EOF'
 #!/bin/bash
 # Health check script for all services
 set -e
 
-echo "🏥 Checking services health..."
+echo "[HEALTH] Checking services health..."
 echo ""
 
 # Prometheus
 if curl -sf http://localhost:9090/-/healthy > /dev/null 2>&1; then
-    echo "✓ Prometheus: healthy"
+    echo "[OK] Prometheus: healthy"
 else
-    echo "✗ Prometheus: unhealthy"
+    echo "[ERROR] Prometheus: unhealthy"
     exit 1
 fi
 
 # Grafana
 if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
-    echo "✓ Grafana: healthy"
+    echo "[OK] Grafana: healthy"
 else
-    echo "✗ Grafana: unhealthy"
+    echo "[ERROR] Grafana: unhealthy"
     exit 1
 fi
 
 # Telegraf
 if curl -sf http://localhost:9091/metrics > /dev/null 2>&1; then
-    echo "✓ Telegraf: healthy"
+    echo "[OK] Telegraf: healthy"
 else
-    echo "✗ Telegraf: unhealthy"
+    echo "[ERROR] Telegraf: unhealthy"
     exit 1
 fi
 
 # Alertmanager
 if curl -sf http://localhost:9093/-/healthy > /dev/null 2>&1; then
-    echo "✓ Alertmanager: healthy"
+    echo "[OK] Alertmanager: healthy"
 else
-    echo "✗ Alertmanager: unhealthy"
+    echo "[ERROR] Alertmanager: unhealthy"
     exit 1
 fi
 
 echo ""
-echo "✅ All services are healthy!"
+echo "[SUCCESS] All services are healthy!"
 EOF
 
 chmod +x scripts/health_check.sh
@@ -145,7 +145,7 @@ print_status "Created scripts/health_check.sh"
 
 # 4. Improve .env.example
 echo ""
-echo "📝 Fix 4: Improving .env.example..."
+echo "[NOTE] Fix 4: Improving .env.example..."
 
 cat > .env.example << 'EOF'
 # Grafana Configuration
@@ -186,7 +186,7 @@ print_status "Updated .env.example with comments"
 
 # 5. Add Makefile help
 echo ""
-echo "📝 Fix 5: Adding help target to Makefile..."
+echo "[NOTE] Fix 5: Adding help target to Makefile..."
 
 # Check if help target exists
 if ! grep -q "^help:" Makefile; then
@@ -211,7 +211,7 @@ fi
 
 # 6. Create CHANGELOG.md
 echo ""
-echo "📝 Fix 6: Creating CHANGELOG.md..."
+echo "[NOTE] Fix 6: Creating CHANGELOG.md..."
 
 if [ ! -f "CHANGELOG.md" ]; then
     cat > CHANGELOG.md << 'EOF'
@@ -264,7 +264,7 @@ fi
 
 # 7. Create GitHub issue templates
 echo ""
-echo "📝 Fix 7: Creating GitHub issue templates..."
+echo "[NOTE] Fix 7: Creating GitHub issue templates..."
 
 mkdir -p .github/ISSUE_TEMPLATE
 
@@ -332,7 +332,7 @@ print_status "Created GitHub issue templates"
 
 # 8. Add badges to README
 echo ""
-echo "📝 Fix 8: Adding badges to README..."
+echo "[NOTE] Fix 8: Adding badges to README..."
 
 # Check if badges already exist
 if ! grep -q "shields.io" README.md; then
@@ -357,7 +357,7 @@ fi
 
 # 9. Improve error handling in scripts
 echo ""
-echo "📝 Fix 9: Improving error handling in bash scripts..."
+echo "[NOTE] Fix 9: Improving error handling in bash scripts..."
 
 for script in scripts/*.sh; do
     if [ -f "$script" ] && [ -x "$script" ]; then
@@ -376,14 +376,14 @@ done
 
 # 10. Create verification script
 echo ""
-echo "📝 Fix 10: Creating verification script..."
+echo "[NOTE] Fix 10: Creating verification script..."
 
 cat > scripts/verify_fixes.sh << 'EOF'
 #!/bin/bash
 # Verification script to check if all fixes were applied correctly
 set -euo pipefail
 
-echo "🔍 Verifying applied fixes..."
+echo "[CHECK] Verifying applied fixes..."
 echo ""
 
 ERRORS=0
@@ -391,63 +391,63 @@ ERRORS=0
 # Check 1: No hardcoded paths
 echo "Checking for hardcoded paths..."
 if grep -r "/Users/" docker-compose*.yml 2>/dev/null; then
-    echo "✗ Found hardcoded paths in docker-compose files"
+    echo "[ERROR] Found hardcoded paths in docker-compose files"
     ERRORS=$((ERRORS + 1))
 else
-    echo "✓ No hardcoded paths found"
+    echo "[OK] No hardcoded paths found"
 fi
 
 # Check 2: Health check script exists
 echo "Checking health check script..."
 if [ -x "scripts/health_check.sh" ]; then
-    echo "✓ Health check script exists and is executable"
+    echo "[OK] Health check script exists and is executable"
 else
-    echo "✗ Health check script missing or not executable"
+    echo "[ERROR] Health check script missing or not executable"
     ERRORS=$((ERRORS + 1))
 fi
 
 # Check 3: .env.example has comments
 echo "Checking .env.example..."
 if grep -q "# Grafana Configuration" .env.example; then
-    echo "✓ .env.example has proper comments"
+    echo "[OK] .env.example has proper comments"
 else
-    echo "✗ .env.example missing comments"
+    echo "[ERROR] .env.example missing comments"
     ERRORS=$((ERRORS + 1))
 fi
 
 # Check 4: CHANGELOG.md exists
 echo "Checking CHANGELOG.md..."
 if [ -f "CHANGELOG.md" ]; then
-    echo "✓ CHANGELOG.md exists"
+    echo "[OK] CHANGELOG.md exists"
 else
-    echo "✗ CHANGELOG.md missing"
+    echo "[ERROR] CHANGELOG.md missing"
     ERRORS=$((ERRORS + 1))
 fi
 
 # Check 5: Issue templates exist
 echo "Checking GitHub issue templates..."
 if [ -f ".github/ISSUE_TEMPLATE/bug_report.md" ]; then
-    echo "✓ Bug report template exists"
+    echo "[OK] Bug report template exists"
 else
-    echo "✗ Bug report template missing"
+    echo "[ERROR] Bug report template missing"
     ERRORS=$((ERRORS + 1))
 fi
 
 # Check 6: Makefile has help
 echo "Checking Makefile help..."
 if grep -q "^help:" Makefile; then
-    echo "✓ Makefile has help target"
+    echo "[OK] Makefile has help target"
 else
-    echo "✗ Makefile missing help target"
+    echo "[ERROR] Makefile missing help target"
     ERRORS=$((ERRORS + 1))
 fi
 
 echo ""
 if [ $ERRORS -eq 0 ]; then
-    echo "✅ All fixes verified successfully!"
+    echo "[SUCCESS] All fixes verified successfully!"
     exit 0
 else
-    echo "❌ Found $ERRORS issues"
+    echo "[FAIL] Found $ERRORS issues"
     exit 1
 fi
 EOF
@@ -458,20 +458,20 @@ print_status "Created scripts/verify_fixes.sh"
 # Summary
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ All immediate fixes have been applied!"
+echo "[SUCCESS] All immediate fixes have been applied!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "Applied fixes:"
-echo "  1. ✓ Fixed hardcoded paths in docker-compose files"
-echo "  2. ✓ Improved .dockerignore"
-echo "  3. ✓ Created health check script"
-echo "  4. ✓ Improved .env.example with comments"
-echo "  5. ✓ Added Makefile help target"
-echo "  6. ✓ Created CHANGELOG.md"
-echo "  7. ✓ Created GitHub issue templates"
-echo "  8. ✓ Added badges to README.md"
-echo "  9. ✓ Improved error handling in scripts"
-echo " 10. ✓ Created verification script"
+echo "  1. [OK] Fixed hardcoded paths in docker-compose files"
+echo "  2. [OK] Improved .dockerignore"
+echo "  3. [OK] Created health check script"
+echo "  4. [OK] Improved .env.example with comments"
+echo "  5. [OK] Added Makefile help target"
+echo "  6. [OK] Created CHANGELOG.md"
+echo "  7. [OK] Created GitHub issue templates"
+echo "  8. [OK] Added badges to README.md"
+echo "  9. [OK] Improved error handling in scripts"
+echo " 10. [OK] Created verification script"
 echo ""
 echo "Next steps:"
 echo "  1. Review the changes: git diff"

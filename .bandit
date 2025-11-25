@@ -1,0 +1,33 @@
+[bandit]
+# Paths to exclude from scanning
+exclude_dirs = 
+    /tests/
+    /venv/
+    /.venv/
+    /build/
+    /dist/
+    /.pytest_cache/
+    /__pycache__/
+
+# Tests to skip
+skips = 
+    B101
+    B601
+
+# Severity level threshold
+severity = medium
+
+# Confidence level threshold  
+confidence = medium
+
+# Output format
+format = json
+
+# Recursive scan
+recursive = true
+
+# Aggregate output
+aggregate = file
+
+# Number of lines of context
+number = 5

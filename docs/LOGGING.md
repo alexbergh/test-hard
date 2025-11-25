@@ -1,6 +1,6 @@
-# Centralized Logging с Loki
+# Централизованное логирование с Loki
 
-Документация по настройке и использованию centralized logging с Grafana Loki.
+Документация по настройке и использованию централизованного логирования с Grafana Loki.
 
 ## Обзор
 
@@ -71,7 +71,7 @@ make logging
 - Системных логов `/var/log`
 - Security scanner отчетов `/reports`
 
-## LogQL Queries
+## Запросы LogQL
 
 ### Базовые запросы
 
@@ -105,7 +105,7 @@ rate({compose_service="prometheus"} |= "error" [5m])
 topk(10, sum by (container) (count_over_time({compose_project="test-hard"}[1h])))
 ```
 
-### Security-специфичные запросы
+### Запросы для безопасности
 
 ```logql
 # Логи security сканеров
@@ -123,7 +123,7 @@ topk(10, sum by (container) (count_over_time({compose_project="test-hard"}[1h]))
 
 ## Дашборды
 
-### Logs Analysis Dashboard
+### Дашборд анализа логов
 
 Предустановленный дашборд: `grafana/dashboards/logs-analysis.json`
 
@@ -141,7 +141,7 @@ topk(10, sum by (container) (count_over_time({compose_project="test-hard"}[1h]))
 4. Настройте визуализацию
 5. Save dashboard
 
-## Retention и Storage
+## Хранение данных
 
 ### Настройка retention
 
@@ -167,7 +167,7 @@ docker compose -f docker-compose.logging.yml exec loki \
   wget -O- http://localhost:3100/loki/api/v1/delete?query={job="old_job"}&start=0&end=1234567890
 ```
 
-## Alerts на основе логов
+## Оповещения на основе логов
 
 ### Создание alert rules
 
@@ -212,7 +212,7 @@ ruler:
 
 ## Интеграция с Prometheus
 
-### Derived fields
+### Производные поля
 
 Связь логов с traces/metrics через derived fields (уже настроено в `loki.yml`):
 
@@ -224,7 +224,7 @@ derivedFields:
     url: "$${__value.raw}"
 ```
 
-## Production рекомендации
+## Рекомендации для Production
 
 ### 1. Используйте object storage
 
@@ -282,7 +282,7 @@ scrape_configs:
       - targets: ['loki:3100']
 ```
 
-## Troubleshooting
+## Устранение неполадок
 
 ### Promtail не отправляет логи
 
@@ -327,9 +327,9 @@ docker compose -f docker-compose.logging.yml logs loki
 3. Проверьте, что Promtail работает: `docker ps | grep promtail`
 4. Проверьте, что логи собираются: `curl http://localhost:9080/metrics`
 
-## Backup и Restore
+## Резервное копирование и восстановление
 
-### Backup
+### Резервное копирование
 
 ```bash
 # Backup Loki data
@@ -337,7 +337,7 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
   alpine tar czf /backup/loki-backup-$(date +%Y%m%d).tar.gz /data
 ```
 
-### Restore
+### Восстановление
 
 ```bash
 # Restore Loki data
@@ -354,7 +354,7 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
 
 ## Примеры использования
 
-### Debugging deployment issues
+### Отладка проблем развертывания
 
 ```logql
 # Логи за последние 5 минут с ошибками
@@ -364,7 +364,7 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
 {container="prometheus"} [1h]
 ```
 
-### Security monitoring
+### Мониторинг безопасности
 
 ```logql
 # Все security findings
@@ -374,7 +374,7 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
 {job="security_scanners"} |~ "CRITICAL|HIGH"
 ```
 
-### Performance analysis
+### Анализ производительности
 
 ```logql
 # Медленные запросы

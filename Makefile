@@ -41,7 +41,7 @@ logs:
 restart: down up
 
 hardening-suite:
-	./scripts/run_hardening_suite.sh
+	./scripts/scanning/run_hardening_suite.sh
 
 scan:
 	$(COMPOSE) run --rm openscap-scanner
@@ -59,15 +59,7 @@ check-deps:
 	@echo "✓ All dependencies found"
 
 health:
-	@echo "Checking service health..."
-	@$(COMPOSE) ps
-	@echo ""
-	@echo "Prometheus health:"
-	@curl -sf http://localhost:9090/-/healthy || echo "✗ Prometheus unhealthy"
-	@echo "Grafana health:"
-	@curl -sf http://localhost:3000/api/health || echo "✗ Grafana unhealthy"
-	@echo "Telegraf metrics:"
-	@curl -sf http://localhost:9091/metrics | head -5 || echo "✗ Telegraf unhealthy"
+	@./scripts/monitoring/health_check.sh
 
 validate:
 	@echo "Validating configurations..."
@@ -78,8 +70,8 @@ validate:
 
 test:
 	@echo "Running basic tests..."
-	@$(PYTHON) -m py_compile scripts/*.py && echo "✓ Python scripts syntax OK" || echo "✗ Python syntax errors"
-	@bash -n scripts/*.sh && echo "✓ Shell scripts syntax OK" || echo "✗ Shell syntax errors"
+	@find scripts -name "*.py" -exec $(PYTHON) -m py_compile {} \; && echo "✓ Python scripts syntax OK" || echo "✗ Python syntax errors"
+	@find scripts -name "*.sh" -exec bash -n {} \; && echo "✓ Shell scripts syntax OK" || echo "✗ Shell syntax errors"
 
 setup:
 	@echo "Initial setup..."
@@ -107,17 +99,17 @@ test-e2e: ## Run end-to-end tests
 
 test-shell: ## Run shell script tests with bats
 	@echo "Running shell tests..."
-	@./scripts/run_shell_tests.sh
+	@./scripts/testing/run_shell_tests.sh
 
 test-all: ## Run all tests (unit, integration, shell)
 	@echo "Running all tests..."
 	@$(PYTHON) -m pytest tests/unit/ tests/integration/ -v
-	@./scripts/run_shell_tests.sh
+	@./scripts/testing/run_shell_tests.sh
 
 test-full: ## Run full test suite including E2E
 	@echo "Running full test suite..."
 	@$(PYTHON) -m pytest tests/ -v -m ""
-	@./scripts/run_shell_tests.sh
+	@./scripts/testing/run_shell_tests.sh
 
 coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
@@ -168,12 +160,117 @@ version:
 
 bump-patch:
 	@echo "Bumping patch version..."
-	@./scripts/bump-version.sh patch
+	@./scripts/utils/bump-version.sh patch
 
 bump-minor:
 	@echo "Bumping minor version..."
-	@./scripts/bump-version.sh minor
+	@./scripts/utils/bump-version.sh minor
 
 bump-major:
 	@echo "Bumping major version..."
-	@./scripts/bump-version.sh major
+	@./scripts/utils/bump-version.sh major
+
+# Backup and restore
+backup: ## Create backup of configuration and data
+	@echo "Creating backup..."
+	@./scripts/backup/backup.sh
+
+# Security checks
+security: ## Run security checks on configuration
+	@echo "Running security checks..."
+	@./scripts/testing/verify_fixes.sh
+	@echo "Checking for secrets in code..."
+	@git secrets --scan || echo "⚠ git-secrets not installed"
+
+# Validation helpers
+validate-all: validate ## Comprehensive validation of all configs
+	@echo "Validating YAML files..."
+	@yamllint . || echo "⚠ yamllint not installed"
+	@echo "Validating shell scripts..."
+	@shellcheck scripts/**/*.sh || echo "⚠ shellcheck not installed"
+	@echo "Validating Dockerfiles..."
+	@hadolint docker/Dockerfile.* || echo "⚠ hadolint not installed"
+
+# Docker optimization
+docker-measure: ## Measure Docker image sizes and build times
+	@./scripts/monitoring/measure_docker_improvements.sh
+
+docker-prune: ## Clean up Docker resources
+	@echo "Cleaning Docker resources..."
+	@docker system prune -a --volumes
+	docker builder prune -a
+
+# Status and info
+status: ## Show detailed status of all services
+	@echo "=== Service Status ==="
+	@$(COMPOSE) ps
+	@echo ""
+	@echo "=== Resource Usage ==="
+	@docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
+	@echo ""
+	@echo "=== Disk Usage ==="
+	@docker system df
+
+metrics: ## Show current metrics from Prometheus
+	@echo "=== Prometheus Metrics ==="
+	@curl -s http://localhost:9090/api/v1/label/__name__/values | jq -r '.data[]' | grep security | head -10
+	@echo ""
+	@echo "=== Telegraf Metrics ==="
+	@curl -s http://localhost:9091/metrics | grep security_scanners | head -10
+
+# Documentation
+docs-serve: ## Serve documentation locally
+	@echo "Serving documentation at http://localhost:8000"
+	@$(PYTHON) -m http.server 8000 --directory docs
+
+# Development helpers
+dev-install: install-dev ## Alias for install-dev
+
+dev-shell: ## Open shell in development environment
+	@$(COMPOSE) exec prometheus sh
+
+pre-commit-all: ## Run pre-commit on all files
+	@pre-commit run --all-files
+
+# Cleanup targets
+clean-all: clean ## Clean everything including volumes
+	@echo "Cleaning all data..."
+	@$(COMPOSE) down -v
+	@rm -rf prometheus-data grafana-data
+	@echo "✓ All data cleaned"
+
+clean-reports: ## Clean only report files
+	@rm -rf reports/*
+	@mkdir -p reports
+	@echo "✓ Reports cleaned"
+
+clean-cache: ## Clean Docker build cache
+	@docker builder prune -a -f
+	@echo "✓ Build cache cleaned"
+
+# Troubleshooting
+troubleshoot: ## Run diagnostic commands
+	@echo "=== Docker Version ==="
+	@docker --version
+	@docker compose version
+	@echo ""
+	@echo "=== Python Version ==="
+	@$(PYTHON) --version
+	@echo ""
+	@echo "=== Services Status ==="
+	@make status
+	@echo ""
+	@echo "=== Recent Logs ==="
+	@$(COMPOSE) logs --tail=50
+
+diagnostics: ## Create diagnostic bundle
+	@echo "Creating diagnostic bundle..."
+	@mkdir -p diagnostics
+	@$(COMPOSE) ps > diagnostics/ps.txt 2>&1
+	@$(COMPOSE) logs > diagnostics/logs.txt 2>&1
+	@docker stats --no-stream > diagnostics/stats.txt 2>&1
+	@docker system df > diagnostics/df.txt 2>&1
+	@cp docker-compose.yml diagnostics/ 2>&1
+	@tar czf diagnostics-$(shell date +%Y%m%d).tar.gz diagnostics/
+	@rm -rf diagnostics/
+	@echo "✓ Diagnostic bundle created: diagnostics-$(shell date +%Y%m%d).tar.gz"

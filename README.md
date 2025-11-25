@@ -40,13 +40,27 @@ make up
 ```
 
 ### Документация:
+
+**Основное:**
+- **[Документация](docs/README.md)** - центральная страница документации
 - **[Быстрый старт](docs/QUICKSTART.md)** - развертывание за 5-10 минут
+- **[FAQ](docs/FAQ.md)** - часто задаваемые вопросы
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - устранение неполадок
+- **[Contributing](CONTRIBUTING.md)** - как внести вклад в проект
+
+**Развертывание:**
 - **[Полное руководство](docs/DEPLOYMENT.md)** - детальная инструкция с troubleshooting
-- **[Сканирование реальных хостов](docs/REAL-HOSTS-SCANNING.md)** - как сканировать production серверы, VM и Docker контейнеры 
-- **[Создание пользователей](docs/USER-SETUP.md)** - безопасная настройка пользователей (полное руководство) 
-- **[Быстрая настройка пользователей](docs/QUICK-USER-SETUP.md)** - шпаргалка по безопасности
-- **[Docker оптимизации](docs/DOCKER_OPTIMIZATIONS.md)** - multi-stage builds, BuildKit cache, метрики
 - **[Docker Quick Start](docs/DOCKER_QUICK_START.md)** - быстрое руководство по оптимизированным образам
+- **[Нативная установка](docs/NATIVE-INSTALLATION.md)** - установка без Docker
+
+**Безопасность:**
+- **[Security Policy](docs/SECURITY.md)** - политика безопасности
+- **[Создание пользователей](docs/USER-SETUP.md)** - безопасная настройка пользователей (полное руководство)
+- **[Сканирование хостов](docs/REAL-HOSTS-SCANNING.md)** - как сканировать production серверы
+
+**Дополнительно:**
+- **[Docker оптимизации](docs/DOCKER_OPTIMIZATIONS.md)** - multi-stage builds, BuildKit cache, метрики
+- **[Централизованное логирование](docs/LOGGING.md)** - настройка Loki + Promtail
 
 ### Режимы работы
 
@@ -165,7 +179,7 @@ pip install atomic-operator attrs click pyyaml
 службой, и браузер/API-клиент стучится не в контейнер из этого compose-файла. Прежде чем сбрасывать пароли, выполните последовательность
 проверок:
 
-1. **Убедитесь, что порт 3000 не занят чужой Grafana.**
+1. **Убедитесь, что порт 3000 не занят другой Grafana.**
    ```bash
    docker ps --filter "publish=3000" --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
    sudo ss -tulpn | grep ':3000'           # или lsof -iTCP:3000 -sTCP:LISTEN

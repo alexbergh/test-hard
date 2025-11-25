@@ -1,17 +1,77 @@
+# Git attributes for test-hard
+# https://git-scm.com/docs/gitattributes
+
 # Auto detect text files and normalize line endings to LF
 * text=auto eol=lf
 
-# Explicitly declare text files to always have LF line endings
+# Source code
+*.py text eol=lf diff=python
 *.sh text eol=lf
-*.py text eol=lf
+*.bash text eol=lf
+
+# Configuration
 *.yml text eol=lf
 *.yaml text eol=lf
 *.json text eol=lf
-*.md text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+*.env text eol=lf
 
-# Denote shell scripts as executable
-*.sh binary
-scripts/**/*.sh binary
-scanners/**/entrypoint.sh binary
-scanners/**/entrypoint.py binary
-scanners/**/entrypoint-new.sh binary
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+*.rst text eol=lf
+
+# Docker
+Dockerfile* text eol=lf
+*.dockerignore text eol=lf
+docker-compose*.yml text eol=lf
+
+# Makefile
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Git
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Archives (binary)
+*.tar binary
+*.gz binary
+*.tgz binary
+*.zip binary
+*.7z binary
+
+# Images (binary)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Fonts (binary)
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Export ignore (не включать в экспорт архивов)
+.gitattributes export-ignore
+.gitignore export-ignore
+.editorconfig export-ignore
+.pre-commit-config.yaml export-ignore
+tests/ export-ignore
+docs/examples/ export-ignore
+*.md export-ignore
+CONTRIBUTING.md -export-ignore
+README.md -export-ignore
+LICENSE -export-ignore
+
+# Linguist overrides (для GitHub language detection)
+*.sh linguist-language=Shell
+docs/**/*.md linguist-documentation
+scripts/**/*.py linguist-language=Python
+*.yml linguist-language=YAML

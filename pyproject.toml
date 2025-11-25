@@ -1,0 +1,161 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-hard"
+version = "1.0.0"
+description = "Security hardening and monitoring platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "alexbergh", email = "alex@example.com"}
+]
+keywords = ["security", "hardening", "monitoring", "prometheus", "grafana", "docker"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Monitoring",
+    "Topic :: Security",
+]
+
+dependencies = [
+    "atomic-operator>=0.6.0",
+    "attrs>=23.0.0",
+    "click>=8.1.0",
+    "PyYAML>=6.0.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "pytest-docker>=2.0.0",
+    "pytest-timeout>=2.2.0",
+    "black>=23.12.0",
+    "flake8>=7.0.0",
+    "isort>=5.13.0",
+    "mypy>=1.7.0",
+    "pre-commit>=3.5.0",
+    "pip-audit>=2.6.0",
+    "ipython>=8.18.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/alexbergh/test-hard"
+Documentation = "https://github.com/alexbergh/test-hard/tree/main/docs"
+Repository = "https://github.com/alexbergh/test-hard.git"
+Issues = "https://github.com/alexbergh/test-hard/issues"
+Changelog = "https://github.com/alexbergh/test-hard/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = {"" = "scripts"}
+packages = ["parsing", "scanning", "monitoring", "backup", "testing", "utils"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yml", "*.yaml", "*.json", "*.conf"]
+
+# Black configuration
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | __pycache__
+)/
+'''
+
+# isort configuration
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_gitignore = true
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = [
+    'venv',
+    'build',
+    'dist',
+    '__pycache__',
+]
+
+# pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--color=yes",
+    "--durations=10",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "e2e: End-to-end tests",
+    "kubernetes: Kubernetes-specific tests",
+    "slow: Slow running tests",
+    "requires_docker: Tests that require Docker",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["scripts"]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+# Bandit configuration
+[tool.bandit]
+exclude_dirs = [
+    "tests",
+    "venv",
+    ".venv",
+]
+skips = [
+    "B101",  # assert_used
+    "B601",  # paramiko_calls
+]

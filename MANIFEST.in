@@ -1,0 +1,76 @@
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+
+# Include configuration files
+include pyproject.toml
+include requirements.txt
+include pytest.ini
+include .editorconfig
+include .gitignore
+include .gitattributes
+
+# Include example configurations
+include .env.example
+include .secrets.example
+include hosts.ini.example
+
+# Include Docker files
+include docker-compose.yml
+include docker-compose.*.yml
+include .dockerignore
+recursive-include docker *
+recursive-include scanners *
+
+# Include configuration directories
+recursive-include prometheus *.yml *.yaml
+recursive-include grafana *.json *.yml *.yaml
+recursive-include telegraf *.conf
+recursive-include loki *.yml *.yaml
+
+# Include scripts
+recursive-include scripts *.py *.sh
+recursive-include scripts */README.md
+
+# Include documentation
+recursive-include docs *.md
+
+# Include tests
+recursive-include tests *.py
+
+# Include Kubernetes and ArgoCD configs
+recursive-include k8s *.yml *.yaml
+recursive-include argocd *.yml *.yaml
+
+# Include Ansible playbooks
+recursive-include playbooks *.yml *.yaml
+
+# Exclude compiled Python files
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+
+# Exclude development files
+exclude .pre-commit-config.yaml
+exclude .yamllint.yml
+exclude .markdownlint.yaml
+exclude .flake8
+exclude .bandit
+exclude .coverage
+exclude coverage.xml
+
+# Exclude build artifacts
+prune build
+prune dist
+prune *.egg-info
+prune htmlcov
+prune .pytest_cache
+prune .mypy_cache
+prune .tox
+
+# Exclude git and CI
+prune .git
+prune .github
