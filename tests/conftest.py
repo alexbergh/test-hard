@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+import shutil
 from pathlib import Path
 from typing import Dict, Any
 
@@ -176,3 +177,12 @@ def cli_runner():
     """Provide a CLI runner for testing command-line scripts."""
     from click.testing import CliRunner
     return CliRunner()
+
+
+def pytest_collection_modifyitems(config, items):
+    """Automatically skip Docker-dependent tests when Docker is unavailable."""
+    docker_available = shutil.which("docker") is not None
+
+    for item in items:
+        if "requires_docker" in item.keywords and not docker_available:
+            item.add_marker(pytest.mark.skip(reason="Docker is not installed"))

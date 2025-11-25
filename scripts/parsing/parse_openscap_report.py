@@ -22,19 +22,24 @@ def _latest_report(results_dir: Path) -> Optional[Path]:
         logger.debug("Results directory does not exist: %s", results_dir)
         return None
 
+    latest_report = None
+    latest_key = None
+
     try:
-        reports = sorted(
-            results_dir.glob("*.arf"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True,
-        )
+        for idx, report in enumerate(results_dir.glob("*.arf")):
+            stat = report.stat()
+            key = (stat.st_mtime_ns, stat.st_ctime_ns, idx)
+
+            if latest_key is None or key > latest_key:
+                latest_report = report
+                latest_key = key
     except OSError as exc:
         logger.error("Error listing reports in %s: %s", results_dir, exc)
         return None
 
-    if reports:
-        logger.info("Found latest report: %s", reports[0])
-    return reports[0] if reports else None
+    if latest_report:
+        logger.info("Found latest report: %s", latest_report)
+    return latest_report
 
 
 # Очень упрощённый разбор ARF: считаем количество pass/fail/other
