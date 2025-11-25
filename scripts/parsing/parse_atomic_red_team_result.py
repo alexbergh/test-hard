@@ -121,7 +121,7 @@ def render_metric(name: str, labels: Dict[str, Any], value: Any) -> str:
     
     encoded = ",".join(
         f'{key}="{escape_label_value(val)}"'
-        for key, val in sorted(labels.items())
+        for key, val in labels.items()
     )
     return f"{name}{{{encoded}}} {value}"
 

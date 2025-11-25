@@ -29,8 +29,14 @@ def parse_lynis_report(report_path: str) -> None:
         logger.error("Error reading file %s: %s", path, exc)
         sys.exit(1)
 
-    metrics = {}
-    hostname = report.get('general', {}).get('hostname', 'unknown')
+    hostname = report.get('general', {}).get('hostname') or 'unknown'
+    metrics = {
+        'lynis_warnings_count': len(report.get('warnings', []) or []),
+        'lynis_suggestions_count': len(report.get('suggestions', []) or []),
+        'lynis_tests_count': len(report.get('tests', []) or []),
+        'lynis_plugins_count': len(report.get('plugins', []) or []),
+    }
+    metrics['lynis_tests_performed'] = metrics['lynis_tests_count']
     
     # Lynis Score (hardening index)
     if 'general' in report and 'hardening_index' in report['general']:
@@ -38,22 +44,6 @@ def parse_lynis_report(report_path: str) -> None:
             metrics['lynis_score'] = int(report['general']['hardening_index'])
         except (ValueError, TypeError) as exc:
             logger.warning("Invalid hardening_index value: %s", exc)
-
-    # Количество предупреждений
-    if 'warnings' in report:
-        metrics['lynis_warnings_count'] = len(report['warnings'])
-    
-    # Количество предложений
-    if 'suggestions' in report:
-        metrics['lynis_suggestions_count'] = len(report['suggestions'])
-    
-    # Тесты: выполнено/пропущено
-    if 'tests' in report:
-        metrics['lynis_tests_performed'] = len(report['tests'])
-    
-    # Плагины
-    if 'plugins' in report:
-        metrics['lynis_plugins_count'] = len(report['plugins'])
 
     logger.info("Parsed Lynis report from %s: %d metrics", path, len(metrics))
 
