@@ -7,7 +7,7 @@ RUN apt-get update \
 RUN install -d -o telegraf -g telegraf /opt/hardening/scripts
 
 COPY telegraf/telegraf.conf /etc/telegraf/telegraf.conf
-COPY scripts/parse_atomic_red_team_result.py /opt/hardening/scripts/parse_atomic_red_team_result.py
+COPY scripts/parsing/parse_atomic_red_team_result.py /opt/hardening/scripts/parse_atomic_red_team_result.py
 
 RUN chown telegraf:telegraf \
         /etc/telegraf/telegraf.conf \

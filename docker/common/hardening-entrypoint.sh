@@ -33,7 +33,7 @@ ensure_dir "${HARDENING_ART_STORAGE:-/var/lib/hardening/art-storage}"
 
 if [[ "${RUN_HARDENING_ON_START}" == "true" ]]; then
   echo "[hardening] RUN_HARDENING_ON_START=true — launching security checks"
-  if ! /opt/hardening/scripts/run_all_checks.sh; then
+  if ! /opt/hardening/scripts/scanning/run_all_checks.sh; then
     echo "[hardening] Security checks completed with errors" >&2
   else
     echo "[hardening] Security checks completed successfully"

@@ -74,7 +74,7 @@
     - name: Parse metrics locally
       local_action:
         module: shell
-        cmd: "python3 scripts/parse_lynis_report.py {{ reports_dir }}/{{ inventory_hostname }}.log > {{ reports_dir }}/{{ inventory_hostname }}_metrics.prom"
+        cmd: "python3 scripts/parsing/parse_lynis_report.py {{ reports_dir }}/{{ inventory_hostname }}.log > {{ reports_dir }}/{{ inventory_hostname }}_metrics.prom"
       when: lynis_log.stat.exists
       ignore_errors: yes
     

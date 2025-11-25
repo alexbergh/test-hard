@@ -78,7 +78,7 @@ jobs:
         run: |
           echo "Creating backup before deployment..."
           # Add backup commands
-          # Example: ./scripts/backup.sh
+          # Example: ./scripts/backup/backup.sh
 
       - name: Deploy to production
         run: |

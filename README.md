@@ -103,17 +103,17 @@ make help              # показать все доступные команд
 
 ```bash
 # сборка и запуск всех контейнеров + выполнение проверок внутри
-./scripts/run_hardening_suite.sh
+./scripts/scanning/run_hardening_suite.sh
 
 # только перечислить доступные сервисы
-./scripts/run_hardening_suite.sh --list
+./scripts/scanning/run_hardening_suite.sh --list
 ```
 
 По умолчанию проверки Atomic Red Team выполняются в режиме dry-run (`ATOMIC_DRY_RUN=true`). Чтобы запускать реальные техники,
 установите переменную окружения при запуске `docker compose`, например: `ATOMIC_DRY_RUN=false docker compose up`. Для немедленного запуска
 проверок при старте контейнера добавьте `RUN_HARDENING_ON_START=true`.
 
-По умолчанию `docker-compose.yml` и `scripts/run_hardening_suite.sh` запускают дистрибутивы с публично доступными образами
+По умолчанию `docker-compose.yml` и `scripts/scanning/run_hardening_suite.sh` запускают дистрибутивы с публично доступными образами
 (Debian, Ubuntu, Fedora, CentOS, ALT Linux).
 
 ## Alerting
@@ -127,16 +127,16 @@ Prometheus загружает правила из `prometheus/alert.rules.yml` �
 ## Интеграция hardening-инструментов
 Каталог `scripts/` содержит вспомогательные обёртки:
 
-* `run_lynis.sh` и `parse_lynis_report.py` — запускают аудит Lynis и выводят метрики (`lynis_score`, `lynis_warnings_count`, `lynis_suggestions_count`).
-* `run_openscap.sh` и `parse_openscap_report.py` — выполняют профиль OpenSCAP и подсчитывают количество правил по статусам (`openscap_pass_count`, `openscap_fail_count`, ...). Если парсеру не передать путь до ARF-файла, он попытается взять самый свежий отчёт из каталога `${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}/openscap`.
-* `run_atomic_red_team_test.sh` и `parse_atomic_red_team_result.py` — запускают реальные сценарии Atomic Red Team и преобразуют результаты (`art_test_result`, `art_scenario_status`, `art_summary_total`).
+* `scripts/scanning/run_lynis.sh` и `scripts/parsing/parse_lynis_report.py` — запускают аудит Lynis и выводят метрики (`lynis_score`, `lynis_warnings_count`, `lynis_suggestions_count`).
+* `scripts/scanning/run_openscap.sh` и `scripts/parsing/parse_openscap_report.py` — выполняют профиль OpenSCAP и подсчитывают количество правил по статусам (`openscap_pass_count`, `openscap_fail_count`, ...). Если парсеру не передать путь до ARF-файла, он попытается взять самый свежий отчёт из каталога `${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}/openscap`.
+* `scripts/scanning/run_atomic_red_team_test.sh` и `scripts/parsing/parse_atomic_red_team_result.py` — запускают реальные сценарии Atomic Red Team и преобразуют результаты (`art_test_result`, `art_scenario_status`, `art_summary_total`).
 
 Настройте периодический запуск (cron/systemd timers/Ansible) и сбор метрик через `[[inputs.exec]]`, `[[inputs.file]]` или `[[inputs.socket_listener]]` в Telegraf.
 
 ### Atomic Red Team сценарии
 
 * Каталог `atomic-red-team/` содержит файл `scenarios.yaml` с готовыми наборами атомарных тестов для Linux и Windows (например, `T1082`, `T1049`, `T1119`).
-* Скрипт `scripts/run_atomic_red_team_suite.py` использует [atomic-operator](https://github.com/redcanaryco/atomic-operator) для скачивания/обновления репозитория Atomic Red Team, исполнения сценариев и сохранения структурированных отчётов.
+* Скрипт `scripts/scanning/run_atomic_red_team_suite.py` использует [atomic-operator](https://github.com/redcanaryco/atomic-operator) для скачивания/обновления репозитория Atomic Red Team, исполнения сценариев и сохранения структурированных отчётов.
 * Результаты складываются в отдельное хранилище `art-storage/`:
   * `art-storage/history/<timestamp>.json` — архив выполнений;
   * `art-storage/latest.json` и `art-storage/latest.prom` — последний запуск;
@@ -146,9 +146,9 @@ Prometheus загружает правила из `prometheus/alert.rules.yml` �
 
 ```bash
 pip install atomic-operator attrs click pyyaml
-./scripts/run_atomic_red_team_test.sh                # выполняет сценарии из atomic-red-team/scenarios.yaml
-./scripts/run_atomic_red_team_test.sh T1082 run      # точечный запуск техники T1082
-./scripts/run_atomic_red_team_test.sh --mode prereqs # загрузка зависимостей без выполнения
+./scripts/scanning/run_atomic_red_team_test.sh                # выполняет сценарии из atomic-red-team/scenarios.yaml
+./scripts/scanning/run_atomic_red_team_test.sh T1082 run      # точечный запуск техники T1082
+./scripts/scanning/run_atomic_red_team_test.sh --mode prereqs # загрузка зависимостей без выполнения
 ```
 
 Скрипт автоматически скачивает (или обновляет) репозиторий Atomic Red Team в `~/.cache/atomic-red-team`, либо принимает путь через `--atomics-path`.
