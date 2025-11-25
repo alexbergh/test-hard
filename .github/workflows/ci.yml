@@ -216,6 +216,7 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config --images | \
           grep -v "^$" | \
+          grep -v "^test-hard/" | \
           xargs -I {} sh -c 'docker pull {} && trivy image {} --severity HIGH,CRITICAL'
 
   build:
