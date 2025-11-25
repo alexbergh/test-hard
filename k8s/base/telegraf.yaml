@@ -54,19 +54,19 @@ spec:
     spec:
       serviceAccountName: telegraf
       containers:
-      - name: telegraf
-        image: telegraf:1.30
-        env:
-        - name: HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        ports:
-        - containerPort: 9091
-          name: metrics
-        volumeMounts:
-        - name: config
-          mountPath: /etc/telegraf
+        - name: telegraf
+          image: telegraf:1.30
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - containerPort: 9091
+              name: metrics
+          volumeMounts:
+            - name: config
+              mountPath: /etc/telegraf
         resources:
           requests:
             cpu: 250m
@@ -87,9 +87,9 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:
-      - name: config
-        configMap:
-          name: telegraf-config
+        - name: config
+          configMap:
+            name: telegraf-config
 
 ---
 apiVersion: v1
@@ -109,9 +109,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 9091
-    targetPort: 9091
-    protocol: TCP
-    name: metrics
+    - port: 9091
+      targetPort: 9091
+      protocol: TCP
+      name: metrics
   selector:
     app: telegraf

@@ -46,37 +46,37 @@ spec:
         runAsNonRoot: true
         runAsUser: 472
       containers:
-      - name: grafana
-        image: grafana/grafana:11.0.0
-        env:
-        - name: GF_SECURITY_ADMIN_USER
-          valueFrom:
-            secretKeyRef:
-              name: grafana-credentials
-              key: admin-user
-        - name: GF_SECURITY_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: grafana-credentials
-              key: admin-password
-        - name: GF_INSTALL_PLUGINS
-          value: "grafana-piechart-panel"
-        - name: GF_AUTH_BASIC_ENABLED
-          value: "true"
-        - name: GF_AUTH_DISABLE_LOGIN_FORM
-          value: "false"
-        - name: GF_LOG_LEVEL
-          value: "info"
-        ports:
-        - containerPort: 3000
-          name: http
-        volumeMounts:
-        - name: storage
-          mountPath: /var/lib/grafana
-        - name: datasources
-          mountPath: /etc/grafana/provisioning/datasources
-        - name: dashboards-config
-          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana
+          image: grafana/grafana:11.0.0
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-credentials
+                  key: admin-user
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-credentials
+                  key: admin-password
+            - name: GF_INSTALL_PLUGINS
+              value: "grafana-piechart-panel"
+            - name: GF_AUTH_BASIC_ENABLED
+              value: "true"
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "false"
+            - name: GF_LOG_LEVEL
+              value: "info"
+          ports:
+            - containerPort: 3000
+              name: http
+          volumeMounts:
+            - name: storage
+              mountPath: /var/lib/grafana
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboards-config
+              mountPath: /etc/grafana/provisioning/dashboards
         resources:
           requests:
             cpu: 250m
@@ -97,15 +97,15 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:
-      - name: storage
-        persistentVolumeClaim:
-          claimName: grafana-data
-      - name: datasources
-        configMap:
-          name: grafana-datasources
-      - name: dashboards-config
-        configMap:
-          name: grafana-dashboards-config
+        - name: storage
+          persistentVolumeClaim:
+            claimName: grafana-data
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboards-config
+          configMap:
+            name: grafana-dashboards-config
 
 ---
 apiVersion: v1
@@ -154,10 +154,10 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 3000
-    targetPort: 3000
-    protocol: TCP
-    name: http
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
   selector:
     app: grafana
 
@@ -173,14 +173,14 @@ metadata:
 spec:
   ingressClassName: nginx
   tls:
-  - hosts:
-    - grafana.example.com
-    secretName: grafana-tls
+    - hosts:
+        - grafana.example.com
+      secretName: grafana-tls
   rules:
-  - host: grafana.example.com
-    http:
-      paths:
-      - path: /
+    - host: grafana.example.com
+      http:
+        paths:
+          - path: /
         pathType: Prefix
         backend:
           service:

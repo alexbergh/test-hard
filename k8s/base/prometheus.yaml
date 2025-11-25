@@ -64,23 +64,23 @@ spec:
         runAsNonRoot: true
         runAsUser: 65534
       containers:
-      - name: prometheus
-        image: prom/prometheus:v2.52.0
-        args:
-          - '--config.file=/etc/prometheus/prometheus.yml'
-          - '--storage.tsdb.path=/prometheus'
-          - '--storage.tsdb.retention.time=30d'
-          - '--storage.tsdb.retention.size=10GB'
-          - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-          - '--web.console.templates=/usr/share/prometheus/consoles'
-        ports:
-        - containerPort: 9090
-          name: http
-        volumeMounts:
-        - name: config
-          mountPath: /etc/prometheus
-        - name: storage
-          mountPath: /prometheus
+        - name: prometheus
+          image: prom/prometheus:v2.52.0
+          args:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--storage.tsdb.retention.time=30d'
+            - '--storage.tsdb.retention.size=10GB'
+            - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+            - '--web.console.templates=/usr/share/prometheus/consoles'
+          ports:
+            - containerPort: 9090
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: storage
+              mountPath: /prometheus
         resources:
           requests:
             cpu: 500m
@@ -101,12 +101,12 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:
-      - name: config
-        configMap:
-          name: prometheus-config
-      - name: storage
-        persistentVolumeClaim:
-          claimName: prometheus-data
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: storage
+          persistentVolumeClaim:
+            claimName: prometheus-data
 
 ---
 apiVersion: v1
@@ -119,9 +119,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 9090
-    targetPort: 9090
-    protocol: TCP
-    name: http
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: http
   selector:
     app: prometheus

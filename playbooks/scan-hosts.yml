@@ -3,34 +3,34 @@
   hosts: all
   become: yes
   gather_facts: yes
-  
+
   vars:
     reports_dir: "./reports/lynis"
-  
+
   tasks:
     - name: Display target host info
       debug:
         msg: "Scanning {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
-    
+
     - name: Install Lynis on Debian/Ubuntu
       apt:
         name: lynis
         state: present
         update_cache: yes
       when: ansible_os_family == "Debian"
-    
+
     - name: Install EPEL on RHEL/CentOS
       package:
         name: epel-release
         state: present
       when: ansible_os_family == "RedHat"
-    
+
     - name: Install Lynis on RHEL/CentOS/Fedora
       package:
         name: lynis
         state: present
       when: ansible_os_family == "RedHat"
-    
+
     - name: Clean old Lynis files
       file:
         path: "{{ item }}"
@@ -40,44 +40,47 @@
         - /var/run/lynis.lock
         - /tmp/lynis.log
       ignore_errors: yes
-    
+
     - name: Run Lynis audit
       command: lynis audit system --quick --quiet
       register: lynis_output
       changed_when: false
       ignore_errors: yes
-    
+
     - name: Check if Lynis log exists
       stat:
         path: /var/log/lynis.log
       register: lynis_log
-    
+
     - name: Fetch Lynis log
       fetch:
         src: /var/log/lynis.log
         dest: "{{ reports_dir }}/{{ inventory_hostname }}.log"
         flat: yes
       when: lynis_log.stat.exists
-    
+
     - name: Check if Lynis report exists
       stat:
         path: /var/log/lynis-report.dat
       register: lynis_report
-    
+
     - name: Fetch Lynis report
       fetch:
         src: /var/log/lynis-report.dat
         dest: "{{ reports_dir }}/{{ inventory_hostname }}.dat"
         flat: yes
       when: lynis_report.stat.exists
-    
+
     - name: Parse metrics locally
       local_action:
         module: shell
-        cmd: "python3 scripts/parsing/parse_lynis_report.py {{ reports_dir }}/{{ inventory_hostname }}.log > {{ reports_dir }}/{{ inventory_hostname }}_metrics.prom"
+        cmd: >-
+          python3 scripts/parsing/parse_lynis_report.py
+          {{ reports_dir }}/{{ inventory_hostname }}.log
+          > {{ reports_dir }}/{{ inventory_hostname }}_metrics.prom
       when: lynis_log.stat.exists
       ignore_errors: yes
-    
+
     - name: Display scan summary
       debug:
         msg: "✅ Scan complete for {{ inventory_hostname }}"

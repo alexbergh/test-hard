@@ -254,11 +254,11 @@ jobs:
           BUILDKIT_PROGRESS: plain
         run: |
           export VERSION=${{ steps.version.outputs.VERSION }}
-          
+
           # Build с использованием BuildKit cache
           docker compose build --parallel \
             --build-arg BUILDKIT_INLINE_CACHE=1
-          
+
           # Tag custom images
           docker tag test-hard-openscap-scanner:latest test-hard/openscap-scanner:$VERSION
           docker tag test-hard-lynis-scanner:latest test-hard/lynis-scanner:$VERSION
