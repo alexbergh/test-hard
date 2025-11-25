@@ -3,4 +3,4 @@
 
 # Разрешаем только необходимые файлы
 !telegraf/telegraf.conf
-!scripts/parse_atomic_red_team_result.py
+!scripts/parsing/parse_atomic_red_team_result.py
