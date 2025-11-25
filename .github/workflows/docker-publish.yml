@@ -22,9 +22,8 @@ jobs:
     strategy:
       matrix:
         component:
-          - lynis-scanner
-          - openscap-scanner
-          - atomic-test
+          - lynis
+          - openscap
 
     steps:
       - name: Checkout repository
