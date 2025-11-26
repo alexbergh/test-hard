@@ -2,14 +2,16 @@
 
 ## Требования
 
-### Системные требования:
-- **OS**: Linux/macOS
-- **Docker**: 20.10+
-- **Docker Compose**: 2.0+
-- **RAM**: минимум 4GB
-- **Disk**: минимум 10GB свободного места
+### Системные требования
 
-### Проверка требований:
+* **OS**: Linux/macOS
+* **Docker**: 20.10+
+* **Docker Compose**: 2.0+
+* **RAM**: минимум 4GB
+* **Disk**: минимум 10GB свободного места
+
+### Проверка требований
+
 ```bash
 docker --version
 docker compose version
@@ -85,13 +87,13 @@ curl http://localhost:3000/api/health
 
 ## Запуск сканирования
 
-### Полное сканирование всех хостов:
+### Полное сканирование всех хостов
 
 ```bash
 ./scripts/run_hardening_suite.sh
 ```
 
-### Проверка результатов:
+### Проверка результатов
 
 ```bash
 # Проверка сгенерированных отчетов
@@ -107,28 +109,32 @@ cat reports/openscap/target-fedora_metrics.prom
 
 ## Доступ к дашбордам
 
-### Grafana:
+### Grafana
+
 ```
 URL: http://localhost:3000
 Login: admin
 Password: admin
 ```
 
-### Дашборды:
+### Дашборды
+
 1. **Security Monitoring Dashboard**
-   - URL: http://localhost:3000/d/security-monitoring/security-monitoring-dashboard
-   - Показывает: общие score, warnings, failures
+   * URL: <http://localhost:3000/d/security-monitoring/security-monitoring-dashboard>
+   * Показывает: общие score, warnings, failures
 
 2. **Security Issues Details Dashboard**
-   - URL: http://localhost:3000/d/security-issues-details/security-issues-details
-   - Показывает: детальные таблицы проблем
+   * URL: <http://localhost:3000/d/security-issues-details/security-issues-details>
+   * Показывает: детальные таблицы проблем
 
-### Prometheus:
+### Prometheus
+
 ```
 URL: http://localhost:9090
 ```
 
-### Telegraf Metrics:
+### Telegraf Metrics
+
 ```
 URL: http://localhost:9091/metrics
 ```
@@ -137,12 +143,14 @@ URL: http://localhost:9091/metrics
 
 ## Проверка метрик
 
-### 1. Проверка в Telegraf:
+### 1. Проверка в Telegraf
+
 ```bash
 curl -s http://localhost:9091/metrics | grep security_scanners | head -20
 ```
 
-### 2. Проверка в Prometheus:
+### 2. Проверка в Prometheus
+
 ```bash
 # Lynis метрики
 curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_score" | jq '.data.result'
@@ -161,11 +169,13 @@ curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_test_r
 ### Проблема: "No data" в Grafana
 
 **Решение 1: Проверить метрики в Prometheus**
+
 ```bash
 curl http://localhost:9090/api/v1/label/__name__/values | jq '.data[]' | grep security_scanners
 ```
 
 **Решение 2: Перезапустить Telegraf**
+
 ```bash
 docker compose restart telegraf
 sleep 20
@@ -173,13 +183,15 @@ curl http://localhost:9091/metrics | grep security_scanners
 ```
 
 **Решение 3: Проверить datasource в Grafana**
-- Открыть: http://localhost:3000/connections/datasources
-- Проверить что Prometheus datasource активен
-- Test & Save
+
+* Открыть: <http://localhost:3000/connections/datasources>
+* Проверить что Prometheus datasource активен
+* Test & Save
 
 ### Проблема: Сканеры не генерируют метрики
 
 **Решение: Проверить логи**
+
 ```bash
 # Логи Lynis
 docker logs lynis-scanner
@@ -195,6 +207,7 @@ ls -lh reports/openscap/
 ### Проблема: Контейнеры не запускаются
 
 **Решение: Полная очистка и перезапуск**
+
 ```bash
 # Остановить все
 docker compose down -v
@@ -213,7 +226,8 @@ docker compose up -d
 
 ## Обновление системы
 
-### Обновление из репозитория:
+### Обновление из репозитория
+
 ```bash
 # Получить последние изменения
 git pull origin main
@@ -226,7 +240,8 @@ docker compose down
 docker compose up -d
 ```
 
-### Обновление только сканеров:
+### Обновление только сканеров
+
 ```bash
 docker compose build --no-cache lynis-scanner openscap-scanner
 docker compose up -d lynis-scanner openscap-scanner
@@ -236,7 +251,8 @@ docker compose up -d lynis-scanner openscap-scanner
 
 ## Мониторинг
 
-### Проверка ресурсов:
+### Проверка ресурсов
+
 ```bash
 # Использование ресурсов контейнерами
 docker stats
@@ -245,7 +261,8 @@ docker stats
 docker system df -v
 ```
 
-### Логи сервисов:
+### Логи сервисов
+
 ```bash
 # Все логи
 docker compose logs -f
@@ -260,12 +277,14 @@ docker compose logs -f grafana
 
 ## Очистка
 
-### Остановка всех сервисов:
+### Остановка всех сервисов
+
 ```bash
 docker compose down
 ```
 
-### Полная очистка (включая volumes):
+### Полная очистка (включая volumes)
+
 ```bash
 docker compose down -v
 rm -rf reports/lynis/*
@@ -308,25 +327,28 @@ test-hard/
 
 ## Метрики
 
-### Агрегированные метрики:
-- `security_scanners_lynis_score` - Lynis hardening score (0-100)
-- `security_scanners_lynis_warnings` - Количество warnings
-- `security_scanners_lynis_suggestions` - Количество suggestions
-- `security_scanners_openscap_score` - OpenSCAP compliance score (0-100)
-- `security_scanners_openscap_pass_count` - Количество passed rules
-- `security_scanners_openscap_fail_count` - Количество failed rules
+### Агрегированные метрики
 
-### Детальные метрики:
-- `security_scanners_lynis_test_result` - Детали Lynis тестов
-  - Labels: host, test_id, type, description
-- `security_scanners_openscap_rule_result` - Детали OpenSCAP правил
-  - Labels: host, rule_id, severity, title
+* `security_scanners_lynis_score` - Lynis hardening score (0-100)
+* `security_scanners_lynis_warnings` - Количество warnings
+* `security_scanners_lynis_suggestions` - Количество suggestions
+* `security_scanners_openscap_score` - OpenSCAP compliance score (0-100)
+* `security_scanners_openscap_pass_count` - Количество passed rules
+* `security_scanners_openscap_fail_count` - Количество failed rules
+
+### Детальные метрики
+
+* `security_scanners_lynis_test_result` - Детали Lynis тестов
+  * Labels: host, test_id, type, description
+* `security_scanners_openscap_rule_result` - Детали OpenSCAP правил
+  * Labels: host, rule_id, severity, title
 
 ---
 
 ## Безопасность
 
-### Изменение паролей Grafana:
+### Изменение паролей Grafana
+
 ```bash
 # Через CLI
 docker exec grafana grafana-cli admin reset-admin-password <new_password>
@@ -334,7 +356,8 @@ docker exec grafana grafana-cli admin reset-admin-password <new_password>
 # Или через UI после первого входа
 ```
 
-### Настройка firewall (опционально):
+### Настройка firewall (опционально)
+
 ```bash
 # Разрешить только локальный доступ
 sudo ufw allow from 127.0.0.1 to any port 3000
@@ -345,8 +368,8 @@ sudo ufw allow from 127.0.0.1 to any port 9090
 
 ## Поддержка
 
-- **Репозиторий**: https://github.com/alexbergh/test-hard
-- **Issues**: https://github.com/alexbergh/test-hard/issues
+* **Репозиторий**: <https://github.com/alexbergh/test-hard>
+* **Issues**: <https://github.com/alexbergh/test-hard/issues>
 
 ---
 

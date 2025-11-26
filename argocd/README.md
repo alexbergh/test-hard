@@ -18,9 +18,10 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```
 
-Откройте https://localhost:8080 и войдите с:
-- Username: `admin`
-- Password: (из команды выше)
+Откройте <https://localhost:8080> и войдите с:
+
+* Username: `admin`
+* Password: (из команды выше)
 
 ## Развертывание приложений
 
@@ -112,9 +113,10 @@ kubectl create secret generic argocd-notifications-secret \
 GitHub Actions автоматически обновляет образы при push в main/develop.
 
 ArgoCD автоматически синхронизирует изменения:
-- **Dev**: Сразу после merge в develop
-- **Staging**: Сразу после merge в main
-- **Prod**: Требует ручного подтверждения
+
+* **Dev**: Сразу после merge в develop
+* **Staging**: Сразу после merge в main
+* **Prod**: Требует ручного подтверждения
 
 ## Troubleshooting
 
