@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # Verification script to check if all fixes were applied correctly
 set -euo pipefail
 

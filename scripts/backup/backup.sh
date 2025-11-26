@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Backup script for test-hard monitoring platform
 set -euo pipefail
 

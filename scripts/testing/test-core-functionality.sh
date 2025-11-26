@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Test core functionality after DevOps improvements
 set -euo pipefail
 

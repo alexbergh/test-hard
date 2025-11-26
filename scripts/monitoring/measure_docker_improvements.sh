@@ -1,5 +1,5 @@
-﻿#!/bin/bash
-# РЎРєСЂРёРїС‚ РґР»СЏ РёР·РјРµСЂРµРЅРёСЏ СѓР»СѓС‡С€РµРЅРёР№ РїРѕСЃР»Рµ РѕРїС‚РёРјРёР·Р°С†РёРё Docker РѕР±СЂР°Р·РѕРІ
+#!/bin/bash
+# Script for measuring improvements after Docker image optimization
 
 set -e
 
@@ -11,13 +11,13 @@ echo "Docker Optimization Metrics"
 echo "======================================"
 echo ""
 
-# Р¦РІРµС‚Р° РґР»СЏ РІС‹РІРѕРґР°
+# Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Р¤СѓРЅРєС†РёСЏ РґР»СЏ С„РѕСЂРјР°С‚РёСЂРѕРІР°РЅРёСЏ СЂР°Р·РјРµСЂР° РІ MB
+# Function to format size in MB
 format_size() {
     local size=$1
     if [[ $size == *"GB"* ]]; then
@@ -30,10 +30,10 @@ format_size() {
     echo "$size"
 }
 
-echo -e "${BLUE}1. Р Р°Р·РјРµСЂС‹ Docker РѕР±СЂР°Р·РѕРІ${NC}"
+echo -e "${BLUE}1. Docker Image Sizes${NC}"
 echo "----------------------------------------"
 
-# РЎРїРёСЃРѕРє РѕР±СЂР°Р·РѕРІ РґР»СЏ РїСЂРѕРІРµСЂРєРё
+# List of images to check
 IMAGES=(
     "test-hard/ubuntu"
     "test-hard/debian"
@@ -68,91 +68,91 @@ echo "----------------------------------------"
 printf "%-30s %15s\n" "TOTAL ($image_count images)" "${total_size}MB"
 echo ""
 
-echo -e "${BLUE}2. BuildKit Cache СЃС‚Р°С‚РёСЃС‚РёРєР°${NC}"
+echo -e "${BLUE}2. BuildKit Cache Statistics${NC}"
 echo "----------------------------------------"
 if command -v docker &> /dev/null && docker buildx version &> /dev/null 2>&1; then
-    docker buildx du || echo "BuildKit cache info РЅРµРґРѕСЃС‚СѓРїРЅР°"
+    docker buildx du || echo "BuildKit cache info unavailable"
 else
-    echo "Docker Buildx РЅРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅ"
+    echo "Docker Buildx not installed"
 fi
 echo ""
 
-echo -e "${BLUE}3. Docker System РёРЅС„РѕСЂРјР°С†РёСЏ${NC}"
+echo -e "${BLUE}3. Docker System Information${NC}"
 echo "----------------------------------------"
 docker system df
 echo ""
 
-echo -e "${BLUE}4. РЎР»РѕРё РѕР±СЂР°Р·РѕРІ (РїСЂРёРјРµСЂС‹)${NC}"
+echo -e "${BLUE}4. Image Layers (examples)${NC}"
 echo "----------------------------------------"
 
-# РџРѕРєР°Р·С‹РІР°РµРј СЃР»РѕРё РґР»СЏ РЅРµСЃРєРѕР»СЊРєРёС… РѕР±СЂР°Р·РѕРІ
+# Show layers for several images
 for image in "test-hard/ubuntu:latest" "test-hard/telegraf:latest"; do
     if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "$image"; then
         echo ""
-        echo -e "${YELLOW}РЎР»РѕРё РґР»СЏ $image:${NC}"
+        echo -e "${YELLOW}Layers for $image:${NC}"
         docker history "$image" --format "table {{.CreatedBy}}\t{{.Size}}" --no-trunc=false | head -n 10
     fi
 done
 echo ""
 
-echo -e "${BLUE}5. Health Check СЃС‚Р°С‚СѓСЃС‹${NC}"
+echo -e "${BLUE}5. Health Check Statuses${NC}"
 echo "----------------------------------------"
 printf "%-30s %20s\n" "CONTAINER" "HEALTH STATUS"
 printf "%-30s %20s\n" "---------" "-------------"
 
-# РџСЂРѕРІРµСЂРєР° healthcheck РґР»СЏ Р·Р°РїСѓС‰РµРЅРЅС‹С… РєРѕРЅС‚РµР№РЅРµСЂРѕРІ
+# Check healthcheck for running containers
 if docker ps --format "{{.Names}}" | grep -q .; then
     for container in $(docker ps --format "{{.Names}}"); do
         health=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "no healthcheck")
         printf "%-30s %20s\n" "$container" "$health"
     done
 else
-    echo "РќРµС‚ Р·Р°РїСѓС‰РµРЅРЅС‹С… РєРѕРЅС‚РµР№РЅРµСЂРѕРІ"
+    echo "No running containers"
 fi
 echo ""
 
-echo -e "${BLUE}6. Р РµРєРѕРјРµРЅРґР°С†РёРё${NC}"
+echo -e "${BLUE}6. Recommendations${NC}"
 echo "----------------------------------------"
 
-# РџСЂРѕРІРµСЂРєР° РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ BuildKit
+# Check BuildKit usage
 if ! grep -q "DOCKER_BUILDKIT" ~/.bashrc 2>/dev/null && ! grep -q "DOCKER_BUILDKIT" ~/.zshrc 2>/dev/null; then
-    echo -e "${YELLOW}[WARN] BuildKit РЅРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅ РІ shell profile${NC}"
-    echo "   Р”РѕР±Р°РІСЊС‚Рµ РІ ~/.bashrc РёР»Рё ~/.zshrc:"
+    echo -e "${YELLOW}[WARN] BuildKit not set in shell profile${NC}"
+    echo "   Add to ~/.bashrc or ~/.zshrc:"
     echo "   export DOCKER_BUILDKIT=1"
     echo ""
 fi
 
-# РџСЂРѕРІРµСЂРєР° СЂР°Р·РјРµСЂР° cache
+# Check cache size
 cache_size=$(docker system df --format "{{.BuildCache}}" | awk '{print $1}')
 if [ -n "$cache_size" ]; then
     cache_num=$(format_size "$cache_size")
     if (( $(echo "$cache_num > 5000" | bc -l) )); then
-        echo -e "${YELLOW}[WARN] Build cache Р·Р°РЅРёРјР°РµС‚ РјРЅРѕРіРѕ РјРµСЃС‚Р°: $cache_size${NC}"
-        echo "   Р Р°СЃСЃРјРѕС‚СЂРёС‚Рµ РѕС‡РёСЃС‚РєСѓ: docker builder prune"
+        echo -e "${YELLOW}[WARN] Build cache takes a lot of space: $cache_size${NC}"
+        echo "   Consider cleanup: docker builder prune"
         echo ""
     fi
 fi
 
-# РџСЂРѕРІРµСЂРєР° РЅРµРёСЃРїРѕР»СЊР·СѓРµРјС‹С… РѕР±СЂР°Р·РѕРІ
+# Check unused images
 unused=$(docker images -f "dangling=true" -q | wc -l)
 if [ "$unused" -gt 0 ]; then
-    echo -e "${YELLOW}[WARN] РќР°Р№РґРµРЅРѕ $unused dangling РѕР±СЂР°Р·РѕРІ${NC}"
-    echo "   РћС‡РёСЃС‚РєР°: docker image prune"
+    echo -e "${YELLOW}[WARN] Found $unused dangling images${NC}"
+    echo "   Cleanup: docker image prune"
     echo ""
 fi
 
-echo -e "${GREEN}[OK] РђРЅР°Р»РёР· Р·Р°РІРµСЂС€РµРЅ${NC}"
+echo -e "${GREEN}[OK] Analysis complete${NC}"
 echo ""
 
-# РћРїС†РёРѕРЅР°Р»СЊРЅРѕРµ СЃСЂР°РІРЅРµРЅРёРµ СЃ Р±РµРЅС‡РјР°СЂРєРѕРј
+# Optional benchmark comparison
 if [ -f "$PROJECT_DIR/benchmark_sizes.txt" ]; then
-    echo -e "${BLUE}7. РЎСЂР°РІРЅРµРЅРёРµ СЃ benchmark${NC}"
+    echo -e "${BLUE}7. Benchmark Comparison${NC}"
     echo "----------------------------------------"
-    echo "Benchmark С„Р°Р№Р»: $PROJECT_DIR/benchmark_sizes.txt"
+    echo "Benchmark file: $PROJECT_DIR/benchmark_sizes.txt"
     echo "TODO: Implement benchmark comparison"
     echo ""
 fi
 
-echo "Р”Р»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ С‚РµРєСѓС‰РёС… СЂР°Р·РјРµСЂРѕРІ РєР°Рє benchmark:"
+echo "To save current sizes as benchmark:"
 echo "  docker images --format '{{.Repository}}:{{.Tag}} {{.Size}}' | grep test-hard > benchmark_sizes.txt"
 echo ""
