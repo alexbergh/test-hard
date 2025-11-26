@@ -5,11 +5,13 @@
 ## Предварительные требования
 
 1. **Docker версия 20.10+**
+
    ```bash
    docker --version
    ```
 
 2. **Включить BuildKit** (рекомендуется)
+
    ```bash
    # Временно для текущей сессии
    export DOCKER_BUILDKIT=1
@@ -20,6 +22,7 @@
    ```
 
 3. **Docker Compose v2**
+
    ```bash
    docker compose version
    ```
@@ -75,9 +78,10 @@ docker compose logs -f telegraf
 ### Использование кэша
 
 BuildKit автоматически использует кэш для:
-- **APT/DNF/YUM пакетов** - скачиваются один раз
-- **PIP зависимостей** - устанавливаются один раз
-- **Docker слоев** - переиспользуются при повторных сборках
+
+* **APT/DNF/YUM пакетов** - скачиваются один раз
+* **PIP зависимостей** - устанавливаются один раз
+* **Docker слоев** - переиспользуются при повторных сборках
 
 ### Измерение улучшений
 
@@ -87,6 +91,7 @@ bash scripts/measure_docker_improvements.sh
 ```
 
 **Пример вывода:**
+
 ```
 ====================================
 Docker Optimization Metrics
@@ -245,18 +250,18 @@ docker image prune -a --filter "until=24h"
 
 ### DO
 
-- Используйте BuildKit для всех сборок
-- Регулярно очищайте кэш (раз в неделю)
-- Используйте `docker compose build --parallel` для ускорения
-- Проверяйте health status перед деплоем
-- Сохраняйте benchmark размеров образов
+* Используйте BuildKit для всех сборок
+* Регулярно очищайте кэш (раз в неделю)
+* Используйте `docker compose build --parallel` для ускорения
+* Проверяйте health status перед деплоем
+* Сохраняйте benchmark размеров образов
 
 ### DON'T
 
-- Не используйте `--no-cache` без необходимости
-- Не игнорируйте .dockerignore файлы
-- Не запускайте сборку без BuildKit
-- Не удаляйте весь кэш перед каждой сборкой
+* Не используйте `--no-cache` без необходимости
+* Не игнорируйте .dockerignore файлы
+* Не запускайте сборку без BuildKit
+* Не удаляйте весь кэш перед каждой сборкой
 
 ## Метрики производительности
 
@@ -270,10 +275,10 @@ docker image prune -a --filter "until=24h"
 
 ## Дополнительные ресурсы
 
-- [Полная документация по оптимизациям](./DOCKER_OPTIMIZATIONS.md)
-- [Docker BuildKit](https://docs.docker.com/build/buildkit/)
-- [Multi-stage builds](https://docs.docker.com/build/building/multi-stage/)
-- [Best practices](https://docs.docker.com/develop/dev-best-practices/)
+* [Полная документация по оптимизациям](./DOCKER_OPTIMIZATIONS.md)
+* [Docker BuildKit](https://docs.docker.com/build/buildkit/)
+* [Multi-stage builds](https://docs.docker.com/build/building/multi-stage/)
+* [Best practices](https://docs.docker.com/develop/dev-best-practices/)
 
 ## Поддержка
 

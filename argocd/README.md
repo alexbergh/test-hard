@@ -160,6 +160,6 @@ argocd app rollback test-hard-prod <revision-number>
 
 ## Ссылки
 
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [ArgoCD Best Practices](https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/)
-- [GitOps Principles](https://opengitops.dev/)
+* [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
+* [ArgoCD Best Practices](https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/)
+* [GitOps Principles](https://opengitops.dev/)

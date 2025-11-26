@@ -375,20 +375,20 @@ sudo ufw allow from 127.0.0.1 to any port 9090
 
 ## Чеклист развертывания
 
-- [ ] Docker и Docker Compose установлены
-- [ ] Репозиторий склонирован
-- [ ] Образы собраны (`docker compose build --no-cache`)
-- [ ] Сервисы запущены (`docker compose up -d`)
-- [ ] Все контейнеры работают (`docker compose ps`)
-- [ ] Сканирование выполнено (`./scripts/run_hardening_suite.sh`)
-- [ ] Метрики видны в Telegraf (`curl http://localhost:9091/metrics`)
-- [ ] Метрики видны в Prometheus (`curl http://localhost:9090`)
-- [ ] Grafana доступна (`http://localhost:3000`)
-- [ ] Дашборды отображают данные
-- [ ] Пароль Grafana изменен (опционально)
+* [ ] Docker и Docker Compose установлены
+* [ ] Репозиторий склонирован
+* [ ] Образы собраны (`docker compose build --no-cache`)
+* [ ] Сервисы запущены (`docker compose up -d`)
+* [ ] Все контейнеры работают (`docker compose ps`)
+* [ ] Сканирование выполнено (`./scripts/run_hardening_suite.sh`)
+* [ ] Метрики видны в Telegraf (`curl http://localhost:9091/metrics`)
+* [ ] Метрики видны в Prometheus (`curl http://localhost:9090`)
+* [ ] Grafana доступна (`http://localhost:3000`)
+* [ ] Дашборды отображают данные
+* [ ] Пароль Grafana изменен (опционально)
 
 ---
 
-## Готово!
+## Готово
 
 После выполнения всех шагов система полностью функциональна и готова к использованию.

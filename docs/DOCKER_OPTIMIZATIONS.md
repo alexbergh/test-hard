@@ -4,11 +4,11 @@
 
 ## Содержание
 
-- [Обзор](#обзор)
-- [Внедренные фичи](#внедренные-фичи)
-- [Ожидаемые улучшения](#ожидаемые-улучшения)
-- [Использование](#использование)
-- [Тестирование](#тестирование)
+* [Обзор](#обзор)
+* [Внедренные фичи](#внедренные-фичи)
+* [Ожидаемые улучшения](#ожидаемые-улучшения)
+* [Использование](#использование)
+* [Тестирование](#тестирование)
 
 ## Обзор
 
@@ -27,6 +27,7 @@
 Каждый Dockerfile теперь имеет свой `.dockerignore` файл, что минимизирует build context.
 
 **Структура:**
+
 ```
 docker/ubuntu/Dockerfile.dockerignore
 docker/debian/Dockerfile.dockerignore
@@ -36,9 +37,10 @@ telegraf/Dockerfile.dockerignore
 ```
 
 **Преимущества:**
-- Уменьшение размера build context
-- Ускорение передачи файлов в Docker daemon
-- Предотвращение утечки секретов
+
+* Уменьшение размера build context
+* Ускорение передачи файлов в Docker daemon
+* Предотвращение утечки секретов
 
 ### 2. HEALTHCHECK
 
@@ -50,15 +52,17 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 ```
 
 **Преимущества:**
-- Автоматическое определение состояния контейнера
-- Интеграция с оркестраторами (Docker Swarm, K8s)
-- Улучшенный мониторинг
+
+* Автоматическое определение состояния контейнера
+* Интеграция с оркестраторами (Docker Swarm, K8s)
+* Улучшенный мониторинг
 
 ### 3. Multi-stage builds
 
 Все основные Dockerfile рефакторены с использованием multi-stage builds.
 
 **Пример (Ubuntu):**
+
 ```dockerfile
 # syntax=docker/dockerfile:1.4
 
@@ -75,24 +79,27 @@ COPY --from=builder /opt/venv /opt/venv
 ```
 
 **Обновленные образы:**
-- `docker/ubuntu/Dockerfile`
-- `docker/debian/Dockerfile`
-- `docker/fedora/Dockerfile`
-- `docker/centos/Dockerfile`
-- `docker/altlinux/Dockerfile`
-- `docker/astra/Dockerfile`
-- `docker/redos/Dockerfile`
+
+* `docker/ubuntu/Dockerfile`
+* `docker/debian/Dockerfile`
+* `docker/fedora/Dockerfile`
+* `docker/centos/Dockerfile`
+* `docker/altlinux/Dockerfile`
+* `docker/astra/Dockerfile`
+* `docker/redos/Dockerfile`
 
 **Преимущества:**
-- Уменьшение размера финального образа на 40-70%
-- Исключение build-зависимостей из production образа
-- Повышение безопасности
+
+* Уменьшение размера финального образа на 40-70%
+* Исключение build-зависимостей из production образа
+* Повышение безопасности
 
 ### 4. BuildKit cache mounts
 
 Все Dockerfile используют cache mounts для ускорения сборки:
 
 **Для APT (Debian/Ubuntu):**
+
 ```dockerfile
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -100,27 +107,31 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 ```
 
 **Для DNF (Fedora/CentOS):**
+
 ```dockerfile
 RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
     dnf install -y python3
 ```
 
 **Для PIP:**
+
 ```dockerfile
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install atomic-operator attrs click pyyaml
 ```
 
 **Преимущества:**
-- Кэширование пакетов между сборками
-- Ускорение повторных сборок в 3-5 раз
-- Экономия трафика
+
+* Кэширование пакетов между сборками
+* Ускорение повторных сборок в 3-5 раз
+* Экономия трафика
 
 ### 5. Оптимизированный CI/CD
 
 GitHub Actions workflows обновлены для использования BuildKit:
 
 **Ключевые изменения:**
+
 ```yaml
 - name: Set up Docker Buildx
   uses: docker/setup-buildx-action@v3
@@ -143,9 +154,10 @@ GitHub Actions workflows обновлены для использования Bu
 ```
 
 **Преимущества:**
-- Кэширование слоев между CI запусками
-- Параллельная сборка образов
-- Детальный прогресс сборки
+
+* Кэширование слоев между CI запусками
+* Параллельная сборка образов
+* Детальный прогресс сборки
 
 ## Ожидаемые улучшения
 
@@ -169,9 +181,9 @@ GitHub Actions workflows обновлены для использования Bu
 
 ### CI/CD
 
-- **Экономия GitHub Actions минут:** ~50%
-- **Ускорение feedback loop:** 2x
-- **Снижение network traffic:** 60-70%
+* **Экономия GitHub Actions минут:** ~50%
+* **Ускорение feedback loop:** 2x
+* **Снижение network traffic:** 60-70%
 
 ## Использование
 
@@ -321,12 +333,13 @@ BUILDKIT_PROGRESS=plain docker build -f docker/ubuntu/Dockerfile .
 ## Changelog
 
 ### 2024-11-21
--  Добавлены специфичные .dockerignore файлы для всех Dockerfile
--  Добавлен HEALTHCHECK в telegraf/Dockerfile
--  Внедрены multi-stage builds для всех основных образов
--  Добавлены BuildKit cache mounts (apt, dnf, yum, pip)
--  Оптимизированы GitHub Actions workflows для использования BuildKit
--  Обновлена документация
+
+* Добавлены специфичные .dockerignore файлы для всех Dockerfile
+* Добавлен HEALTHCHECK в telegraf/Dockerfile
+* Внедрены multi-stage builds для всех основных образов
+* Добавлены BuildKit cache mounts (apt, dnf, yum, pip)
+* Оптимизированы GitHub Actions workflows для использования BuildKit
+* Обновлена документация
 
 ## Следующие шаги
 
