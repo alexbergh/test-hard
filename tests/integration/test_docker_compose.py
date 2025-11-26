@@ -51,7 +51,12 @@ class TestDockerComposeIntegration:
 
     def test_grafana_datasource(self, docker_services):
         """Test that Grafana has Prometheus datasource configured."""
-        response = requests.get("http://localhost:3000/api/datasources", auth=("admin", "admin"), timeout=5)
+        # Use credentials from .env.example (copied to .env in CI)
+        response = requests.get(
+            "http://localhost:3000/api/datasources",
+            auth=("CHANGE_ME_ADMIN_USER", "CHANGE_ME_GENERATE_WITH_openssl_rand_base64_32"),
+            timeout=5,
+        )
         assert response.status_code == 200
         datasources = response.json()
         prometheus_ds = [ds for ds in datasources if ds["type"] == "prometheus"]
