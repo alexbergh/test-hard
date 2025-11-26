@@ -41,32 +41,32 @@ cp .env.example .env
 make up
 ```
 
-### Документация:
+### Документация
 
 **Основное:**
 
-- **[Документация](docs/README.md)** - центральная страница документации
-- **[Быстрый старт](docs/QUICKSTART.md)** - развертывание за 5-10 минут
-- **[FAQ](docs/FAQ.md)** - часто задаваемые вопросы
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - устранение неполадок
-- **[Contributing](CONTRIBUTING.md)** - как внести вклад в проект
+* **[Документация](docs/README.md)** - центральная страница документации
+* **[Быстрый старт](docs/QUICKSTART.md)** - развертывание за 5-10 минут
+* **[FAQ](docs/FAQ.md)** - часто задаваемые вопросы
+* **[Troubleshooting](docs/TROUBLESHOOTING.md)** - устранение неполадок
+* **[Contributing](CONTRIBUTING.md)** - как внести вклад в проект
 
 **Развертывание:**
 
-- **[Полное руководство](docs/DEPLOYMENT.md)** - детальная инструкция с troubleshooting
-- **[Docker Quick Start](docs/DOCKER_QUICK_START.md)** - быстрое руководство по оптимизированным образам
-- **[Нативная установка](docs/NATIVE-INSTALLATION.md)** - установка без Docker
+* **[Полное руководство](docs/DEPLOYMENT.md)** - детальная инструкция с troubleshooting
+* **[Docker Quick Start](docs/DOCKER_QUICK_START.md)** - быстрое руководство по оптимизированным образам
+* **[Нативная установка](docs/NATIVE-INSTALLATION.md)** - установка без Docker
 
 **Безопасность:**
 
-- **[Security Policy](docs/SECURITY.md)** - политика безопасности
-- **[Создание пользователей](docs/USER-SETUP.md)** - безопасная настройка пользователей (полное руководство)
-- **[Сканирование хостов](docs/REAL-HOSTS-SCANNING.md)** - как сканировать production серверы
+* **[Security Policy](docs/SECURITY.md)** - политика безопасности
+* **[Создание пользователей](docs/USER-SETUP.md)** - безопасная настройка пользователей (полное руководство)
+* **[Сканирование хостов](docs/REAL-HOSTS-SCANNING.md)** - как сканировать production серверы
 
 **Дополнительно:**
 
-- **[Docker оптимизации](docs/DOCKER_OPTIMIZATIONS.md)** - multi-stage builds, BuildKit cache, метрики
-- **[Централизованное логирование](docs/LOGGING.md)** - настройка Loki + Promtail
+* **[Docker оптимизации](docs/DOCKER_OPTIMIZATIONS.md)** - multi-stage builds, BuildKit cache, метрики
+* **[Централизованное логирование](docs/LOGGING.md)** - настройка Loki + Promtail
 
 ### Режимы работы
 
@@ -97,9 +97,9 @@ make help              # показать все доступные команд
 
 После завершения можно остановить инфраструктуру `make down` и очистить отчёты `make clean`.
 
-* Prometheus: http://localhost:9090
-* Alertmanager: http://localhost:9093
-* Grafana: http://localhost:3000 (учётные данные из `.env`)
+* Prometheus: <http://localhost:9090>
+* Alertmanager: <http://localhost:9093>
+* Grafana: <http://localhost:3000> (учётные данные из `.env`)
 
 ## Демонстрационная мультидистрибутивная среда
 
@@ -123,14 +123,17 @@ make help              # показать все доступные команд
 (Debian, Ubuntu, Fedora, CentOS, ALT Linux).
 
 ## Alerting
+
 Prometheus загружает правила из `prometheus/alert.rules.yml` и пересылает сработавшие оповещения в Alertmanager.
 Настройте webhook в `prometheus/alertmanager.yml`, чтобы направлять уведомления в нужную систему (Grafana, Slack, PagerDuty и т.д.).
 
 ## Настройка агентов
+
 1. В составе `make up` автоматически поднимается контейнер `telegraf`, который использует конфигурацию из `telegraf/telegraf.conf` и публикует метрики на `http://localhost:9091/metrics`.
 2. При необходимости разверните Telegraf на реальных хостах, используя тот же конфигурационный файл, и обновите `prometheus/prometheus.yml`, добавив адреса ваших агентов вместо внутреннего сервиса `telegraf:9091`.
 
 ## Интеграция hardening-инструментов
+
 Каталог `scripts/` содержит вспомогательные обёртки:
 
 * `scripts/scanning/run_lynis.sh` и `scripts/parsing/parse_lynis_report.py` — запускают аудит Lynis и выводят метрики (`lynis_score`, `lynis_warnings_count`, `lynis_suggestions_count`).
@@ -177,6 +180,7 @@ pip install atomic-operator attrs click pyyaml
 Где `/var/lib/atomic-results` — примонтированное хранилище с содержимым каталога `art-storage/`.
 
 ## Дашборды Grafana
+
 Файлы JSON с дашбордами поместите в `grafana/provisioning/dashboards/` — Grafana автоматически подхватит их при старте согласно `grafana/provisioning/dashboards/default.yml`.
 
 ### Диагностика 401 при обращении к Grafana API
@@ -186,6 +190,7 @@ pip install atomic-operator attrs click pyyaml
 проверок:
 
 1. **Убедитесь, что порт 3000 не занят другой Grafana.**
+
    ```bash
    docker ps --filter "publish=3000" --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
    sudo ss -tulpn | grep ':3000'           # или lsof -iTCP:3000 -sTCP:LISTEN
@@ -193,15 +198,18 @@ pip install atomic-operator attrs click pyyaml
    Если в выводе видны другие контейнеры или процессы, либо версию `/api/health` отвечает не `11.0.0`, остановите конфликтующий сервис
    или смените порт в `.env` (`GRAFANA_HOST_PORT=3300`) и перезапустите `docker compose`.
 2. **Проверьте, что работает именно нужный контейнер.**
+
    ```bash
    docker compose ps grafana
    docker compose exec grafana grafana-cli -v
    docker compose exec grafana env | grep '^GF_'
    ```
+
    Так вы увидите имя контейнера, версию Grafana и актуальные переменные окружения.
 3. **Убедитесь, что не отключены basic-auth и форма логина.** В `docker-compose.yml` заданы переменные
    `GF_AUTH_BASIC_ENABLED=true` и `GF_AUTH_DISABLE_LOGIN_FORM=false`. При необходимости переопределите их в `.env` перед запуском.
 4. **Перезапустите контейнер после изменения настроек или порта.**
+
    ```bash
    docker compose up -d grafana
    ```
@@ -254,6 +262,7 @@ test-hard/
 ```
 
 ## Makefile
+
 ```bash
 make up          # полный стек (целевые контейнеры, мониторинг, сканеры)
 make up-targets  # только целевые контейнеры и сканеры
@@ -268,16 +277,19 @@ make restart     # перезапуск стека
 **Полная документация доступна в каталоге [`docs/`](docs/)**:
 
 ### Начало работы
+
 * **[Быстрый старт (QUICKSTART.md)](docs/QUICKSTART.md)** — развертывание за 5-10 минут
 * **[Полное руководство (DEPLOYMENT.md)](docs/DEPLOYMENT.md)** — детальная инструкция с troubleshooting
 * **[Установка без Docker (NATIVE-INSTALLATION.md)](docs/NATIVE-INSTALLATION.md)** — установка на Linux/BSD без контейнеров
 
 ### Безопасность
+
 * **[Создание пользователей (USER-SETUP.md)](docs/USER-SETUP.md)** — безопасная настройка пользователей
 * **[Политика безопасности (SECURITY.md)](docs/SECURITY.md)** — общая политика безопасности
 * **[Сканирование реальных хостов (REAL-HOSTS-SCANNING.md)](docs/REAL-HOSTS-SCANNING.md)** — сканирование production систем
 
 ### Расширенные возможности
+
 * **[Centralized Logging (LOGGING.md)](docs/LOGGING.md)** — настройка логирования с Loki
 
 ## Тестирование
@@ -321,34 +333,34 @@ kubectl apply -k k8s/overlays/prod
 
 ### Centralized Logging
 
-- **Loki** для хранения логов
-- **Promtail** для сбора логов из контейнеров
-- **LogQL** для мощного поиска и анализа
-- Готовый дашборд для анализа логов
-- Документация: [docs/LOGGING.md](docs/LOGGING.md)
+* **Loki** для хранения логов
+* **Promtail** для сбора логов из контейнеров
+* **LogQL** для мощного поиска и анализа
+* Готовый дашборд для анализа логов
+* Документация: [docs/LOGGING.md](docs/LOGGING.md)
 
 ### GitOps Deployment
 
-- **ArgoCD** для автоматического deployment
-- Автоматическая синхронизация для dev/staging
-- Ручное подтверждение для production
-- Rollback support
-- Документация: [argocd/README.md](argocd/README.md)
+* **ArgoCD** для автоматического deployment
+* Автоматическая синхронизация для dev/staging
+* Ручное подтверждение для production
+* Rollback support
+* Документация: [argocd/README.md](argocd/README.md)
 
 ### Container Registry
 
-- Автоматическая публикация в **GitHub Container Registry**
-- Image signing с Cosign
-- Multi-platform builds (amd64, arm64)
-- Семантическое версионирование
+* Автоматическая публикация в **GitHub Container Registry**
+* Image signing с Cosign
+* Multi-platform builds (amd64, arm64)
+* Семантическое версионирование
 
 ### Расширенное тестирование
 
-- **80%+ test coverage**
-- Unit, integration, E2E тесты
-- Shell script тесты с bats
-- Kubernetes deployment тесты
-- Coverage reporting
+* **80%+ test coverage**
+* Unit, integration, E2E тесты
+* Shell script тесты с bats
+* Kubernetes deployment тесты
+* Coverage reporting
 
 ## План развития
 
@@ -357,23 +369,23 @@ kubectl apply -k k8s/overlays/prod
 
 Полный план развития на 2026 год:
 
-- **[ROADMAP.md](ROADMAP.md)** - детальный roadmap с задачами по кварталам
+* **[ROADMAP.md](ROADMAP.md)** - детальный roadmap с задачами по кварталам
 
 ### Ближайшие задачи (Q1 2026)
 
-- Web UI для управления сканированиями
-- Scheduled scanning
-- Distributed tracing с Grafana Tempo
+* Web UI для управления сканированиями
+* Scheduled scanning
+* Distributed tracing с Grafana Tempo
 
 ### Среднесрочные (Q2-Q3 2026)
 
-- Runtime security с Falco
-- Compliance as Code (InSpec, OPA)
-- ML-based anomaly detection
-- Multi-tenancy support
+* Runtime security с Falco
+* Compliance as Code (InSpec, OPA)
+* ML-based anomaly detection
+* Multi-tenancy support
 
 ### Долгосрочные (Q4 2026)
 
-- Multi-cloud support (AWS, Azure, GCP)
-- Advanced reporting и analytics
-- Integration marketplace
+* Multi-cloud support (AWS, Azure, GCP)
+* Advanced reporting и analytics
+* Integration marketplace
