@@ -549,6 +549,7 @@ EOF
 ## Контрольный чек-лист безопасности
 
 ### Базовая настройка
+
 - [ ] Создан выделенный пользователь (не root)
 - [ ] Установлены минимальные необходимые права
 - [ ] Настроена SSH аутентификация по ключам
@@ -557,6 +558,7 @@ EOF
 - [ ] Создан `.env` файл с правами 600
 
 ### Разграничение доступа
+
 - [ ] Разделены пользователи для разных задач (admin/scanner/service/readonly)
 - [ ] Настроены ограниченные sudo права (не используется `ALL=(ALL) ALL`)
 - [ ] Пользователи НЕ добавлены в docker group (используется Socket Proxy)
@@ -564,6 +566,7 @@ EOF
 - [ ] Ограничен SSH доступ (ForceCommand, ограничение команд)
 
 ### Аудит и мониторинг
+
 - [ ] Включен auditd для мониторинга действий
 - [ ] Настроены правила аудита для критических операций
 - [ ] Логируются SSH подключения
@@ -571,12 +574,14 @@ EOF
 - [ ] Настроены alerts на подозрительную активность
 
 ### Ротация и обслуживание
+
 - [ ] Настроена периодическая ротация SSH ключей (каждые 90 дней)
 - [ ] Старые ключи удаляются после ротации
 - [ ] Пароли в `.env` не дефолтные и достаточно сложные
 - [ ] Настроен backup критических конфигураций
 
 ### Production
+
 - [ ] НЕ используются дефолтные пароли (особенно Grafana admin/admin)
 - [ ] Включен TLS для всех внешних соединений
 - [ ] Настроены firewall правила
@@ -625,20 +630,23 @@ echo "Please review and test before production use!"
 
 ---
 
-##  Дополнительные ресурсы
+## Дополнительные ресурсы
 
 ### Документация
+
 - [Docker Security Best Practices](https://docs.docker.com/engine/security/)
 - [SSH Security Best Practices](https://www.ssh.com/academy/ssh/security)
 - [Linux Security Hardening](https://www.cisecurity.org/benchmark/distribution_independent_linux)
 - [Principle of Least Privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege)
 
 ### Связанные документы
+
 - [SECURITY.md](SECURITY.md) - Общая политика безопасности
 - [REAL-HOSTS-SCANNING.md](REAL-HOSTS-SCANNING.md) - Сканирование удаленных хостов
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Развертывание платформы
 
 ### Инструменты проверки
+
 ```bash
 # Проверить права на файлы
 find /opt/test-hard -type f -perm /o+w -ls

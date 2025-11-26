@@ -330,9 +330,9 @@ sudo tail -f /var/log/secure    # RHEL/CentOS
 
 ## Дополнительные ресурсы
 
-- **[USER-SETUP.md](USER-SETUP.md)** - Полное руководство по настройке пользователей
-- **[SECURITY.md](SECURITY.md)** - Политика безопасности
-- **[REAL-HOSTS-SCANNING.md](REAL-HOSTS-SCANNING.md)** - Сканирование удаленных хостов
+* **[USER-SETUP.md](USER-SETUP.md)** - Полное руководство по настройке пользователей
+* **[SECURITY.md](SECURITY.md)** - Политика безопасности
+* **[REAL-HOSTS-SCANNING.md](REAL-HOSTS-SCANNING.md)** - Сканирование удаленных хостов
 
 ## Полезные команды
 

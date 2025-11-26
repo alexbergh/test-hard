@@ -351,10 +351,10 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
 
 ## Полезные ссылки
 
-- [Loki Documentation](https://grafana.com/docs/loki/latest/)
-- [LogQL Documentation](https://grafana.com/docs/loki/latest/logql/)
-- [Promtail Configuration](https://grafana.com/docs/loki/latest/clients/promtail/configuration/)
-- [Best Practices](https://grafana.com/docs/loki/latest/best-practices/)
+* [Loki Documentation](https://grafana.com/docs/loki/latest/)
+* [LogQL Documentation](https://grafana.com/docs/loki/latest/logql/)
+* [Promtail Configuration](https://grafana.com/docs/loki/latest/clients/promtail/configuration/)
+* [Best Practices](https://grafana.com/docs/loki/latest/best-practices/)
 
 ## Примеры использования
 
