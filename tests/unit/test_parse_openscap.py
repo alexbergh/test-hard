@@ -1,4 +1,5 @@
 """Unit tests for parse_openscap_report.py"""
+
 import sys
 from pathlib import Path
 
@@ -19,16 +20,16 @@ class TestParseOpenSCAPReport:
         output = captured.out
 
         # Verify metrics are present
-        assert 'openscap_pass_count' in output
-        assert 'openscap_fail_count' in output
-        assert 'openscap_error_count' in output
-        assert 'openscap_unknown_count' in output
+        assert "openscap_pass_count" in output
+        assert "openscap_fail_count" in output
+        assert "openscap_error_count" in output
+        assert "openscap_unknown_count" in output
 
         # Verify counts from sample data
-        assert 'openscap_pass_count' in output and '2' in output
-        assert 'openscap_fail_count' in output and '3' in output
-        assert 'openscap_error_count' in output and '1' in output
-        assert 'openscap_unknown_count' in output and '1' in output
+        assert "openscap_pass_count" in output and "2" in output
+        assert "openscap_fail_count" in output and "3" in output
+        assert "openscap_error_count" in output and "1" in output
+        assert "openscap_unknown_count" in output and "1" in output
 
         assert result == 0
 
@@ -108,19 +109,27 @@ class TestParseOpenSCAPReport:
         output = captured.out
 
         # All status types should be present
-        assert 'openscap_pass_count' in output
-        assert 'openscap_fail_count' in output
-        assert 'openscap_error_count' in output
-        assert 'openscap_unknown_count' in output
-        assert 'openscap_notchecked_count' in output
-        assert 'openscap_notselected_count' in output
-        assert 'openscap_informational_count' in output
-        assert 'openscap_fixed_count' in output
+        assert "openscap_pass_count" in output
+        assert "openscap_fail_count" in output
+        assert "openscap_error_count" in output
+        assert "openscap_unknown_count" in output
+        assert "openscap_notchecked_count" in output
+        assert "openscap_notselected_count" in output
+        assert "openscap_informational_count" in output
+        assert "openscap_fixed_count" in output
 
         # Each should have count of 1
-        for status_type in ['pass', 'fail', 'error', 'unknown', 'notchecked', 
-                           'notselected', 'informational', 'fixed']:
-            assert f'openscap_{status_type}_count' in output
+        for status_type in [
+            "pass",
+            "fail",
+            "error",
+            "unknown",
+            "notchecked",
+            "notselected",
+            "informational",
+            "fixed",
+        ]:
+            assert f"openscap_{status_type}_count" in output
 
         assert result == 0
 
@@ -141,15 +150,18 @@ class TestParseOpenSCAPReport:
         output = captured.out
 
         # Should still output metrics with 0 counts
-        assert 'openscap_pass_count' in output
+        assert "openscap_pass_count" in output
         assert result == 0
 
 
-@pytest.mark.parametrize("filename", [
-    "report-20241027.arf",
-    "scan-results.arf",
-    "ubuntu-scan.arf",
-])
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "report-20241027.arf",
+        "scan-results.arf",
+        "ubuntu-scan.arf",
+    ],
+)
 def test_various_filenames(tmp_path, sample_openscap_arf, filename):
     """Test that parser works with various ARF filenames."""
     target_file = tmp_path / filename

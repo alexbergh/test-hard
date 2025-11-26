@@ -24,7 +24,8 @@ A clear description of what you expected to happen.
 - Project version: [e.g. 1.0.0]
 
 ## Logs
-```
+
+```text
 Paste relevant logs here
 ```
 

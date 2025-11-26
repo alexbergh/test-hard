@@ -7,6 +7,10 @@ default: true
 # MD013/line-length - Line length (disabled - too strict for documentation)
 MD013: false
 
+# MD040/fenced-code-language - Fenced code blocks should have a language
+# Disabled - many code blocks are generic or output examples
+MD040: false
+
 # MD033/no-inline-html - Inline HTML
 MD033:
   allowed_elements:

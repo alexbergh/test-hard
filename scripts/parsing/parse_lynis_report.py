@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)
 def parse_lynis_report(report_path: str) -> None:
     """Parse Lynis JSON report and output Prometheus metrics."""
     path = Path(report_path)
-    
+
     if not path.exists():
         logger.error("Report file not found: %s", path)
         sys.exit(1)
-    
+
     try:
-        with path.open('r', encoding='utf-8') as f:
+        with path.open("r", encoding="utf-8") as f:
             report = json.load(f)
     except json.JSONDecodeError as exc:
         logger.error("Failed to parse JSON from %s: %s", path, exc)
@@ -27,19 +27,19 @@ def parse_lynis_report(report_path: str) -> None:
         logger.error("Error reading file %s: %s", path, exc)
         sys.exit(1)
 
-    hostname = report.get('general', {}).get('hostname') or 'unknown'
+    hostname = report.get("general", {}).get("hostname") or "unknown"
     metrics = {
-        'lynis_warnings_count': len(report.get('warnings', []) or []),
-        'lynis_suggestions_count': len(report.get('suggestions', []) or []),
-        'lynis_tests_count': len(report.get('tests', []) or []),
-        'lynis_plugins_count': len(report.get('plugins', []) or []),
+        "lynis_warnings_count": len(report.get("warnings", []) or []),
+        "lynis_suggestions_count": len(report.get("suggestions", []) or []),
+        "lynis_tests_count": len(report.get("tests", []) or []),
+        "lynis_plugins_count": len(report.get("plugins", []) or []),
     }
-    metrics['lynis_tests_performed'] = metrics['lynis_tests_count']
-    
+    metrics["lynis_tests_performed"] = metrics["lynis_tests_count"]
+
     # Lynis Score (hardening index)
-    if 'general' in report and 'hardening_index' in report['general']:
+    if "general" in report and "hardening_index" in report["general"]:
         try:
-            metrics['lynis_score'] = int(report['general']['hardening_index'])
+            metrics["lynis_score"] = int(report["general"]["hardening_index"])
         except (ValueError, TypeError) as exc:
             logger.warning("Invalid hardening_index value: %s", exc)
 
@@ -47,12 +47,14 @@ def parse_lynis_report(report_path: str) -> None:
 
     # Вывод метрик в формате Prometheus
     for key, value in metrics.items():
-        print(f"{key}{{host=\"{hostname}\"}} {value}")
+        print(f'{key}{{host="{hostname}"}} {value}')
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         logger.error("Usage: parse_lynis_report.py <path_to_lynis_json_report>")
-        print("Usage: parse_lynis_report.py <path_to_lynis_json_report>", file=sys.stderr)
+        print(
+            "Usage: parse_lynis_report.py <path_to_lynis_json_report>", file=sys.stderr
+        )
         sys.exit(1)
     parse_lynis_report(sys.argv[1])

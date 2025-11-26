@@ -175,7 +175,9 @@ def load_scenarios(args: argparse.Namespace) -> List[ScenarioSpec]:
                         description=item.get("description"),
                         arguments=item.get("arguments", {}),
                         copy_source_files=item.get("copy_source_files"),
-                        get_prereqs_before_run=item.get("get_prereqs_before_run", False),
+                        get_prereqs_before_run=item.get(
+                            "get_prereqs_before_run", False
+                        ),
                     )
                 )
             else:
@@ -229,16 +231,14 @@ def ensure_repo(operator: AtomicOperator, args: argparse.Namespace) -> Path:
     except Exception as exc:
         logger.error("Failed to download repository: %s", exc)
         raise
-    
+
     resolved = find_atomics_root(cache_root, download_hint)
     if resolved:
         logger.info("Successfully downloaded atomics to: %s", resolved)
         return resolved
-    
+
     logger.error("Failed to locate downloaded repository")
-    raise FileNotFoundError(
-        "Download failed. Specify --atomics-path manually."
-    )
+    raise FileNotFoundError("Download failed. Specify --atomics-path manually.")
 
 
 def find_atomics_root(base: Path, hint: Optional[str] = None) -> Optional[Path]:
@@ -387,7 +387,7 @@ def run_scenario(
         scenario.technique,
         mode,
     )
-    
+
     tech_data = operator.run(
         techniques=[scenario.technique],
         atomics_path=str(repo_path),
@@ -402,7 +402,9 @@ def run_scenario(
     if scenario.tests:
         tests_to_run = scenario.tests
     else:
-        tests_to_run = [TestSpec(number=index + 1) for index in range(len(technique.atomic_tests))]
+        tests_to_run = [
+            TestSpec(number=index + 1) for index in range(len(technique.atomic_tests))
+        ]
 
     results: List[TestResult] = []
     scenario_status = "passed"
@@ -454,7 +456,14 @@ def write_outputs(
     history_dir.mkdir(parents=True, exist_ok=True)
     prom_dir.mkdir(parents=True, exist_ok=True)
 
-    summary = {"passed": 0, "failed": 0, "skipped": 0, "error": 0, "unknown": 0, "total": 0}
+    summary = {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "error": 0,
+        "unknown": 0,
+        "total": 0,
+    }
     serialisable_results = []
     prom_lines = [
         "# HELP art_test_result ART test status (0=pass,1=fail,2=skip,3=err,4=unk)",
@@ -479,20 +488,22 @@ def write_outputs(
         for test in scenario.tests:
             summary["total"] += 1
             summary[test.status] = summary.get(test.status, 0) + 1
-            scenario_entry["tests"].append({
-                "guid": test.guid,
-                "number": test.number,
-                "name": test.name,
-                "executor": test.executor,
-                "supported_platforms": test.supported_platforms,
-                "status": test.status,
-                "return_code": test.return_code,
-                "start_timestamp": test.start_timestamp,
-                "end_timestamp": test.end_timestamp,
-                "command": test.command,
-                "output": test.output,
-                "error": test.error,
-            })
+            scenario_entry["tests"].append(
+                {
+                    "guid": test.guid,
+                    "number": test.number,
+                    "name": test.name,
+                    "executor": test.executor,
+                    "supported_platforms": test.supported_platforms,
+                    "status": test.status,
+                    "return_code": test.return_code,
+                    "start_timestamp": test.start_timestamp,
+                    "end_timestamp": test.end_timestamp,
+                    "command": test.command,
+                    "output": test.output,
+                    "error": test.error,
+                }
+            )
 
             labels = {
                 "host": hostname,
@@ -560,21 +571,24 @@ def _escape_label_value(value: str) -> str:
 
 def render_metric(name: str, labels: Dict[str, str], value: int) -> str:
     encoded_labels = ",".join(
-        f"{key}=\"{_escape_label_value(val)}\"" for key, val in sorted(labels.items())
+        f'{key}="{_escape_label_value(val)}"' for key, val in sorted(labels.items())
     )
     return f"{name}{{{encoded_labels}}} {value}"
 
 
 def main() -> None:
     args = parse_args()
-    
+
     # Set log level from args if available
-    if hasattr(args, 'verbose') and args.verbose:
+    if hasattr(args, "verbose") and args.verbose:
         logger.setLevel(logging.DEBUG)
-    
-    logger.info("Starting Atomic Red Team execution (mode: %s, dry_run: %s)", 
-                args.mode, args.dry_run)
-    
+
+    logger.info(
+        "Starting Atomic Red Team execution (mode: %s, dry_run: %s)",
+        args.mode,
+        args.dry_run,
+    )
+
     try:
         scenarios = load_scenarios(args)
         operator = AtomicOperator()
@@ -611,7 +625,7 @@ def main() -> None:
 
         logger.info("✓ Atomic Red Team execution completed successfully")
         print(f"Wrote Atomic Red Team results to {history_path}")
-    
+
     except Exception as exc:
         logger.error("Fatal error: %s", exc, exc_info=True)
         sys.exit(1)

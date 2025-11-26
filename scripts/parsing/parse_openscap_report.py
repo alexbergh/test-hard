@@ -10,7 +10,9 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
-DEFAULT_RESULTS_ROOT = Path(os.environ.get("HARDENING_RESULTS_DIR", "/var/lib/hardening/results"))
+DEFAULT_RESULTS_ROOT = Path(
+    os.environ.get("HARDENING_RESULTS_DIR", "/var/lib/hardening/results")
+)
 DEFAULT_RESULTS_DIR = DEFAULT_RESULTS_ROOT / "openscap"
 
 
@@ -84,8 +86,14 @@ def main(argv: list[str]) -> int:  # noqa: C901
     try:
         results = root.findall(".//xccdf:rule-result", ns)
         counts = {
-            "pass": 0, "fail": 0, "error": 0, "unknown": 0,
-            "notchecked": 0, "notselected": 0, "informational": 0, "fixed": 0,
+            "pass": 0,
+            "fail": 0,
+            "error": 0,
+            "unknown": 0,
+            "notchecked": 0,
+            "notselected": 0,
+            "informational": 0,
+            "fixed": 0,
         }
 
         for r in results:
@@ -101,6 +109,7 @@ def main(argv: list[str]) -> int:  # noqa: C901
     except Exception as exc:
         logger.error("Error processing ARF results: %s", exc)
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

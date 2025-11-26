@@ -42,6 +42,7 @@ make up
 ### Документация:
 
 **Основное:**
+
 - **[Документация](docs/README.md)** - центральная страница документации
 - **[Быстрый старт](docs/QUICKSTART.md)** - развертывание за 5-10 минут
 - **[FAQ](docs/FAQ.md)** - часто задаваемые вопросы
@@ -49,16 +50,19 @@ make up
 - **[Contributing](CONTRIBUTING.md)** - как внести вклад в проект
 
 **Развертывание:**
+
 - **[Полное руководство](docs/DEPLOYMENT.md)** - детальная инструкция с troubleshooting
 - **[Docker Quick Start](docs/DOCKER_QUICK_START.md)** - быстрое руководство по оптимизированным образам
 - **[Нативная установка](docs/NATIVE-INSTALLATION.md)** - установка без Docker
 
 **Безопасность:**
+
 - **[Security Policy](docs/SECURITY.md)** - политика безопасности
 - **[Создание пользователей](docs/USER-SETUP.md)** - безопасная настройка пользователей (полное руководство)
 - **[Сканирование хостов](docs/REAL-HOSTS-SCANNING.md)** - как сканировать production серверы
 
 **Дополнительно:**
+
 - **[Docker оптимизации](docs/DOCKER_OPTIMIZATIONS.md)** - multi-stage builds, BuildKit cache, метрики
 - **[Централизованное логирование](docs/LOGGING.md)** - настройка Loki + Promtail
 
@@ -204,7 +208,8 @@ pip install atomic-operator attrs click pyyaml
 автоматически без дополнительных запросов к API.
 
 ## Структура репозитория
-```
+
+```text
 test-hard/
 ├── .env.example               # Пример переменных окружения Grafana
 ├── docker-compose.yml         # Prometheus, Grafana и доступные агенты
@@ -313,6 +318,7 @@ kubectl apply -k k8s/overlays/prod
 ## Новые возможности (Октябрь 2025)
 
 ### Centralized Logging
+
 - **Loki** для хранения логов
 - **Promtail** для сбора логов из контейнеров
 - **LogQL** для мощного поиска и анализа
@@ -320,6 +326,7 @@ kubectl apply -k k8s/overlays/prod
 - Документация: [docs/LOGGING.md](docs/LOGGING.md)
 
 ### GitOps Deployment
+
 - **ArgoCD** для автоматического deployment
 - Автоматическая синхронизация для dev/staging
 - Ручное подтверждение для production
@@ -327,12 +334,14 @@ kubectl apply -k k8s/overlays/prod
 - Документация: [argocd/README.md](argocd/README.md)
 
 ### Container Registry
+
 - Автоматическая публикация в **GitHub Container Registry**
 - Image signing с Cosign
 - Multi-platform builds (amd64, arm64)
 - Семантическое версионирование
 
 ### Расширенное тестирование
+
 - **80%+ test coverage**
 - Unit, integration, E2E тесты
 - Shell script тесты с bats
@@ -345,20 +354,24 @@ kubectl apply -k k8s/overlays/prod
 **Test Coverage:** 80%+
 
 Полный план развития на 2026 год:
+
 - **[ROADMAP.md](ROADMAP.md)** - детальный roadmap с задачами по кварталам
 
 ### Ближайшие задачи (Q1 2026)
-* Web UI для управления сканированиями
-* Scheduled scanning
-* Distributed tracing с Grafana Tempo
+
+- Web UI для управления сканированиями
+- Scheduled scanning
+- Distributed tracing с Grafana Tempo
 
 ### Среднесрочные (Q2-Q3 2026)
-* Runtime security с Falco
-* Compliance as Code (InSpec, OPA)
-* ML-based anomaly detection
-* Multi-tenancy support
+
+- Runtime security с Falco
+- Compliance as Code (InSpec, OPA)
+- ML-based anomaly detection
+- Multi-tenancy support
 
 ### Долгосрочные (Q4 2026)
-* Multi-cloud support (AWS, Azure, GCP)
-* Advanced reporting и analytics
-* Integration marketplace
+
+- Multi-cloud support (AWS, Azure, GCP)
+- Advanced reporting и analytics
+- Integration marketplace

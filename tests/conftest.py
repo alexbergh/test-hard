@@ -1,4 +1,5 @@
 """Pytest configuration and fixtures."""
+
 import shutil
 import sys
 from pathlib import Path
@@ -21,28 +22,22 @@ def project_root() -> Path:
 def sample_lynis_report() -> Dict[str, Any]:
     """Return sample Lynis report data."""
     return {
-        "general": {
-            "hostname": "test-host",
-            "hardening_index": 75
-        },
+        "general": {"hostname": "test-host", "hardening_index": 75},
         "warnings": [
             {"id": "W001", "message": "Test warning 1"},
-            {"id": "W002", "message": "Test warning 2"}
+            {"id": "W002", "message": "Test warning 2"},
         ],
         "suggestions": [
             {"id": "S001", "message": "Test suggestion 1"},
             {"id": "S002", "message": "Test suggestion 2"},
-            {"id": "S003", "message": "Test suggestion 3"}
+            {"id": "S003", "message": "Test suggestion 3"},
         ],
         "tests": [
             {"id": "T001", "result": "pass"},
             {"id": "T002", "result": "pass"},
-            {"id": "T003", "result": "fail"}
+            {"id": "T003", "result": "fail"},
         ],
-        "plugins": [
-            {"name": "plugin1"},
-            {"name": "plugin2"}
-        ]
+        "plugins": [{"name": "plugin1"}, {"name": "plugin2"}],
     }
 
 
@@ -60,7 +55,7 @@ def sample_atomic_modern_report() -> Dict[str, Any]:
             "skipped": 1,
             "error": 0,
             "unknown": 0,
-            "total": 5
+            "total": 5,
         },
         "scenarios": [
             {
@@ -77,7 +72,7 @@ def sample_atomic_modern_report() -> Dict[str, Any]:
                         "executor": "sh",
                         "supported_platforms": ["linux"],
                         "status": "passed",
-                        "return_code": 0
+                        "return_code": 0,
                     },
                     {
                         "guid": "test-guid-2",
@@ -86,11 +81,11 @@ def sample_atomic_modern_report() -> Dict[str, Any]:
                         "executor": "bash",
                         "supported_platforms": ["linux"],
                         "status": "failed",
-                        "return_code": 1
-                    }
-                ]
+                        "return_code": 1,
+                    },
+                ],
             }
-        ]
+        ],
     }
 
 
@@ -101,7 +96,7 @@ def sample_atomic_legacy_report() -> Dict[str, Any]:
         "tests": [
             {"id": "T1082", "passed": True},
             {"id": "T1049", "passed": False},
-            {"id": "T1119", "passed": True}
+            {"id": "T1119", "passed": True},
         ]
     }
 
@@ -157,7 +152,7 @@ def mock_env_vars(monkeypatch):
         "HARDENING_RESULTS_DIR": "/tmp/test-results",
         "HARDENING_ART_STORAGE": "/tmp/art-storage",
         "ATOMIC_DRY_RUN": "true",
-        "ATOMIC_TIMEOUT": "60"
+        "ATOMIC_TIMEOUT": "60",
     }
     for key, value in test_env.items():
         monkeypatch.setenv(key, value)
@@ -174,6 +169,7 @@ def docker_compose_file(tmp_path_factory):
 def cli_runner():
     """Provide a CLI runner for testing command-line scripts."""
     from click.testing import CliRunner
+
     return CliRunner()
 
 

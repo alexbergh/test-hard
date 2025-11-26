@@ -1,4 +1,5 @@
 """Unit tests for parse_lynis_report.py"""
+
 import json
 import sys
 from pathlib import Path
@@ -17,7 +18,7 @@ class TestParseLynisReport:
         """Test parsing a valid Lynis report."""
         # Create temporary report file
         report_file = tmp_path / "lynis-report.json"
-        with report_file.open('w') as f:
+        with report_file.open("w") as f:
             json.dump(sample_lynis_report, f)
 
         # Parse the report
@@ -51,14 +52,10 @@ class TestParseLynisReport:
 
     def test_parse_minimal_report(self, tmp_path, capsys):
         """Test parsing report with minimal data."""
-        minimal_report = {
-            "general": {
-                "hostname": "minimal-host"
-            }
-        }
+        minimal_report = {"general": {"hostname": "minimal-host"}}
 
         report_file = tmp_path / "minimal.json"
-        with report_file.open('w') as f:
+        with report_file.open("w") as f:
             json.dump(minimal_report, f)
 
         parse_lynis_report(str(report_file))
@@ -72,29 +69,26 @@ class TestParseLynisReport:
         report = {
             "general": {
                 "hostname": "test-host",
-                "hardening_index": "invalid"  # Should be int
+                "hardening_index": "invalid",  # Should be int
             }
         }
 
         report_file = tmp_path / "invalid-index.json"
-        with report_file.open('w') as f:
+        with report_file.open("w") as f:
             json.dump(report, f)
 
         parse_lynis_report(str(report_file))
         captured = capsys.readouterr()
 
         # Should not include lynis_score if invalid
-        assert 'lynis_score' not in captured.out
+        assert "lynis_score" not in captured.out
 
     def test_default_hostname(self, tmp_path, capsys):
         """Test default hostname when not provided."""
-        report = {
-            "general": {},
-            "warnings": []
-        }
+        report = {"general": {}, "warnings": []}
 
         report_file = tmp_path / "no-hostname.json"
-        with report_file.open('w') as f:
+        with report_file.open("w") as f:
             json.dump(report, f)
 
         parse_lynis_report(str(report_file))
@@ -104,16 +98,19 @@ class TestParseLynisReport:
         assert 'host="unknown"' in captured.out
 
 
-@pytest.mark.parametrize("field,expected_count", [
-    ("warnings", 2),
-    ("suggestions", 3),
-    ("tests", 3),
-    ("plugins", 2),
-])
+@pytest.mark.parametrize(
+    "field,expected_count",
+    [
+        ("warnings", 2),
+        ("suggestions", 3),
+        ("tests", 3),
+        ("plugins", 2),
+    ],
+)
 def test_count_fields(sample_lynis_report, tmp_path, capsys, field, expected_count):
     """Test counting of various report fields."""
     report_file = tmp_path / f"test-{field}.json"
-    with report_file.open('w') as f:
+    with report_file.open("w") as f:
         json.dump(sample_lynis_report, f)
 
     parse_lynis_report(str(report_file))
