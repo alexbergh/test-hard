@@ -175,9 +175,7 @@ def load_scenarios(args: argparse.Namespace) -> List[ScenarioSpec]:
                         description=item.get("description"),
                         arguments=item.get("arguments", {}),
                         copy_source_files=item.get("copy_source_files"),
-                        get_prereqs_before_run=item.get(
-                            "get_prereqs_before_run", False
-                        ),
+                        get_prereqs_before_run=item.get("get_prereqs_before_run", False),
                     )
                 )
             else:
@@ -212,9 +210,7 @@ def ensure_repo(operator: AtomicOperator, args: argparse.Namespace) -> Path:
             logger.info("Found atomics directory at: %s", resolved)
             return resolved
         logger.error("Unable to locate atomics directory at: %s", provided)
-        raise FileNotFoundError(
-            f"Unable to locate an 'atomics' directory beneath {provided}."
-        )
+        raise FileNotFoundError(f"Unable to locate an 'atomics' directory beneath {provided}.")
 
     cache_root = Path(os.path.expanduser(args.cache_dir)).resolve()
     cache_root.mkdir(parents=True, exist_ok=True)
@@ -402,9 +398,7 @@ def run_scenario(
     if scenario.tests:
         tests_to_run = scenario.tests
     else:
-        tests_to_run = [
-            TestSpec(number=index + 1) for index in range(len(technique.atomic_tests))
-        ]
+        tests_to_run = [TestSpec(number=index + 1) for index in range(len(technique.atomic_tests))]
 
     results: List[TestResult] = []
     scenario_status = "passed"
@@ -417,9 +411,7 @@ def run_scenario(
                 spec.number,
                 scenario.technique,
             )
-            raise IndexError(
-                f"Technique {scenario.technique} has no test #{spec.number}"
-            ) from exc
+            raise IndexError(f"Technique {scenario.technique} has no test #{spec.number}") from exc
 
         test_result = execute_test(
             operator,
@@ -570,9 +562,7 @@ def _escape_label_value(value: str) -> str:
 
 
 def render_metric(name: str, labels: Dict[str, str], value: int) -> str:
-    encoded_labels = ",".join(
-        f'{key}="{_escape_label_value(val)}"' for key, val in sorted(labels.items())
-    )
+    encoded_labels = ",".join(f'{key}="{_escape_label_value(val)}"' for key, val in sorted(labels.items()))
     return f"{name}{{{encoded_labels}}} {value}"
 
 

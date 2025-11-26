@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Semantic versioning bump script
 set -euo pipefail
 
@@ -40,7 +40,7 @@ esac
 new_version="$major.$minor.$patch"
 echo "$new_version" > "$VERSION_FILE"
 
-echo "Version bumped: $current → $new_version"
+echo "Version bumped: $current в†’ $new_version"
 echo ""
 echo "Next steps:"
 echo "  1. Review changes: git diff"

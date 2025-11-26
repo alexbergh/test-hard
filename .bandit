@@ -1,6 +1,6 @@
 [bandit]
 # Paths to exclude from scanning
-exclude_dirs = 
+exclude_dirs =
     /tests/
     /venv/
     /.venv/
@@ -12,7 +12,7 @@ exclude_dirs =
 # Tests to skip
 # SECURITY: Only skip B101 (assert_used) which is acceptable in test code
 # B601 (paramiko_calls) - REMOVED: SSH operations must be reviewed for security
-skips = 
+skips =
     B101
 
 # Additional security checks enabled by default:
@@ -40,7 +40,7 @@ skips =
 # Severity level threshold
 severity = medium
 
-# Confidence level threshold  
+# Confidence level threshold
 confidence = medium
 
 # Output format

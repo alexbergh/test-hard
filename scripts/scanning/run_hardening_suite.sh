@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 compose_bin=${COMPOSE_BIN:-docker compose}
@@ -58,11 +58,11 @@ mkdir -p reports
 ${compose_bin} up -d "${targets[@]}"
 ${compose_bin} build "${scanners[@]}"
 
-# Поднимаем сканеры как сервисы для доступа к их файловой системе
+# РџРѕРґРЅРёРјР°РµРј СЃРєР°РЅРµСЂС‹ РєР°Рє СЃРµСЂРІРёСЃС‹ РґР»СЏ РґРѕСЃС‚СѓРїР° Рє РёС… С„Р°Р№Р»РѕРІРѕР№ СЃРёСЃС‚РµРјРµ
 echo "[suite] Starting scanner services..."
 ${compose_bin} up -d "${scanners[@]}"
 
-# Запускаем сканирование
+# Р—Р°РїСѓСЃРєР°РµРј СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ
 for scanner in "${scanners[@]}"; do
   echo "[suite] Running ${scanner}"
   case "$scanner" in
@@ -86,10 +86,10 @@ for scanner in "${scanners[@]}"; do
   esac
 done
 
-# Копируем отчёты из работающих контейнеров
+# РљРѕРїРёСЂСѓРµРј РѕС‚С‡С‘С‚С‹ РёР· СЂР°Р±РѕС‚Р°СЋС‰РёС… РєРѕРЅС‚РµР№РЅРµСЂРѕРІ
 echo "[suite] Copying reports from containers..."
 
-# Сначала проверяем что файлы существуют в контейнерах
+# РЎРЅР°С‡Р°Р»Р° РїСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ С„Р°Р№Р»С‹ СЃСѓС‰РµСЃС‚РІСѓСЋС‚ РІ РєРѕРЅС‚РµР№РЅРµСЂР°С…
 echo "[suite] Checking files in containers..."
 
 echo "[suite] OpenSCAP container files:"
@@ -98,29 +98,29 @@ docker exec openscap-scanner find /reports -type f 2>/dev/null || echo "No files
 echo "[suite] Lynis container files:"
 docker exec lynis-scanner find /reports -type f 2>/dev/null || echo "No files in lynis-scanner"
 
-# OpenSCAP отчёты - копируем через docker cp
+# OpenSCAP РѕС‚С‡С‘С‚С‹ - РєРѕРїРёСЂСѓРµРј С‡РµСЂРµР· docker cp
 for target in "${targets[@]}"; do
   echo "[suite] Copying OpenSCAP report for $target"
   mkdir -p reports/openscap
-  
-  # Копируем напрямую через docker cp
+
+  # РљРѕРїРёСЂСѓРµРј РЅР°РїСЂСЏРјСѓСЋ С‡РµСЂРµР· docker cp
   docker cp "openscap-scanner:/reports/openscap/${target}.xml" "reports/openscap/${target}.xml" 2>/dev/null || echo "No XML for $target"
   docker cp "openscap-scanner:/reports/openscap/${target}.html" "reports/openscap/${target}.html" 2>/dev/null || echo "No HTML for $target"
   docker cp "openscap-scanner:/reports/openscap/${target}_metrics.prom" "reports/openscap/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
 done
 
-# Lynis отчёты - копируем через docker cp
+# Lynis РѕС‚С‡С‘С‚С‹ - РєРѕРїРёСЂСѓРµРј С‡РµСЂРµР· docker cp
 for target in "${targets[@]}"; do
   echo "[suite] Copying Lynis report for $target"
   mkdir -p reports/lynis
-  
-  # Копируем напрямую через docker cp
+
+  # РљРѕРїРёСЂСѓРµРј РЅР°РїСЂСЏРјСѓСЋ С‡РµСЂРµР· docker cp
   docker cp "lynis-scanner:/reports/lynis/${target}.log" "reports/lynis/${target}.log" 2>/dev/null || echo "No log for $target"
   docker cp "lynis-scanner:/reports/lynis/${target}.dat" "reports/lynis/${target}.dat" 2>/dev/null || echo "No dat for $target"
   docker cp "lynis-scanner:/reports/lynis/${target}_metrics.prom" "reports/lynis/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
 done
 
-# Проверить финальные файлы перед остановкой
+# РџСЂРѕРІРµСЂРёС‚СЊ С„РёРЅР°Р»СЊРЅС‹Рµ С„Р°Р№Р»С‹ РїРµСЂРµРґ РѕСЃС‚Р°РЅРѕРІРєРѕР№
 echo "[suite] Final check of files before stopping containers..."
 
 echo "[suite] Final OpenSCAP files:"
@@ -129,12 +129,12 @@ docker exec openscap-scanner find /reports -type f 2>/dev/null || echo "No files
 echo "[suite] Final Lynis files:"
 docker exec lynis-scanner find /reports -type f 2>/dev/null || echo "No files"
 
-# Останавливаем сканеры
+# РћСЃС‚Р°РЅР°РІР»РёРІР°РµРј СЃРєР°РЅРµСЂС‹
 echo "[suite] Stopping scanner services..."
 ${compose_bin} stop "${scanners[@]}" 2>/dev/null || true
 
 printf '\n[suite] Reports saved under %s\n' "$(realpath reports)"
 
-# Проверить скопированные файлы
+# РџСЂРѕРІРµСЂРёС‚СЊ СЃРєРѕРїРёСЂРѕРІР°РЅРЅС‹Рµ С„Р°Р№Р»С‹
 echo "[suite] Checking copied files:"
 find reports -type f -name "*" | sort

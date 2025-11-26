@@ -10,9 +10,7 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
-DEFAULT_RESULTS_ROOT = Path(
-    os.environ.get("HARDENING_RESULTS_DIR", "/var/lib/hardening/results")
-)
+DEFAULT_RESULTS_ROOT = Path(os.environ.get("HARDENING_RESULTS_DIR", "/var/lib/hardening/results"))
 DEFAULT_RESULTS_DIR = DEFAULT_RESULTS_ROOT / "openscap"
 
 

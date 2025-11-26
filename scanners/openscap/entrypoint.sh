@@ -1,4 +1,4 @@
-set -euo pipefail
+﻿set -euo pipefail
 exec /usr/bin/env python3 - "$@" <<'PY'
 import pathlib
 import sys

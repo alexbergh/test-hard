@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 PROFILE="${1:-xccdf_org.ssgproject.content_profile_cis}"

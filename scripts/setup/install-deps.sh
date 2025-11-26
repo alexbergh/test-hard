@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Install Python dependencies and pre-commit hooks
 set -euo pipefail
 
@@ -47,7 +47,7 @@ fi
 # Install pre-commit (optional)
 if [ "${INSTALL_PRECOMMIT:-true}" = "true" ]; then
     log "Installing pre-commit hooks..."
-    
+
     if python3 -m pip install --user pre-commit; then
         if [ -f ".pre-commit-config.yaml" ]; then
             python3 -m pre_commit install

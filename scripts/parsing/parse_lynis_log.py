@@ -19,9 +19,7 @@ def parse_lynis_log(log_path: str, hostname: str = "localhost") -> None:
     # Extract hardening index
     score = 0
     # Try format: "Hardening index : [61]"
-    hardening_match = re.search(
-        r"Hardening index\s*:\s*\[?(\d+)\]?", content, re.IGNORECASE
-    )
+    hardening_match = re.search(r"Hardening index\s*:\s*\[?(\d+)\]?", content, re.IGNORECASE)
     if hardening_match:
         score = int(hardening_match.group(1))
 

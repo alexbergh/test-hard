@@ -53,8 +53,6 @@ def parse_lynis_report(report_path: str) -> None:
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         logger.error("Usage: parse_lynis_report.py <path_to_lynis_json_report>")
-        print(
-            "Usage: parse_lynis_report.py <path_to_lynis_json_report>", file=sys.stderr
-        )
+        print("Usage: parse_lynis_report.py <path_to_lynis_json_report>", file=sys.stderr)
         sys.exit(1)
     parse_lynis_report(sys.argv[1])

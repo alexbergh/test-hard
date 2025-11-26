@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 IFS=' ' read -r -a targets <<< "${TARGET_CONTAINERS:-}"
@@ -22,7 +22,7 @@ install_openscap() {
       docker exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
       ;;
     target-debian|target-ubuntu)
-      # Для Debian/Ubuntu не устанавливаем - будем использовать host сканер
+      # Р”Р»СЏ Debian/Ubuntu РЅРµ СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј - Р±СѓРґРµРј РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ host СЃРєР°РЅРµСЂ
       echo "Skipping OpenSCAP install for $name - will use host scanner"
       ;;
     *)
@@ -42,11 +42,11 @@ get_datastream() {
       echo "/usr/share/xml/scap/ssg/content/ssg-cs9-ds.xml"
       ;;
     target-debian)
-      # Пробуем разные пути для datastream
+      # РџСЂРѕР±СѓРµРј СЂР°Р·РЅС‹Рµ РїСѓС‚Рё РґР»СЏ datastream
       echo "/usr/share/xml/scap/ssg/content/ssg-debian12-ds.xml"
       ;;
     target-ubuntu)
-      # Пробуем разные пути для datastream
+      # РџСЂРѕР±СѓРµРј СЂР°Р·РЅС‹Рµ РїСѓС‚Рё РґР»СЏ datastream
       echo "/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml"
       ;;
     *)
@@ -59,48 +59,48 @@ scan_container() {
   local name="$1"
   local datastream
   datastream=$(get_datastream "$name")
-  
+
   if [ -z "$datastream" ]; then
     echo "No datastream mapping for $name, skipping" >&2
     return 0
   fi
-  
-  # Проверить что datastream существует, или найти альтернативный путь
+
+  # РџСЂРѕРІРµСЂРёС‚СЊ С‡С‚Рѕ datastream СЃСѓС‰РµСЃС‚РІСѓРµС‚, РёР»Рё РЅР°Р№С‚Рё Р°Р»СЊС‚РµСЂРЅР°С‚РёРІРЅС‹Р№ РїСѓС‚СЊ
   if ! docker exec "$name" test -f "$datastream" 2>/dev/null; then
     echo "Primary datastream $datastream not found, searching alternatives..." >&2
-    
-    # Искать datastream файлы автоматически
+
+    # РСЃРєР°С‚СЊ datastream С„Р°Р№Р»С‹ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё
     local found_datastream
     found_datastream=$(docker exec "$name" find /usr -name "*ssg*ds.xml" -type f 2>/dev/null | head -1 || true)
-    
+
     if [ -z "$found_datastream" ]; then
       echo "No datastream files found in $name, skipping" >&2
       return 0
     fi
-    
+
     datastream="$found_datastream"
     echo "Found alternative datastream: $datastream" >&2
   fi
-  
+
   local result_file="/tmp/openscap-results.xml"
   local report_file="/tmp/openscap-report.html"
-  
+
   echo "[OpenSCAP] Scanning $name using $datastream" >&2
-  
-  # Запустить сканирование внутри контейнера
+
+  # Р—Р°РїСѓСЃС‚РёС‚СЊ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ РІРЅСѓС‚СЂРё РєРѕРЅС‚РµР№РЅРµСЂР°
   if docker exec "$name" oscap xccdf eval \
     --profile "$PROFILE" \
     --results "$result_file" \
     --report "$report_file" \
     "$datastream" >/dev/null 2>&1 || true; then
-    
-    # Скопировать результаты
+
+    # РЎРєРѕРїРёСЂРѕРІР°С‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚С‹
     docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null || echo "Failed to copy XML"
     docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null || echo "Failed to copy HTML"
-    
-    # Извлечь метрики из XML и создать Prometheus metrics
+
+    # РР·РІР»РµС‡СЊ РјРµС‚СЂРёРєРё РёР· XML Рё СЃРѕР·РґР°С‚СЊ Prometheus metrics
     extract_openscap_metrics "$name" "/reports/openscap/${name}.xml"
-    
+
     echo "[OpenSCAP] Scan completed for $name" >&2
     return 0
   else
@@ -113,33 +113,33 @@ extract_openscap_metrics() {
   local name="$1"
   local xml_file="$2"
   local metrics_file="/reports/openscap/${name}_metrics.prom"
-  
+
   echo "[OpenSCAP] Extracting metrics for ${name}" >&2
-  
+
   if [ ! -f "$xml_file" ]; then
     echo "[OpenSCAP] XML file not found: $xml_file" >&2
     return 1
   fi
-  
-  # Извлечь количество passed, failed, notselected правил
+
+  # РР·РІР»РµС‡СЊ РєРѕР»РёС‡РµСЃС‚РІРѕ passed, failed, notselected РїСЂР°РІРёР»
   local pass_count
   local fail_count
-  # Использовать grep -o для подсчета всех вхождений
+  # РСЃРїРѕР»СЊР·РѕРІР°С‚СЊ grep -o РґР»СЏ РїРѕРґСЃС‡РµС‚Р° РІСЃРµС… РІС…РѕР¶РґРµРЅРёР№
   pass_count=$(grep -o '<result>pass</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
   fail_count=$(grep -o '<result>fail</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
-  
-  # Если пустые, установить 0
+
+  # Р•СЃР»Рё РїСѓСЃС‚С‹Рµ, СѓСЃС‚Р°РЅРѕРІРёС‚СЊ 0
   pass_count=${pass_count:-0}
   fail_count=${fail_count:-0}
-  
-  # Вычислить score из pass/fail
+
+  # Р’С‹С‡РёСЃР»РёС‚СЊ score РёР· pass/fail
   local total=$((pass_count + fail_count))
   local score=0
   if [ "$total" -gt 0 ]; then
     score=$((pass_count * 100 / total))
   fi
-  
-  # Создать основной Prometheus metrics файл
+
+  # РЎРѕР·РґР°С‚СЊ РѕСЃРЅРѕРІРЅРѕР№ Prometheus metrics С„Р°Р№Р»
   cat > "$metrics_file" <<EOF
 # HELP openscap_pass_count OpenSCAP passed rules count
 # TYPE openscap_pass_count gauge
@@ -152,26 +152,26 @@ openscap_fail_count{host="${name}"} ${fail_count}
 openscap_score{host="${name}"} ${score}
 EOF
 
-  # Создать детальный файл с failed rules
+  # РЎРѕР·РґР°С‚СЊ РґРµС‚Р°Р»СЊРЅС‹Р№ С„Р°Р№Р» СЃ failed rules
   local details_file="/reports/openscap/${name}_details.prom"
   {
     echo "# HELP openscap_rule_result OpenSCAP rule results (0=fail, 1=pass)"
     echo "# TYPE openscap_rule_result gauge"
-    
-    # Извлечь failed rules напрямую из XML
+
+    # РР·РІР»РµС‡СЊ failed rules РЅР°РїСЂСЏРјСѓСЋ РёР· XML
     grep -B 2 '<result>fail</result>' "$xml_file" | grep 'rule-result' | head -30 | while read -r line; do
-      # Извлечь rule_id
+      # РР·РІР»РµС‡СЊ rule_id
       rule_id=$(echo "$line" | sed -n 's/.*idref="\([^"]*\)".*/\1/p' | sed 's/xccdf_org\.ssgproject\.content_rule_//')
-      # Извлечь severity
+      # РР·РІР»РµС‡СЊ severity
       severity=$(echo "$line" | sed -n 's/.*severity="\([^"]*\)".*/\1/p')
-      
+
       if [ -n "$rule_id" ] && [ -n "$severity" ]; then
-        # Получить title для этого rule (используем короткий rule_id как title)
+        # РџРѕР»СѓС‡РёС‚СЊ title РґР»СЏ СЌС‚РѕРіРѕ rule (РёСЃРїРѕР»СЊР·СѓРµРј РєРѕСЂРѕС‚РєРёР№ rule_id РєР°Рє title)
         title=$(echo "$rule_id" | sed 's/_/ /g' | cut -c1-60)
-        
-        # Экранировать кавычки
+
+        # Р­РєСЂР°РЅРёСЂРѕРІР°С‚СЊ РєР°РІС‹С‡РєРё
         title=${title//\"/}
-        
+
         echo "openscap_rule_result{host=\"${name}\",rule_id=\"${rule_id}\",severity=\"${severity}\",title=\"${title}\"} 0"
       fi
     done
@@ -189,7 +189,7 @@ for target in "${targets[@]}"; do
     status=1
     continue
   fi
-  
+
   if ! scan_container "$target"; then
     status=1
   fi

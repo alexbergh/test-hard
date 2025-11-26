@@ -51,9 +51,7 @@ class TestDockerComposeIntegration:
 
     def test_grafana_datasource(self, docker_services):
         """Test that Grafana has Prometheus datasource configured."""
-        response = requests.get(
-            "http://localhost:3000/api/datasources", auth=("admin", "admin"), timeout=5
-        )
+        response = requests.get("http://localhost:3000/api/datasources", auth=("admin", "admin"), timeout=5)
         assert response.status_code == 200
         datasources = response.json()
         prometheus_ds = [ds for ds in datasources if ds["type"] == "prometheus"]
@@ -83,9 +81,7 @@ class TestDockerComposeIntegration:
         running_count = len([c for c in containers if c and '"State":"running"' in c])
 
         # At least monitoring services should be running
-        assert (
-            running_count >= 5
-        )  # prometheus, grafana, telegraf, alertmanager, docker-proxy
+        assert running_count >= 5  # prometheus, grafana, telegraf, alertmanager, docker-proxy
 
     @pytest.mark.slow
     def test_prometheus_scrapes_telegraf(self, docker_services):
@@ -116,15 +112,11 @@ def test_makefile_commands():
     project_root = Path(__file__).parent.parent.parent
 
     # Test validate command
-    result = subprocess.run(
-        ["make", "validate"], cwd=project_root, capture_output=True, text=True
-    )
+    result = subprocess.run(["make", "validate"], cwd=project_root, capture_output=True, text=True)
     assert result.returncode == 0
 
     # Test test command
-    result = subprocess.run(
-        ["make", "test"], cwd=project_root, capture_output=True, text=True
-    )
+    result = subprocess.run(["make", "test"], cwd=project_root, capture_output=True, text=True)
     assert result.returncode == 0
 
 

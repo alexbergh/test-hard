@@ -68,9 +68,7 @@ def emit_modern_format(host: str, data: Dict[str, Any]) -> None:
             platforms = test.get("supported_platforms")
             if platforms:
                 labels["platforms"] = ",".join(platforms)
-            value = STATUS_TO_VALUE.get(
-                test.get("status", "unknown"), STATUS_TO_VALUE["unknown"]
-            )
+            value = STATUS_TO_VALUE.get(test.get("status", "unknown"), STATUS_TO_VALUE["unknown"])
             print(render_metric("art_test_result", labels, value))
 
         if status:
@@ -120,9 +118,7 @@ def render_metric(name: str, labels: Dict[str, Any], value: Any) -> str:
         """Escape backslashes and quotes in label values."""
         return str(val).replace("\\", "\\\\").replace('"', '\\"')
 
-    encoded = ",".join(
-        f'{key}="{escape_label_value(val)}"' for key, val in labels.items()
-    )
+    encoded = ",".join(f'{key}="{escape_label_value(val)}"' for key, val in labels.items())
     return f"{name}{{{encoded}}} {value}"
 
 

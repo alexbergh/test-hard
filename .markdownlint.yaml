@@ -7,6 +7,14 @@ default: true
 # MD013/line-length - Line length (disabled - too strict for documentation)
 MD013: false
 
+# MD029/ol-prefix - Ordered list item prefix
+# Disabled - we use actual numbers for clarity
+MD029: false
+
+# MD036/no-emphasis-as-heading - Emphasis used instead of a heading
+# Disabled - we use bold text for sub-sections in troubleshooting
+MD036: false
+
 # MD040/fenced-code-language - Fenced code blocks should have a language
 # Disabled - many code blocks are generic or output examples
 MD040: false

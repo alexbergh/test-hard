@@ -2,8 +2,8 @@
 Write-Host "Fixing YAML lint errors..." -ForegroundColor Cyan
 
 # Get all YAML files
-$yamlFiles = Get-ChildItem -Recurse -Include *.yml,*.yaml | Where-Object { 
-    $_.FullName -notmatch '\\node_modules\\' -and 
+$yamlFiles = Get-ChildItem -Recurse -Include *.yml,*.yaml | Where-Object {
+    $_.FullName -notmatch '\\node_modules\\' -and
     $_.FullName -notmatch '\\venv\\' -and
     $_.FullName -notmatch '\\build\\' -and
     $_.FullName -notmatch '\\.git\\'
@@ -15,7 +15,7 @@ $fixedCount = 0
 foreach ($file in $yamlFiles) {
     $content = Get-Content $file.FullName -Raw
     $newContent = $content -replace '[ \t]+(\r?\n)', '$1'
-    
+
     if ($content -ne $newContent) {
         Set-Content -Path $file.FullName -Value $newContent -NoNewline
         Write-Host "  Fixed: $($file.Name)" -ForegroundColor Green

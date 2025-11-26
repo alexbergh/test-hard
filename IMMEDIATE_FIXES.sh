@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # Immediate Fixes Script for test-hard
 # This script applies critical fixes identified in the analysis
 # Run with: bash IMMEDIATE_FIXES.sh
@@ -338,7 +338,7 @@ echo "[NOTE] Fix 8: Adding badges to README..."
 if ! grep -q "shields.io" README.md; then
     # Create temporary file with badges
     cat > README.tmp << 'EOF'
-# test-hard — Платформа Security Hardening & Monitoring
+# test-hard вЂ” РџР»Р°С‚С„РѕСЂРјР° Security Hardening & Monitoring
 
 ![CI Status](https://github.com/alexbergh/test-hard/workflows/CI%20Pipeline/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -365,10 +365,10 @@ for script in scripts/*.sh; do
         if ! grep -q "set -euo pipefail" "$script"; then
             # Backup
             cp "$script" "$script.backup"
-            
+
             # Add error handling after shebang
             awk 'NR==1 {print; print "set -euo pipefail"; print ""; next} {print}' "$script.backup" > "$script"
-            
+
             print_status "Improved error handling in $script"
         fi
     fi
@@ -457,9 +457,9 @@ print_status "Created scripts/verify_fixes.sh"
 
 # Summary
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "в”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓ"
 echo "[SUCCESS] All immediate fixes have been applied!"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "в”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓ"
 echo ""
 echo "Applied fixes:"
 echo "  1. [OK] Fixed hardcoded paths in docker-compose files"

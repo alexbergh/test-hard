@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # Scan remote host via SSH
 set -euo pipefail
 
@@ -94,9 +94,9 @@ fi
 echo ""
 
 # Summary
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "в”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓ"
 echo "Scan complete for $HOST"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "в”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓв”Ѓ"
 echo ""
 echo "Reports:"
 echo "  - Log: $REPORTS_DIR/${HOST}.log"
@@ -110,7 +110,7 @@ if [ -f "$REPORTS_DIR/${HOST}.log" ]; then
     SCORE=$(grep -i "hardening index" "$REPORTS_DIR/${HOST}.log" | grep -oE "\[[0-9]+\]" | grep -oE "[0-9]+" | head -1 || echo "N/A")
     WARNINGS=$(grep -c "Warning:" "$REPORTS_DIR/${HOST}.log" 2>/dev/null || echo "0")
     SUGGESTIONS=$(grep -c "Suggestion:" "$REPORTS_DIR/${HOST}.log" 2>/dev/null || echo "0")
-    
+
     echo "  - Hardening Score: $SCORE/100"
     echo "  - Warnings: $WARNINGS"
     echo "  - Suggestions: $SUGGESTIONS"

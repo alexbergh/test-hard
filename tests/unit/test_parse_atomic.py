@@ -7,12 +7,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
-from parse_atomic_red_team_result import (  # noqa: E402
-    emit_legacy_format,
-    emit_modern_format,
-    main,
-    render_metric,
-)
+from parse_atomic_red_team_result import emit_legacy_format, emit_modern_format, main, render_metric  # noqa: E402
 
 
 class TestParseAtomicRedTeam:
