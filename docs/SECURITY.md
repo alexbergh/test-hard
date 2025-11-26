@@ -2,8 +2,8 @@
 
 ## Документация по безопасности
 
-- **[Создание пользователей (USER-SETUP.md)](USER-SETUP.md)** - Подробное руководство по безопасному созданию и настройке пользователей
-- **[Сканирование реальных хостов (REAL-HOSTS-SCANNING.md)](REAL-HOSTS-SCANNING.md)** - Безопасное сканирование production систем
+* **[Создание пользователей (USER-SETUP.md)](USER-SETUP.md)** - Подробное руководство по безопасному созданию и настройке пользователей
+* **[Сканирование реальных хостов (REAL-HOSTS-SCANNING.md)](REAL-HOSTS-SCANNING.md)** - Безопасное сканирование production систем
 
 ## Улучшения безопасности
 
@@ -14,34 +14,38 @@
 **Проблема**: Прямой доступ к Docker socket представляет значительные риски безопасности.
 
 **Решение**: Docker Socket Proxy (`tecnativa/docker-socket-proxy`) используется для ограничения доступа сканера:
-- Доступ к socket только для чтения
-- Ограниченные API endpoints (только CONTAINERS, EXEC, IMAGES, INFO)
-- Нет доступа к VOLUMES, NETWORKS или POST операциям
+
+* Доступ к socket только для чтения
+* Ограниченные API endpoints (только CONTAINERS, EXEC, IMAGES, INFO)
+* Нет доступа к VOLUMES, NETWORKS или POST операциям
 
 ### 2. User Management and Least Privilege
 
 **КРИТИЧЕСКИ ВАЖНО:** Никогда не запускайте платформу от root или с неограниченными правами!
 
 **Рекомендованные типы пользователей**:
-- `hardening-admin` - Администрирование платформы (ограниченный sudo)
-- `hardening-scanner` - Запуск сканирований (минимальные права)
-- `hardening-service` - Автоматизация через systemd (без sudo)
-- `hardening-readonly` - Просмотр отчетов (только чтение)
+
+* `hardening-admin` - Администрирование платформы (ограниченный sudo)
+* `hardening-scanner` - Запуск сканирований (минимальные права)
+* `hardening-service` - Автоматизация через systemd (без sudo)
+* `hardening-readonly` - Просмотр отчетов (только чтение)
 
 **Полное руководство**: См. [USER-SETUP.md](USER-SETUP.md) для детальных инструкций по созданию и настройке пользователей.
 
 **Ключевые принципы**:
-- **НЕ добавляйте** пользователей в docker group (используйте Docker Socket Proxy)
-- **НЕ используйте** полный sudo доступ `ALL=(ALL) ALL`
-- **Используйте** SSH ключи вместо паролей
-- **Настройте** auditd для мониторинга действий
-- **Ротируйте** SSH ключи каждые 90 дней
+
+* **НЕ добавляйте** пользователей в docker group (используйте Docker Socket Proxy)
+* **НЕ используйте** полный sudo доступ `ALL=(ALL) ALL`
+* **Используйте** SSH ключи вместо паролей
+* **Настройте** auditd для мониторинга действий
+* **Ротируйте** SSH ключи каждые 90 дней
 
 ### 3. Управление учетными данными
 
 **Учетные данные по умолчанию**: Никогда не используйте пароли по умолчанию в production!
 
 **Рекомендуемые практики**:
+
 ```bash
 # Сгенерировать надежный пароль
 openssl rand -base64 32
@@ -52,31 +56,35 @@ nano .env  # Изменить GF_ADMIN_PASSWORD
 ```
 
 **Переменные окружения**:
-- `GF_ADMIN_USER` - Имя пользователя администратора Grafana
-- `GF_ADMIN_PASSWORD` - Пароль администратора Grafana (немедленно изменить!)
-- Все учетные данные должны храниться в файле `.env` (не коммитить в git)
+
+* `GF_ADMIN_USER` - Имя пользователя администратора Grafana
+* `GF_ADMIN_PASSWORD` - Пароль администратора Grafana (немедленно изменить!)
+* Все учетные данные должны храниться в файле `.env` (не коммитить в git)
 
 ### 4. Ограничения ресурсов
 
 Все сервисы имеют ограничения CPU и памяти для предотвращения истощения ресурсов:
-- Telegraf: 0.5 CPU, 256MB RAM
-- Prometheus: 1 CPU, 1GB RAM
-- Grafana: 0.5 CPU, 512MB RAM
-- Сканеры: 1 CPU, 512MB RAM каждый
+
+* Telegraf: 0.5 CPU, 256MB RAM
+* Prometheus: 1 CPU, 1GB RAM
+* Grafana: 0.5 CPU, 512MB RAM
+* Сканеры: 1 CPU, 512MB RAM каждый
 
 ### 5. Мониторинг здоровья
 
 Все критические сервисы реализуют проверки состояния:
-- Prometheus: endpoint `/-/healthy`
-- Grafana: endpoint `/api/health`
-- Telegraf: доступность endpoint `/metrics`
-- Alertmanager: endpoint `/-/healthy`
+
+* Prometheus: endpoint `/-/healthy`
+* Grafana: endpoint `/api/health`
+* Telegraf: доступность endpoint `/metrics`
+* Alertmanager: endpoint `/-/healthy`
 
 ### 6. Сетевая изоляция
 
 Сервисы изолированы в отдельных сетях:
-- Сеть `default`: Сервисы приложения
-- Сеть `scanner-net`: Доступ сканера к Docker proxy
+
+* Сеть `default`: Сервисы приложения
+* Сеть `scanner-net`: Доступ сканера к Docker proxy
 
 ### 7. Рекомендации по TLS/SSL
 
@@ -87,6 +95,7 @@ nano .env  # Изменить GF_ADMIN_PASSWORD
 4. Используйте mTLS для коммуникации между сервисами
 
 Пример nginx конфигурации:
+
 ```nginx
 server {
     listen 443 ssl http2;
@@ -108,24 +117,27 @@ server {
 ### Профили OpenSCAP
 
 Доступные профили безопасности:
-- `xccdf_org.ssgproject.content_profile_standard` (по умолчанию)
-- `xccdf_org.ssgproject.content_profile_cis` (CIS benchmarks)
-- `xccdf_org.ssgproject.content_profile_pci-dss` (PCI-DSS)
+
+* `xccdf_org.ssgproject.content_profile_standard` (по умолчанию)
+* `xccdf_org.ssgproject.content_profile_cis` (CIS benchmarks)
+* `xccdf_org.ssgproject.content_profile_pci-dss` (PCI-DSS)
 
 Изменить профиль можно через переменную окружения `OPENSCAP_PROFILE`.
 
 ### Аудит Lynis
 
 Lynis выполняет комплексный аудит безопасности. Проверяйте:
-- Индекс hardening (цель: >70)
-- Предупреждения (должно быть <10)
-- Рекомендации по улучшению
+
+* Индекс hardening (цель: >70)
+* Предупреждения (должно быть <10)
+* Рекомендации по улучшению
 
 ### Atomic Red Team
 
 Тесты выполняются в **режиме dry-run по умолчанию** для предотвращения изменений системы.
 
 Для включения реального выполнения:
+
 ```bash
 ATOMIC_DRY_RUN=false docker compose up
 ```
@@ -169,32 +181,36 @@ ATOMIC_DRY_RUN=false docker compose up
 ## Чеклист безопасности для Production
 
 ### Управление пользователями
-- [ ] Создан выделенный пользователь (не root)
-- [ ] Пользователи НЕ добавлены в docker group
-- [ ] Настроены ограниченные sudo права (см. [USER-SETUP.md](USER-SETUP.md))
-- [ ] Настроена SSH аутентификация по ключам
-- [ ] Включен auditd для мониторинга действий
-- [ ] Настроена периодическая ротация SSH ключей
+
+* [ ] Создан выделенный пользователь (не root)
+* [ ] Пользователи НЕ добавлены в docker group
+* [ ] Настроены ограниченные sudo права (см. [USER-SETUP.md](USER-SETUP.md))
+* [ ] Настроена SSH аутентификация по ключам
+* [ ] Включен auditd для мониторинга действий
+* [ ] Настроена периодическая ротация SSH ключей
 
 ### Учетные данные и доступ
-- [ ] Изменены все пароли по умолчанию
-- [ ] Включен TLS/SSL для всех внешних сервисов
-- [ ] Ограничен сетевой доступ (правила firewall)
-- [ ] Проверены и ограничены sudo права
-- [ ] Используется Docker Socket Proxy (не прямой доступ к socket)
+
+* [ ] Изменены все пароли по умолчанию
+* [ ] Включен TLS/SSL для всех внешних сервисов
+* [ ] Ограничен сетевой доступ (правила firewall)
+* [ ] Проверены и ограничены sudo права
+* [ ] Используется Docker Socket Proxy (не прямой доступ к socket)
 
 ### Мониторинг и обслуживание
-- [ ] Включено логирование аудита
-- [ ] Регулярные сканирования безопасности (еженедельно)
-- [ ] Настроен мониторинг каналов оповещений
-- [ ] Все образы обновлены
-- [ ] Проверяются и обрабатываются находки безопасности
-- [ ] Настроено резервное копирование конфигурации и данных
-- [ ] Документированы процедуры реагирования на инциденты
+
+* [ ] Включено логирование аудита
+* [ ] Регулярные сканирования безопасности (еженедельно)
+* [ ] Настроен мониторинг каналов оповещений
+* [ ] Все образы обновлены
+* [ ] Проверяются и обрабатываются находки безопасности
+* [ ] Настроено резервное копирование конфигурации и данных
+* [ ] Документированы процедуры реагирования на инциденты
 
 ## Обновления и патчи
 
 Регулярно обновляйте:
+
 ```bash
 # Загрузить последние образы
 docker compose pull
@@ -219,8 +235,8 @@ docker compose up -d
 
 ## Справочные материалы
 
-- [Лучшие практики безопасности Docker](https://docs.docker.com/engine/security/)
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks/)
-- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-- [Безопасность Prometheus](https://prometheus.io/docs/operating/security/)
+* [Лучшие практики безопасности Docker](https://docs.docker.com/engine/security/)
+* [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+* [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks/)
+* [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
+* [Безопасность Prometheus](https://prometheus.io/docs/operating/security/)
