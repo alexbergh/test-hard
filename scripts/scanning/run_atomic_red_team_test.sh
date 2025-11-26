@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Wrapper around run_atomic_red_team_suite.py for backwards compatibility.

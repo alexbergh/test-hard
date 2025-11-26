@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Semantic versioning bump script
 set -euo pipefail
 

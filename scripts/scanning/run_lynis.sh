@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 set -euo pipefail
 
 if [[ "${LYNIS_ALREADY_ESCALATED:-0}" != "1" && "$(id -u)" -ne 0 ]]; then

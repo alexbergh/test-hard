@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Install Python dependencies and pre-commit hooks
 set -euo pipefail
 

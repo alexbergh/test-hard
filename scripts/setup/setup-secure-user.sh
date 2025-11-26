@@ -1,1 +1,340 @@
-﻿#!/bin/bash# setup-secure-user.sh - Р‘РµР·РѕРїР°СЃРЅР°СЏ РЅР°СЃС‚СЂРѕР№РєР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РґР»СЏ test-hard# РСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ: sudo ./scripts/setup-secure-user.sh [admin|scanner|service|readonly]set -euo pipefail# Р¦РІРµС‚Р° РґР»СЏ РІС‹РІРѕРґР°RED='\033[0;31m'GREEN='\033[0;32m'YELLOW='\033[1;33m'BLUE='\033[0;34m'NC='\033[0m' # No Color# Р¤СѓРЅРєС†РёРё РІС‹РІРѕРґР°info() { echo -e "${BLUE}[INFO]${NC} $*"; }success() { echo -e "${GREEN}[SUCCESS]${NC} $*"; }warning() { echo -e "${YELLOW}[WARNING]${NC} $*"; }error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }# РџСЂРѕРІРµСЂРєР° rootif [[ $EUID -ne 0 ]]; then   error "Р­С‚РѕС‚ СЃРєСЂРёРїС‚ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р·Р°РїСѓС‰РµРЅ СЃ РїСЂР°РІР°РјРё root (sudo)"fi# РџРѕР»СѓС‡РёС‚СЊ С‚РёРї РїРѕР»СЊР·РѕРІР°С‚РµР»СЏUSER_TYPE="${1:-}"INSTALL_DIR="${2:-/opt/test-hard}"show_usage() {    cat << EOFРСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ: sudo $0 <С‚РёРї_РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ> [РґРёСЂРµРєС‚РѕСЂРёСЏ]РўРёРїС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№:  admin     - РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РїР»Р°С‚С„РѕСЂРјС‹ (РѕРіСЂР°РЅРёС‡РµРЅРЅС‹Р№ sudo)  scanner   - РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РґР»СЏ СЃРєР°РЅРёСЂРѕРІР°РЅРёР№ (РјРёРЅРёРјР°Р»СЊРЅС‹Рµ РїСЂР°РІР°)  service   - РЎРµСЂРІРёСЃРЅС‹Р№ Р°РєРєР°СѓРЅС‚ РґР»СЏ systemd (Р±РµР· sudo)  readonly  - РўРѕР»СЊРєРѕ РїСЂРѕСЃРјРѕС‚СЂ РѕС‚С‡РµС‚РѕРІ (read-only)РџР°СЂР°РјРµС‚СЂС‹:  РґРёСЂРµРєС‚РѕСЂРёСЏ - Р”РёСЂРµРєС‚РѕСЂРёСЏ СѓСЃС‚Р°РЅРѕРІРєРё (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ: /opt/test-hard)РџСЂРёРјРµСЂС‹:  sudo $0 admin  sudo $0 scanner /var/lib/hardening  sudo $0 serviceР”РѕРєСѓРјРµРЅС‚Р°С†РёСЏ: docs/USER-SETUP.mdEOF    exit 0}# РџРѕРєР°Р·Р°С‚СЊ СЃРїСЂР°РІРєСѓif [[ -z "$USER_TYPE" ]] || [[ "$USER_TYPE" == "-h" ]] || [[ "$USER_TYPE" == "--help" ]]; then    show_usagefi# Р’Р°Р»РёРґР°С†РёСЏ С‚РёРїР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏcase "$USER_TYPE" in    admin|scanner|service|readonly)        ;;    *)        error "РќРµРёР·РІРµСЃС‚РЅС‹Р№ С‚РёРї РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $USER_TYPE. РСЃРїРѕР»СЊР·СѓР№С‚Рµ: admin, scanner, service РёР»Рё readonly"        ;;esacUSERNAME="hardening-${USER_TYPE}"info "РќР°СЃС‚СЂРѕР№РєР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: $USERNAME"info "Р”РёСЂРµРєС‚РѕСЂРёСЏ СѓСЃС‚Р°РЅРѕРІРєРё: $INSTALL_DIR"echo ""# РџСЂРѕРІРµСЂРєР° СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏif id "$USERNAME" &>/dev/null; then    warning "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ $USERNAME СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚"    read -p "РџРµСЂРµСЃРѕР·РґР°С‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ? (y/N): " -n 1 -r    echo    if [[ $REPLY =~ ^[Yy]$ ]]; then        info "РЈРґР°Р»РµРЅРёРµ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ..."        userdel -r "$USERNAME" 2>/dev/null || true    else        error "РџСЂРµСЂРІР°РЅРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј"    fifi# РЎРѕР·РґР°РЅРёРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ С‚РёРїР°case "$USER_TYPE" in    admin)        info "РЎРѕР·РґР°РЅРёРµ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР° СЃ РїРѕР»РЅС‹РјРё РїСЂР°РІР°РјРё..."        useradd -m -s /bin/bash -c "test-hard Administrator" "$USERNAME"        # Р”РѕР±Р°РІРёС‚СЊ РІ docker group        usermod -aG docker "$USERNAME"        # РЎРѕР·РґР°С‚СЊ РґРёСЂРµРєС‚РѕСЂРёРё        mkdir -p "$INSTALL_DIR"/{reports,logs,configs,scripts}        chown -R "$USERNAME:$USERNAME" "$INSTALL_DIR"        chmod 750 "$INSTALL_DIR"        chmod 700 "$INSTALL_DIR/configs"        # РќР°СЃС‚СЂРѕРёС‚СЊ sudo        info "РќР°СЃС‚СЂРѕР№РєР° РѕРіСЂР°РЅРёС‡РµРЅРЅРѕРіРѕ sudo РґРѕСЃС‚СѓРїР°..."        cat > "/etc/sudoers.d/$USERNAME" << 'EOF'# test-hard Administrator - РѕРіСЂР°РЅРёС‡РµРЅРЅС‹Рµ РїСЂР°РІР°hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose, /usr/local/bin/docker-compose, /usr/bin/systemctl restart docker, /usr/bin/systemctl stop docker, /usr/bin/systemctl start dockerDefaults:hardening-admin !requirettyEOF        chmod 440 "/etc/sudoers.d/$USERNAME"        # РџСЂРѕРІРµСЂРёС‚СЊ sudoers        visudo -c || error "РћС€РёР±РєР° РІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё sudoers!"        success "РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ СЃРѕР·РґР°РЅ СѓСЃРїРµС€РЅРѕ"        ;;    scanner)        info "РЎРѕР·РґР°РЅРёРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ..."        useradd -r -m -s /bin/bash -c "test-hard Scanner Service" "$USERNAME"        # РќР• РґРѕР±Р°РІР»СЏРµРј РІ docker group!        # РЎРѕР·РґР°С‚СЊ СЂР°Р±РѕС‡РёРµ РґРёСЂРµРєС‚РѕСЂРёРё        SCANNER_DIR="/var/lib/$USERNAME"        mkdir -p "$SCANNER_DIR"/{scripts,reports,cache,.ssh}        chown -R "$USERNAME:$USERNAME" "$SCANNER_DIR"        chmod 750 "$SCANNER_DIR"        chmod 700 "$SCANNER_DIR/.ssh"        chmod 700 "$SCANNER_DIR/cache"        # РќР°СЃС‚СЂРѕРёС‚СЊ РѕРіСЂР°РЅРёС‡РµРЅРЅС‹Р№ sudo        info "РќР°СЃС‚СЂРѕР№РєР° РјРёРЅРёРјР°Р»СЊРЅРѕРіРѕ sudo РґРѕСЃС‚СѓРїР°..."        cat > "/etc/sudoers.d/$USERNAME" << 'EOF'# test-hard Scanner - С‚РѕР»СЊРєРѕ РєРѕРјР°РЅРґС‹ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏCmnd_Alias SCAN_COMMANDS = \    /usr/bin/lynis audit system*, \    /usr/bin/oscap xccdf eval*, \    /usr/sbin/oscap-ssh*, \    /usr/bin/docker exec */lynis*, \    /usr/bin/docker exec */oscap*hardening-scanner ALL=(ALL) NOPASSWD: SCAN_COMMANDSDefaults:hardening-scanner !authenticateDefaults:hardening-scanner !requirettyEOF        chmod 440 "/etc/sudoers.d/$USERNAME"        # РџСЂРѕРІРµСЂРёС‚СЊ sudoers        visudo -c || error "РћС€РёР±РєР° РІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё sudoers!"        # Р“РµРЅРµСЂРёСЂРѕРІР°С‚СЊ SSH РєР»СЋС‡        info "Р“РµРЅРµСЂР°С†РёСЏ SSH РєР»СЋС‡Р° РґР»СЏ СѓРґР°Р»РµРЅРЅРѕРіРѕ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ..."        sudo -u "$USERNAME" ssh-keygen -t ed25519 -C "scanner@test-hard" \            -f "$SCANNER_DIR/.ssh/scanner_key" -N "" -q        chmod 600 "$SCANNER_DIR/.ssh/scanner_key"        chmod 644 "$SCANNER_DIR/.ssh/scanner_key.pub"        success "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РґР»СЏ СЃРєР°РЅРёСЂРѕРІР°РЅРёСЏ СЃРѕР·РґР°РЅ СѓСЃРїРµС€РЅРѕ"        echo ""        info "РџСѓР±Р»РёС‡РЅС‹Р№ SSH РєР»СЋС‡ РґР»СЏ РєРѕРїРёСЂРѕРІР°РЅРёСЏ РЅР° С†РµР»РµРІС‹Рµ С…РѕСЃС‚С‹:"        cat "$SCANNER_DIR/.ssh/scanner_key.pub"        ;;    service)        info "РЎРѕР·РґР°РЅРёРµ СЃРёСЃС‚РµРјРЅРѕРіРѕ СЃРµСЂРІРёСЃРЅРѕРіРѕ Р°РєРєР°СѓРЅС‚Р°..."        useradd -r -s /usr/sbin/nologin -c "test-hard Service Account" "$USERNAME"        # РЎРѕР·РґР°С‚СЊ РјРёРЅРёРјР°Р»СЊРЅСѓСЋ СЂР°Р±РѕС‡СѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ        SERVICE_DIR="/var/lib/$USERNAME"        mkdir -p "$SERVICE_DIR"        chown "$USERNAME:$USERNAME" "$SERVICE_DIR"        chmod 700 "$SERVICE_DIR"        # РЎРѕР·РґР°С‚СЊ РєРѕРЅС„РёРіСѓСЂР°С†РёРѕРЅРЅС‹Р№ С„Р°Р№Р»        info "РЎРѕР·РґР°РЅРёРµ РєРѕРЅС„РёРіСѓСЂР°С†РёРё РґР»СЏ systemd СЃРµСЂРІРёСЃР°..."        mkdir -p /etc/test-hard        cat > /etc/test-hard/scanner.env << EOF# test-hard Service ConfigurationTEST_HARD_HOME=$INSTALL_DIRREPORTS_DIR=$INSTALL_DIR/reportsLOG_LEVEL=INFODOCKER_HOST=unix:///var/run/docker-socket-proxy.sockEOF        chmod 600 /etc/test-hard/scanner.env        chown "$USERNAME:$USERNAME" /etc/test-hard/scanner.env        # РЎРѕР·РґР°С‚СЊ systemd unit        cat > /etc/systemd/system/hardening-scanner.service << EOF[Unit]Description=test-hard Security Scanner ServiceAfter=docker.serviceRequires=docker.service[Service]Type=oneshotUser=$USERNAMEGroup=$USERNAMEWorkingDirectory=$INSTALL_DIREnvironmentFile=/etc/test-hard/scanner.envExecStart=$INSTALL_DIR/scripts/run_all_checks.shStandardOutput=journalStandardError=journalSyslogIdentifier=hardening-scanner# Security hardeningNoNewPrivileges=truePrivateTmp=trueProtectSystem=strictProtectHome=trueReadWritePaths=$INSTALL_DIR/reports $SERVICE_DIR# Resource limitsCPUQuota=50%MemoryLimit=1GTasksMax=100[Install]WantedBy=multi-user.targetEOF        # РЎРѕР·РґР°С‚СЊ timer        cat > /etc/systemd/system/hardening-scanner.timer << 'EOF'[Unit]Description=test-hard Security Scanner TimerRequires=hardening-scanner.service[Timer]OnCalendar=dailyOnCalendar=02:00:00Persistent=true[Install]WantedBy=timers.targetEOF        systemctl daemon-reload        success "РЎРµСЂРІРёСЃРЅС‹Р№ Р°РєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ СѓСЃРїРµС€РЅРѕ"        info "Р”Р»СЏ Р°РєС‚РёРІР°С†РёРё С‚Р°Р№РјРµСЂР° РІС‹РїРѕР»РЅРёС‚Рµ: systemctl enable --now hardening-scanner.timer"        ;;    readonly)        info "РЎРѕР·РґР°РЅРёРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ С‚РѕР»СЊРєРѕ РґР»СЏ С‡С‚РµРЅРёСЏ..."        useradd -m -s /bin/bash -c "test-hard Read-Only User" "$USERNAME"        # РЎРѕР·РґР°С‚СЊ РіСЂСѓРїРїСѓ РґР»СЏ С‡С‚РµРЅРёСЏ РѕС‚С‡РµС‚РѕРІ        groupadd -f hardening-reports        usermod -aG hardening-reports "$USERNAME"        # РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РїСЂР°РІР° РЅР° РѕС‚С‡РµС‚С‹        if [[ -d "$INSTALL_DIR/reports" ]]; then            chgrp -R hardening-reports "$INSTALL_DIR/reports"            chmod -R 750 "$INSTALL_DIR/reports"            find "$INSTALL_DIR/reports" -type f -exec chmod 640 {} \;        fi        success "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РґР»СЏ С‡С‚РµРЅРёСЏ СЃРѕР·РґР°РЅ СѓСЃРїРµС€РЅРѕ"        info "Р”Р»СЏ РґРѕСЃС‚СѓРїР° Рє Grafana СЃРѕР·РґР°Р№С‚Рµ Viewer РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІ РІРµР±-РёРЅС‚РµСЂС„РµР№СЃРµ"        ;;esac# РЎРѕР·РґР°С‚СЊ Р±Р°Р·РѕРІСѓСЋ СЃС‚СЂСѓРєС‚СѓСЂСѓ SSHif [[ "$USER_TYPE" != "service" ]]; then    SSH_DIR="/home/$USERNAME/.ssh"    if [[ ! -d "$SSH_DIR" ]]; then        mkdir -p "$SSH_DIR"        chown "$USERNAME:$USERNAME" "$SSH_DIR"        chmod 700 "$SSH_DIR"    fifi# РЎРѕР·РґР°С‚СЊ .env С„Р°Р№Р» РґР»СЏ adminif [[ "$USER_TYPE" == "admin" ]]; then    info "РЎРѕР·РґР°РЅРёРµ .env С„Р°Р№Р»Р°..."    RANDOM_PASSWORD=$(openssl rand -base64 32)    cat > "/home/$USERNAME/.env" << EOF# test-hard ConfigurationTEST_HARD_HOME=$INSTALL_DIRREPORTS_DIR=$INSTALL_DIR/reportsDOCKER_HOST=unix:///var/run/docker.sock# Grafana credentials (CHANGE THIS!)GF_ADMIN_USER=adminGF_ADMIN_PASSWORD=$RANDOM_PASSWORDEOF    chown "$USERNAME:$USERNAME" "/home/$USERNAME/.env"    chmod 600 "/home/$USERNAME/.env"    warning "РЈСЃС‚Р°РЅРѕРІР»РµРЅ СЃР»СѓС‡Р°Р№РЅС‹Р№ РїР°СЂРѕР»СЊ РґР»СЏ Grafana: $RANDOM_PASSWORD"    warning "РЎРѕС…СЂР°РЅРёС‚Рµ РїР°СЂРѕР»СЊ РІ Р±РµР·РѕРїР°СЃРЅРѕРј РјРµСЃС‚Рµ Рё РёР·РјРµРЅРёС‚Рµ РµРіРѕ РїСЂРё РїРµСЂРІРѕРј РІС…РѕРґРµ!"fiecho ""success "=========================================="success "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ $USERNAME РЅР°СЃС‚СЂРѕРµРЅ СѓСЃРїРµС€РЅРѕ!"success "=========================================="echo ""# Р’С‹РІРµСЃС‚Рё РёРЅСЃС‚СЂСѓРєС†РёРёcase "$USER_TYPE" in    admin)        info "РЎР»РµРґСѓСЋС‰РёРµ С€Р°РіРё:"        echo "1. РџРµСЂРµРєР»СЋС‡РёС‚РµСЃСЊ РЅР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: sudo -iu $USERNAME"        echo "2. РљР»РѕРЅРёСЂСѓР№С‚Рµ СЂРµРїРѕР·РёС‚РѕСЂРёР№ РІ $INSTALL_DIR"        echo "3. РќР°СЃС‚СЂРѕР№С‚Рµ .env С„Р°Р№Р»: nano ~/.env"        echo "4. Р—Р°РїСѓСЃС‚РёС‚Рµ РїР»Р°С‚С„РѕСЂРјСѓ: cd $INSTALL_DIR && make up"        ;;    scanner)        info "РЎР»РµРґСѓСЋС‰РёРµ С€Р°РіРё:"        echo "1. РЎРєРѕРїРёСЂСѓР№С‚Рµ РїСѓР±Р»РёС‡РЅС‹Р№ РєР»СЋС‡ РЅР° С†РµР»РµРІС‹Рµ С…РѕСЃС‚С‹:"        echo "   ssh-copy-id -i /var/lib/$USERNAME/.ssh/scanner_key.pub user@target-host"        echo "2. РќР°СЃС‚СЂРѕР№С‚Рµ inventory С„Р°Р№Р» (СЃРј. docs/REAL-HOSTS-SCANNING.md)"        echo "3. Р—Р°РїСѓСЃС‚РёС‚Рµ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ: sudo -u $USERNAME $INSTALL_DIR/scripts/scan-remote-host.sh"        ;;    service)        info "РЎР»РµРґСѓСЋС‰РёРµ С€Р°РіРё:"        echo "1. РџСЂРѕРІРµСЂСЊС‚Рµ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ: cat /etc/test-hard/scanner.env"        echo "2. РђРєС‚РёРІРёСЂСѓР№С‚Рµ С‚Р°Р№РјРµСЂ: systemctl enable --now hardening-scanner.timer"        echo "3. РџСЂРѕРІРµСЂСЊС‚Рµ СЃС‚Р°С‚СѓСЃ: systemctl status hardening-scanner.timer"        echo "4. РџСЂРѕСЃРјРѕС‚СЂ Р»РѕРіРѕРІ: journalctl -u hardening-scanner.service -f"        ;;    readonly)        info "РЎР»РµРґСѓСЋС‰РёРµ С€Р°РіРё:"        echo "1. РЎРѕР·РґР°Р№С‚Рµ Grafana РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ СЂРѕР»СЊСЋ Viewer"        echo "2. РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РјРѕР¶РµС‚ С‡РёС‚Р°С‚СЊ РѕС‚С‡РµС‚С‹ РІ $INSTALL_DIR/reports"        ;;esacecho ""info "РџРѕР»РЅР°СЏ РґРѕРєСѓРјРµРЅС‚Р°С†РёСЏ: docs/USER-SETUP.md"# РќР°РїРѕРјРёРЅР°РЅРёРµ Рѕ Р±РµР·РѕРїР°СЃРЅРѕСЃС‚Рёecho ""warning "=========================================="warning "РќРђРџРћРњРРќРђРќРР• Рћ Р‘Р•Р—РћРџРђРЎРќРћРЎРўР"warning "=========================================="echo "РќР• РґРѕР±Р°РІР»СЏР№С‚Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РІ docker group (РєСЂРѕРјРµ admin)"echo "РќР• РёСЃРїРѕР»СЊР·СѓР№С‚Рµ РїРѕР»РЅС‹Р№ sudo РґРѕСЃС‚СѓРї ALL=(ALL) ALL"echo "РСЃРїРѕР»СЊР·СѓР№С‚Рµ SSH РєР»СЋС‡Рё РІРјРµСЃС‚Рѕ РїР°СЂРѕР»РµР№"echo "РќР°СЃС‚СЂРѕР№С‚Рµ auditd РґР»СЏ РјРѕРЅРёС‚РѕСЂРёРЅРіР° РґРµР№СЃС‚РІРёР№"echo "Р РѕС‚РёСЂСѓР№С‚Рµ SSH РєР»СЋС‡Рё РєР°Р¶РґС‹Рµ 90 РґРЅРµР№"echo ""
+#!/bin/bash
+# setup-secure-user.sh - Безопасная настройка пользователей для test-hard
+# Использование: sudo ./scripts/setup-secure-user.sh [admin|scanner|service|readonly]
+
+set -euo pipefail
+
+# Цвета для вывода
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Функции вывода
+info() { echo -e "${BLUE}[INFO]${NC} $*"; }
+success() { echo -e "${GREEN}[SUCCESS]${NC} $*"; }
+warning() { echo -e "${YELLOW}[WARNING]${NC} $*"; }
+error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
+
+# Проверка root
+if [[ $EUID -ne 0 ]]; then
+   error "Этот скрипт должен быть запущен с правами root (sudo)"
+fi
+
+# Получить тип пользователя
+USER_TYPE="${1:-}"
+INSTALL_DIR="${2:-/opt/test-hard}"
+
+show_usage() {
+    cat << EOF
+Использование: sudo $0 <тип_пользователя> [директория]
+
+Типы пользователей:
+  admin     - Администратор платформы (ограниченный sudo)
+  scanner   - Пользователь для сканирований (минимальные права)
+  service   - Сервисный аккаунт для systemd (без sudo)
+  readonly  - Только просмотр отчетов (read-only)
+
+Параметры:
+  директория - Директория установки (по умолчанию: /opt/test-hard)
+
+Примеры:
+  sudo $0 admin
+  sudo $0 scanner /var/lib/hardening
+  sudo $0 service
+
+Документация: docs/USER-SETUP.md
+EOF
+    exit 0
+}
+
+# Показать справку
+if [[ -z "$USER_TYPE" ]] || [[ "$USER_TYPE" == "-h" ]] || [[ "$USER_TYPE" == "--help" ]]; then
+    show_usage
+fi
+
+# Валидация типа пользователя
+case "$USER_TYPE" in
+    admin|scanner|service|readonly)
+        ;;
+    *)
+        error "Неизвестный тип пользователя: $USER_TYPE. Используйте: admin, scanner, service или readonly"
+        ;;
+esac
+
+USERNAME="hardening-${USER_TYPE}"
+
+info "Настройка пользователя: $USERNAME"
+info "Директория установки: $INSTALL_DIR"
+echo ""
+
+# Проверка существования пользователя
+if id "$USERNAME" &>/dev/null; then
+    warning "Пользователь $USERNAME уже существует"
+    read -p "Пересоздать пользователя? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        info "Удаление существующего пользователя..."
+        userdel -r "$USERNAME" 2>/dev/null || true
+    else
+        error "Прервано пользователем"
+    fi
+fi
+
+# Создание пользователя в зависимости от типа
+case "$USER_TYPE" in
+    admin)
+        info "Создание администратора с полными правами..."
+        useradd -m -s /bin/bash -c "test-hard Administrator" "$USERNAME"
+        
+        # Добавить в docker group
+        usermod -aG docker "$USERNAME"
+        
+        # Создать директории
+        mkdir -p "$INSTALL_DIR"/{reports,logs,configs,scripts}
+        chown -R "$USERNAME:$USERNAME" "$INSTALL_DIR"
+        chmod 750 "$INSTALL_DIR"
+        chmod 700 "$INSTALL_DIR/configs"
+        
+        # Настроить sudo
+        info "Настройка ограниченного sudo доступа..."
+        cat > "/etc/sudoers.d/$USERNAME" << 'EOF'
+# test-hard Administrator - ограниченные права
+hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose, /usr/local/bin/docker-compose, /usr/bin/systemctl restart docker, /usr/bin/systemctl stop docker, /usr/bin/systemctl start docker
+Defaults:hardening-admin !requiretty
+EOF
+        chmod 440 "/etc/sudoers.d/$USERNAME"
+        
+        # Проверить sudoers
+        visudo -c || error "Ошибка в конфигурации sudoers!"
+        
+        success "Администратор создан успешно"
+        ;;
+        
+    scanner)
+        info "Создание пользователя для сканирования..."
+        useradd -r -m -s /bin/bash -c "test-hard Scanner Service" "$USERNAME"
+        
+        # НЕ добавляем в docker group!
+        
+        # Создать рабочие директории
+        SCANNER_DIR="/var/lib/$USERNAME"
+        mkdir -p "$SCANNER_DIR"/{scripts,reports,cache,.ssh}
+        chown -R "$USERNAME:$USERNAME" "$SCANNER_DIR"
+        chmod 750 "$SCANNER_DIR"
+        chmod 700 "$SCANNER_DIR/.ssh"
+        chmod 700 "$SCANNER_DIR/cache"
+        
+        # Настроить ограниченный sudo
+        info "Настройка минимального sudo доступа..."
+        cat > "/etc/sudoers.d/$USERNAME" << 'EOF'
+# test-hard Scanner - только команды сканирования
+Cmnd_Alias SCAN_COMMANDS = \
+    /usr/bin/lynis audit system*, \
+    /usr/bin/oscap xccdf eval*, \
+    /usr/sbin/oscap-ssh*, \
+    /usr/bin/docker exec */lynis*, \
+    /usr/bin/docker exec */oscap*
+
+hardening-scanner ALL=(ALL) NOPASSWD: SCAN_COMMANDS
+Defaults:hardening-scanner !authenticate
+Defaults:hardening-scanner !requiretty
+EOF
+        chmod 440 "/etc/sudoers.d/$USERNAME"
+        
+        # Проверить sudoers
+        visudo -c || error "Ошибка в конфигурации sudoers!"
+        
+        # Генерировать SSH ключ
+        info "Генерация SSH ключа для удаленного сканирования..."
+        sudo -u "$USERNAME" ssh-keygen -t ed25519 -C "scanner@test-hard" \
+            -f "$SCANNER_DIR/.ssh/scanner_key" -N "" -q
+        chmod 600 "$SCANNER_DIR/.ssh/scanner_key"
+        chmod 644 "$SCANNER_DIR/.ssh/scanner_key.pub"
+        
+        success "Пользователь для сканирования создан успешно"
+        echo ""
+        info "Публичный SSH ключ для копирования на целевые хосты:"
+        cat "$SCANNER_DIR/.ssh/scanner_key.pub"
+        ;;
+        
+    service)
+        info "Создание системного сервисного аккаунта..."
+        useradd -r -s /usr/sbin/nologin -c "test-hard Service Account" "$USERNAME"
+        
+        # Создать минимальную рабочую директорию
+        SERVICE_DIR="/var/lib/$USERNAME"
+        mkdir -p "$SERVICE_DIR"
+        chown "$USERNAME:$USERNAME" "$SERVICE_DIR"
+        chmod 700 "$SERVICE_DIR"
+        
+        # Создать конфигурационный файл
+        info "Создание конфигурации для systemd сервиса..."
+        mkdir -p /etc/test-hard
+        cat > /etc/test-hard/scanner.env << EOF
+# test-hard Service Configuration
+TEST_HARD_HOME=$INSTALL_DIR
+REPORTS_DIR=$INSTALL_DIR/reports
+LOG_LEVEL=INFO
+DOCKER_HOST=unix:///var/run/docker-socket-proxy.sock
+EOF
+        chmod 600 /etc/test-hard/scanner.env
+        chown "$USERNAME:$USERNAME" /etc/test-hard/scanner.env
+        
+        # Создать systemd unit
+        cat > /etc/systemd/system/hardening-scanner.service << EOF
+[Unit]
+Description=test-hard Security Scanner Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=$USERNAME
+Group=$USERNAME
+WorkingDirectory=$INSTALL_DIR
+EnvironmentFile=/etc/test-hard/scanner.env
+ExecStart=$INSTALL_DIR/scripts/run_all_checks.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hardening-scanner
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=$INSTALL_DIR/reports $SERVICE_DIR
+
+# Resource limits
+CPUQuota=50%
+MemoryLimit=1G
+TasksMax=100
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        # Создать timer
+        cat > /etc/systemd/system/hardening-scanner.timer << 'EOF'
+[Unit]
+Description=test-hard Security Scanner Timer
+Requires=hardening-scanner.service
+
+[Timer]
+OnCalendar=daily
+OnCalendar=02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+        systemctl daemon-reload
+        
+        success "Сервисный аккаунт создан успешно"
+        info "Для активации таймера выполните: systemctl enable --now hardening-scanner.timer"
+        ;;
+        
+    readonly)
+        info "Создание пользователя только для чтения..."
+        useradd -m -s /bin/bash -c "test-hard Read-Only User" "$USERNAME"
+        
+        # Создать группу для чтения отчетов
+        groupadd -f hardening-reports
+        usermod -aG hardening-reports "$USERNAME"
+        
+        # Установить права на отчеты
+        if [[ -d "$INSTALL_DIR/reports" ]]; then
+            chgrp -R hardening-reports "$INSTALL_DIR/reports"
+            chmod -R 750 "$INSTALL_DIR/reports"
+            find "$INSTALL_DIR/reports" -type f -exec chmod 640 {} \;
+        fi
+        
+        success "Пользователь для чтения создан успешно"
+        info "Для доступа к Grafana создайте Viewer пользователя в веб-интерфейсе"
+        ;;
+esac
+
+# Создать базовую структуру SSH
+if [[ "$USER_TYPE" != "service" ]]; then
+    SSH_DIR="/home/$USERNAME/.ssh"
+    if [[ ! -d "$SSH_DIR" ]]; then
+        mkdir -p "$SSH_DIR"
+        chown "$USERNAME:$USERNAME" "$SSH_DIR"
+        chmod 700 "$SSH_DIR"
+    fi
+fi
+
+# Создать .env файл для admin
+if [[ "$USER_TYPE" == "admin" ]]; then
+    info "Создание .env файла..."
+    RANDOM_PASSWORD=$(openssl rand -base64 32)
+    cat > "/home/$USERNAME/.env" << EOF
+# test-hard Configuration
+TEST_HARD_HOME=$INSTALL_DIR
+REPORTS_DIR=$INSTALL_DIR/reports
+DOCKER_HOST=unix:///var/run/docker.sock
+
+# Grafana credentials (CHANGE THIS!)
+GF_ADMIN_USER=admin
+GF_ADMIN_PASSWORD=$RANDOM_PASSWORD
+EOF
+    chown "$USERNAME:$USERNAME" "/home/$USERNAME/.env"
+    chmod 600 "/home/$USERNAME/.env"
+    
+    warning "Установлен случайный пароль для Grafana: $RANDOM_PASSWORD"
+    warning "Сохраните пароль в безопасном месте и измените его при первом входе!"
+fi
+
+echo ""
+success "=========================================="
+success "Пользователь $USERNAME настроен успешно!"
+success "=========================================="
+echo ""
+
+# Вывести инструкции
+case "$USER_TYPE" in
+    admin)
+        info "Следующие шаги:"
+        echo "1. Переключитесь на пользователя: sudo -iu $USERNAME"
+        echo "2. Клонируйте репозиторий в $INSTALL_DIR"
+        echo "3. Настройте .env файл: nano ~/.env"
+        echo "4. Запустите платформу: cd $INSTALL_DIR && make up"
+        ;;
+    scanner)
+        info "Следующие шаги:"
+        echo "1. Скопируйте публичный ключ на целевые хосты:"
+        echo "   ssh-copy-id -i /var/lib/$USERNAME/.ssh/scanner_key.pub user@target-host"
+        echo "2. Настройте inventory файл (см. docs/REAL-HOSTS-SCANNING.md)"
+        echo "3. Запустите сканирование: sudo -u $USERNAME $INSTALL_DIR/scripts/scan-remote-host.sh"
+        ;;
+    service)
+        info "Следующие шаги:"
+        echo "1. Проверьте конфигурацию: cat /etc/test-hard/scanner.env"
+        echo "2. Активируйте таймер: systemctl enable --now hardening-scanner.timer"
+        echo "3. Проверьте статус: systemctl status hardening-scanner.timer"
+        echo "4. Просмотр логов: journalctl -u hardening-scanner.service -f"
+        ;;
+    readonly)
+        info "Следующие шаги:"
+        echo "1. Создайте Grafana пользователя с ролью Viewer"
+        echo "2. Пользователь может читать отчеты в $INSTALL_DIR/reports"
+        ;;
+esac
+
+echo ""
+info "Полная документация: docs/USER-SETUP.md"
+
+# Напоминание о безопасности
+echo ""
+warning "=========================================="
+warning "НАПОМИНАНИЕ О БЕЗОПАСНОСТИ"
+warning "=========================================="
+echo "НЕ добавляйте пользователей в docker group (кроме admin)"
+echo "НЕ используйте полный sudo доступ ALL=(ALL) ALL"
+echo "Используйте SSH ключи вместо паролей"
+echo "Настройте auditd для мониторинга действий"
+echo "Ротируйте SSH ключи каждые 90 дней"
+echo ""

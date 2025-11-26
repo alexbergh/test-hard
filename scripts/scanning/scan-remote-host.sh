@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # Scan remote host via SSH
 set -euo pipefail
 

@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # Script to reorganize scripts/ directory structure
 # Run with: bash scripts/reorganize.sh
 set -euo pipefail
