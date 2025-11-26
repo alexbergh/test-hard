@@ -159,7 +159,9 @@ jobs:
       - name: Start services
         run: |
           make up
-          sleep 45
+          sleep 60
+          echo "Checking container status..."
+          docker compose ps
 
       - name: Check service health
         run: |
