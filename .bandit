@@ -10,9 +10,32 @@ exclude_dirs =
     /__pycache__/
 
 # Tests to skip
+# SECURITY: Only skip B101 (assert_used) which is acceptable in test code
+# B601 (paramiko_calls) - REMOVED: SSH operations must be reviewed for security
 skips = 
     B101
-    B601
+
+# Additional security checks enabled by default:
+# - B102: exec_used - Detect use of exec
+# - B103: set_bad_file_permissions - Detect chmod with insecure permissions
+# - B104: hardcoded_bind_all_interfaces - Detect binding to 0.0.0.0
+# - B105: hardcoded_password_string - Detect hardcoded passwords
+# - B106: hardcoded_password_funcarg - Detect passwords in function args
+# - B107: hardcoded_password_default - Detect default password values
+# - B108: hardcoded_tmp_directory - Detect hardcoded /tmp paths
+# - B110: try_except_pass - Detect empty except blocks
+# - B112: try_except_continue - Detect continue in except blocks
+# - B201: flask_debug_true - Detect Flask debug mode
+# - B307: eval - Detect use of eval()
+# - B308: mark_safe - Detect Django mark_safe
+# - B310-B320: URL and XML injection checks
+# - B323: unverified_context - Detect SSL without verification
+# - B324: hashlib_insecure_functions - Detect MD5/SHA1 usage
+# - B501-B510: SSL/TLS configuration checks
+# - B601: paramiko_calls - NOW ENABLED: Review SSH operations
+# - B602: subprocess_popen_with_shell_equals_true
+# - B603-B607: subprocess security checks
+# - B608: hardcoded_sql_expressions - Detect SQL injection
 
 # Severity level threshold
 severity = medium

@@ -1,15 +1,62 @@
+# Alertmanager Configuration
+# SECURITY: Configure proper authentication before production use
+
 route:
   receiver: 'default'
-  group_by: ['alertname']
+  group_by: ['alertname', 'severity']
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 12h
+  routes:
+    # Route critical alerts immediately
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 1h
 
 receivers:
   - name: 'default'
     webhook_configs:
-      - url: 'http://host.docker.internal:5001/alerts'
+      # SECURITY: Use HTTPS and authentication in production
+      # Replace with your actual webhook endpoint
+      - url: '${ALERTMANAGER_WEBHOOK_URL:-http://host.docker.internal:5001/alerts}'
         send_resolved: true
+        # SECURITY: HTTP Basic Auth - credentials from environment
+        http_config:
+          basic_auth:
+            username: '${ALERTMANAGER_WEBHOOK_USER:-alertmanager}'
+            password: '${ALERTMANAGER_WEBHOOK_PASSWORD:-CHANGE_ME_WEBHOOK_SECRET}'
+          # SECURITY: TLS configuration for HTTPS endpoints
+          # tls_config:
+          #   ca_file: /etc/alertmanager/certs/ca.crt
+          #   cert_file: /etc/alertmanager/certs/client.crt
+          #   key_file: /etc/alertmanager/certs/client.key
+          #   insecure_skip_verify: false
+        # Timeout for webhook requests
+        timeout: 10s
+        # Maximum number of alerts per webhook request
+        max_alerts: 100
 
-# Update the webhook URL above to integrate with your notification system
-# (e.g. Grafana Alertmanager, Slack bridge, incident management webhook, etc.).
+  - name: 'critical-alerts'
+    webhook_configs:
+      - url: '${ALERTMANAGER_CRITICAL_WEBHOOK_URL:-http://host.docker.internal:5001/critical}'
+        send_resolved: true
+        http_config:
+          basic_auth:
+            username: '${ALERTMANAGER_WEBHOOK_USER:-alertmanager}'
+            password: '${ALERTMANAGER_WEBHOOK_PASSWORD:-CHANGE_ME_WEBHOOK_SECRET}'
+          # Bearer token alternative (uncomment to use instead of basic_auth):
+          # authorization:
+          #   type: Bearer
+          #   credentials: '${ALERTMANAGER_BEARER_TOKEN}'
+
+# SECURITY NOTES:
+# 1. Always use HTTPS in production - configure tls_config above
+# 2. Set webhook credentials via environment variables:
+#    - ALERTMANAGER_WEBHOOK_URL
+#    - ALERTMANAGER_WEBHOOK_USER  
+#    - ALERTMANAGER_WEBHOOK_PASSWORD
+# 3. Consider using mutual TLS for internal services
+# 4. Rotate credentials regularly (recommended: every 90 days)
+# 5. Use HashiCorp Vault or similar for secrets management

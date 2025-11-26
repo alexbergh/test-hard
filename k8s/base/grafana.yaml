@@ -1,13 +1,29 @@
 ---
+# SECURITY NOTE: This is a PLACEHOLDER secret for development only!
+# For production, use one of these secure alternatives:
+#   1. External Secrets Operator: https://external-secrets.io/
+#   2. Sealed Secrets: https://sealed-secrets.netlify.app/
+#   3. HashiCorp Vault: https://www.vaultproject.io/
+#   4. Create secret manually: kubectl create secret generic grafana-credentials \
+#        --from-literal=admin-user=<USER> --from-literal=admin-password=<SECURE_PASSWORD>
+#
+# DO NOT commit real credentials to this file!
 apiVersion: v1
 kind: Secret
 metadata:
   name: grafana-credentials
   namespace: monitoring
+  labels:
+    app: grafana
+    security.kubernetes.io/warn: "placeholder-secret"
+  annotations:
+    security.kubernetes.io/rotate-after: "90d"
+    security.kubernetes.io/description: "Replace with external secret manager in production"
 type: Opaque
 stringData:
-  admin-user: admin
-  admin-password: changeme  # Change in production overlay!
+  # PLACEHOLDER VALUES - MUST BE REPLACED BEFORE PRODUCTION USE
+  admin-user: "REPLACE_WITH_SECURE_USERNAME"
+  admin-password: "REPLACE_WITH_SECURE_PASSWORD_MIN_32_CHARS"
 
 ---
 apiVersion: v1

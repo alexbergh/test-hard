@@ -5,6 +5,7 @@ namespace: monitoring
 
 resources:
   - namespace.yaml
+  - network-policies.yaml  # SECURITY: Network isolation policies
   - prometheus.yaml
   - grafana.yaml
   - telegraf.yaml

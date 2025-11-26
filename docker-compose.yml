@@ -52,13 +52,23 @@ services:
     build: ./scanners/openscap
     image: test-hard/openscap-scanner:${VERSION:-latest}
     container_name: openscap-scanner
-    privileged: true
+    # SECURITY: Using specific capabilities instead of privileged mode
+    cap_add:
+      - SYS_PTRACE      # Required for process inspection
+      - SYS_ADMIN       # Required for mount namespace operations
+      - NET_ADMIN       # Required for network scanning
+      - AUDIT_CONTROL   # Required for audit operations
+    cap_drop:
+      - ALL             # Drop all capabilities first, then add only needed ones
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:unconfined  # Required for some scanning operations
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - ./reports:/reports
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # SECURITY: Removed direct docker.sock mount - using docker-proxy instead
     networks:
       - default
       - scanner-net
@@ -79,13 +89,23 @@ services:
     build: ./scanners/lynis
     image: test-hard/lynis-scanner:${VERSION:-latest}
     container_name: lynis-scanner
-    privileged: true
+    # SECURITY: Using specific capabilities instead of privileged mode
+    cap_add:
+      - SYS_PTRACE      # Required for process inspection
+      - SYS_ADMIN       # Required for filesystem checks
+      - NET_ADMIN       # Required for network checks
+      - AUDIT_READ      # Required for reading audit logs
+    cap_drop:
+      - ALL             # Drop all capabilities first, then add only needed ones
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:unconfined  # Required for some scanning operations
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - ./reports:/reports
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # SECURITY: Removed direct docker.sock mount - using docker-proxy instead
     networks:
       - default
       - scanner-net
