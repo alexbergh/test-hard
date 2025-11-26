@@ -150,6 +150,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    ```
 
 2. **Или используйте sudo с ограниченными правами:**
+
    ```bash
    # /etc/sudoers.d/scanner
    scanner ALL=(ALL) NOPASSWD: /usr/bin/docker
@@ -162,13 +163,15 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 ### "No data" в дашбордах
 
 **Симптомы:**
-- Дашборды пустые
-- Сообщение "No data"
-- Графики не отображаются
+
+* Дашборды пустые
+* Сообщение "No data"
+* Графики не отображаются
 
 **Диагностика:**
 
 1. **Проверить Telegraf:**
+
    ```bash
    # Есть ли метрики?
    curl http://localhost:9091/metrics | grep security_scanners
@@ -178,6 +181,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    ```
 
 2. **Проверить Prometheus:**
+
    ```bash
    # Prometheus scraping Telegraf?
    curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets'
@@ -187,6 +191,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    ```
 
 3. **Проверить Grafana datasource:**
+
    ```bash
    # Войти в Grafana
    # Configuration → Data Sources → Prometheus
@@ -196,12 +201,14 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 **Решения:**
 
 1. **Перезапустить Telegraf:**
+
    ```bash
    docker compose restart telegraf
    sleep 10
    ```
 
 2. **Запустить сканирование:**
+
    ```bash
    # Метрики появляются после первого скана
    make scan
@@ -210,6 +217,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    ```
 
 3. **Проверить Telegraf конфигурацию:**
+
    ```bash
    # Проверить inputs
    docker exec telegraf telegraf --test --config /etc/telegraf/telegraf.conf
@@ -220,12 +228,14 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 ### Не могу войти в Grafana
 
 **Симптомы:**
-- "Invalid username or password"
-- Страница входа не загружается
+
+* "Invalid username or password"
+* Страница входа не загружается
 
 **Решения:**
 
 1. **Проверить credentials:**
+
    ```bash
    # По умолчанию admin/admin
    # Проверьте .env если изменяли
@@ -233,11 +243,13 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    ```
 
 2. **Сбросить пароль:**
+
    ```bash
    docker compose exec grafana grafana-cli admin reset-admin-password admin
    ```
 
 3. **Проверить доступность:**
+
    ```bash
    curl http://localhost:3000/api/health
    # Должно вернуть: {"database":"ok"}
@@ -250,12 +262,14 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 ### High memory usage
 
 **Симптомы:**
-- Prometheus использует >2GB RAM
-- Система тормозит
+
+* Prometheus использует >2GB RAM
+* Система тормозит
 
 **Решения:**
 
 1. **Уменьшить retention:**
+
    ```yaml
    # prometheus/prometheus.yml
    --storage.tsdb.retention.time=15d
@@ -263,6 +277,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    ```
 
 2. **Уменьшить scrape frequency:**
+
    ```yaml
    # prometheus/prometheus.yml
    global:
@@ -270,6 +285,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    ```
 
 3. **Удалить старые данные:**
+
    ```bash
    docker compose down
    rm -rf prometheus-data/*
@@ -281,10 +297,12 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 ### Метрики не собираются
 
 **Симптомы:**
-- Targets в состоянии "DOWN"
-- Gaps в графиках
+
+* Targets в состоянии "DOWN"
+* Gaps в графиках
 
 **Диагностика:**
+
 ```bash
 # Проверить targets
 curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job, health}'
@@ -293,6 +311,7 @@ curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job, he
 **Решения:**
 
 1. **Проверить сетевые имена:**
+
    ```yaml
    # prometheus/prometheus.yml
    static_configs:
@@ -300,6 +319,7 @@ curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job, he
    ```
 
 2. **Перезапустить Prometheus:**
+
    ```bash
    docker compose restart prometheus
    ```
@@ -311,12 +331,14 @@ curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job, he
 ### Telegraf не собирает метрики
 
 **Симптомы:**
+
 ```bash
 curl http://localhost:9091/metrics
 # Пустой ответ или мало метрик
 ```
 
 **Диагностика:**
+
 ```bash
 # Тест конфигурации
 docker compose exec telegraf telegraf --test
@@ -328,6 +350,7 @@ docker compose logs telegraf | tail -50
 **Решения:**
 
 1. **Проверить inputs:**
+
    ```bash
    # telegraf/telegraf.conf
    [[inputs.exec]]
@@ -337,12 +360,14 @@ docker compose logs telegraf | tail -50
    ```
 
 2. **Проверить наличие отчетов:**
+
    ```bash
    ls -la reports/lynis/
    ls -la reports/openscap/
    ```
 
 3. **Запустить сканирование:**
+
    ```bash
    make scan
    ```
@@ -354,11 +379,13 @@ docker compose logs telegraf | tail -50
 ### Lynis не запускается
 
 **Симптомы:**
+
 ```
 Error: Cannot access /hostfs
 ```
 
 **Решение:**
+
 ```yaml
 # docker-compose.yml - проверить volumes
 volumes:
@@ -370,6 +397,7 @@ volumes:
 ### OpenSCAP fails
 
 **Симптомы:**
+
 ```
 ERROR: Unable to load XCCDF document
 ```
@@ -377,6 +405,7 @@ ERROR: Unable to load XCCDF document
 **Решения:**
 
 1. **Проверить профиль:**
+
    ```bash
    # Список доступных профилей
    docker compose exec openscap-scanner \
@@ -384,6 +413,7 @@ ERROR: Unable to load XCCDF document
    ```
 
 2. **Использовать другой профиль:**
+
    ```bash
    export OPENSCAP_PROFILE="xccdf_org.ssgproject.content_profile_cis_level1_server"
    make scan
@@ -394,6 +424,7 @@ ERROR: Unable to load XCCDF document
 ### SSH сканирование не работает
 
 **Симптомы:**
+
 ```
 Permission denied (publickey)
 ```
@@ -401,16 +432,19 @@ Permission denied (publickey)
 **Решения:**
 
 1. **Проверить SSH ключ:**
+
    ```bash
    ssh -i ~/.ssh/scanner_key user@host whoami
    ```
 
 2. **Скопировать ключ:**
+
    ```bash
    ssh-copy-id -i ~/.ssh/scanner_key.pub user@host
    ```
 
 3. **Проверить права:**
+
    ```bash
    chmod 600 ~/.ssh/scanner_key
    chmod 644 ~/.ssh/scanner_key.pub
@@ -423,10 +457,12 @@ Permission denied (publickey)
 ### Не могу получить доступ к дашбордам
 
 **Симптомы:**
-- Connection refused
-- Timeout
+
+* Connection refused
+* Timeout
 
 **Диагностика:**
+
 ```bash
 # Проверить порты
 docker compose ps
@@ -441,12 +477,14 @@ curl -v http://localhost:3000
 **Решения:**
 
 1. **Открыть порты:**
+
    ```bash
    sudo ufw allow 3000/tcp   # Grafana
    sudo ufw allow 9090/tcp   # Prometheus
    ```
 
 2. **Проверить binding:**
+
    ```yaml
    # docker-compose.yml
    ports:
@@ -458,11 +496,13 @@ curl -v http://localhost:3000
 ### DNS не работает внутри контейнеров
 
 **Симптомы:**
+
 ```
 Could not resolve host
 ```
 
 **Решение:**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -481,6 +521,7 @@ services:
 **Причины и решения:**
 
 1. **Слишком много targets:**
+
    ```yaml
    # Уменьшить количество контейнеров
    # docker-compose.yml
@@ -489,6 +530,7 @@ services:
    ```
 
 2. **Медленный диск:**
+
    ```bash
    # Использовать tmpfs для reports
    # docker-compose.yml
@@ -497,6 +539,7 @@ services:
    ```
 
 3. **Параллелизация:**
+
    ```bash
    # Запускать сканеры параллельно
    ./scripts/scanning/run_lynis.sh &
@@ -511,12 +554,14 @@ services:
 **Решения:**
 
 1. **Использовать BuildKit:**
+
    ```bash
    export DOCKER_BUILDKIT=1
    docker compose build
    ```
 
 2. **Использовать cache:**
+
    ```dockerfile
    # Используйте RUN --mount=type=cache
    RUN --mount=type=cache,target=/var/cache/apt \
@@ -524,6 +569,7 @@ services:
    ```
 
 3. **Multi-stage builds уже используются:**
+
    ```dockerfile
    FROM python:3.11-slim as builder
    # ...
@@ -538,12 +584,14 @@ services:
 ### Atomic Red Team тесты вносят изменения
 
 **Симптомы:**
-- Файлы создаются/изменяются
-- Процессы запускаются
+
+* Файлы создаются/изменяются
+* Процессы запускаются
 
 **Решение:**
 
 По умолчанию **dry-run включен:**
+
 ```yaml
 # docker-compose.yml
 environment:
@@ -551,6 +599,7 @@ environment:
 ```
 
 Для реальных тестов (ТОЛЬКО в изолированных окружениях):
+
 ```bash
 ATOMIC_DRY_RUN=false docker compose up atomic-test
 ```
@@ -562,17 +611,20 @@ ATOMIC_DRY_RUN=false docker compose up atomic-test
 **Что делать:**
 
 1. **Проверить Loki logs:**
+
    ```bash
    # Через Grafana Explore
    {job="docker"} |= "error"
    ```
 
 2. **Проверить Prometheus alerts:**
+
    ```bash
    curl http://localhost:9090/api/v1/alerts
    ```
 
 3. **Проверить Alertmanager:**
+
    ```bash
    curl http://localhost:9093/api/v2/alerts
    ```
@@ -643,20 +695,20 @@ make scan
 Если проблема не решается:
 
 1. **Проверьте документацию:**
-   - [FAQ](FAQ.md)
-   - [DEPLOYMENT.md](DEPLOYMENT.md)
-   - [SECURITY.md](SECURITY.md)
+   * [FAQ](FAQ.md)
+   * [DEPLOYMENT.md](DEPLOYMENT.md)
+   * [SECURITY.md](SECURITY.md)
 
 2. **Создайте issue:**
-   - [GitHub Issues](https://github.com/alexbergh/test-hard/issues)
-   - Приложите диагностику
-   - Опишите шаги воспроизведения
+   * [GitHub Issues](https://github.com/alexbergh/test-hard/issues)
+   * Приложите диагностику
+   * Опишите шаги воспроизведения
 
 3. **Укажите:**
-   - Версию Docker/Docker Compose
-   - OS и версию
-   - Логи ошибок
-   - Конфигурацию (без секретов!)
+   * Версию Docker/Docker Compose
+   * OS и версию
+   * Логи ошибок
+   * Конфигурацию (без секретов!)
 
 ---
 
