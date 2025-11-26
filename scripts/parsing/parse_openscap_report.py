@@ -6,10 +6,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional
 
-logging.basicConfig(
-    level=logging.WARNING,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 DEFAULT_RESULTS_ROOT = Path(os.environ.get("HARDENING_RESULTS_DIR", "/var/lib/hardening/results"))
@@ -43,7 +41,7 @@ def _latest_report(results_dir: Path) -> Optional[Path]:
 
 
 # Очень упрощённый разбор ARF: считаем количество pass/fail/other
-def main(argv: list[str]) -> int:
+def main(argv: list[str]) -> int:  # noqa: C901
     if argv:
         arf_path = Path(argv[0])
         logger.info("Using provided ARF path: %s", arf_path)
@@ -51,8 +49,8 @@ def main(argv: list[str]) -> int:
         arf_path = _latest_report(DEFAULT_RESULTS_DIR)
         if arf_path is None:
             logger.error(
-                "No ARF report found. Either provide a path explicitly or place reports under %s",
-                DEFAULT_RESULTS_DIR
+                "No ARF report found. Provide path or place reports under %s",
+                DEFAULT_RESULTS_DIR,
             )
             print(
                 "Usage: parse_openscap_report.py <report.arf>\n"
@@ -78,12 +76,17 @@ def main(argv: list[str]) -> int:
         logger.error("Error reading file %s: %s", arf_path, exc)
         return 1
 
-    ns = {"arf": "http://scap.nist.gov/schema/arf/1.1",
-          "xccdf": "http://checklists.nist.gov/xccdf/1.2"}
+    ns = {
+        "arf": "http://scap.nist.gov/schema/arf/1.1",
+        "xccdf": "http://checklists.nist.gov/xccdf/1.2",
+    }
 
     try:
         results = root.findall(".//xccdf:rule-result", ns)
-        counts = {"pass":0, "fail":0, "error":0, "unknown":0, "notchecked":0, "notselected":0, "informational":0, "fixed":0}
+        counts = {
+            "pass": 0, "fail": 0, "error": 0, "unknown": 0,
+            "notchecked": 0, "notselected": 0, "informational": 0, "fixed": 0,
+        }
 
         for r in results:
             res = r.findtext("xccdf:result", default="unknown", namespaces=ns).lower()

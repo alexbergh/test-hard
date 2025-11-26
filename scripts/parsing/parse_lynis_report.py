@@ -4,10 +4,8 @@ import logging
 import sys
 from pathlib import Path
 
-logging.basicConfig(
-    level=logging.WARNING,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 

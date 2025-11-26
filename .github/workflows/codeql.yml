@@ -27,15 +27,35 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
         queries: security-and-quality
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+      uses: github/codeql-action/autobuild@v4
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:${{matrix.language}}"
+        # Output SARIF to file for local review even if upload fails
+        output: sarif-results
+        upload: failure-only  # Only upload on analysis failure
+
+    # Upload SARIF manually with error handling
+    - name: Upload SARIF results
+      uses: github/codeql-action/upload-sarif@v4
+      # Don't fail the workflow if Code Scanning is not enabled
+      continue-on-error: true
+      with:
+        sarif_file: sarif-results
+
+    # Save SARIF as artifact for manual review
+    - name: Save SARIF as artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: codeql-sarif-${{ matrix.language }}
+        path: sarif-results
+        retention-days: 30

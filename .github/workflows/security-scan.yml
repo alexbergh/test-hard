@@ -15,13 +15,14 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      actions: read  # Required for workflow run telemetry
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner in repo mode
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -30,10 +31,20 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
+        # Don't fail if Code Scanning is not enabled for this repository
+        continue-on-error: true
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
+      - name: Save Trivy results as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-sarif-results
+          path: trivy-results.sarif
+          retention-days: 30
 
   secrets:
     name: Secret Scanning

@@ -9,10 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable
 
-logging.basicConfig(
-    level=logging.WARNING,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 STATUS_TO_VALUE = {"passed": 0, "failed": 1, "skipped": 2, "error": 3, "unknown": 4}
@@ -105,13 +103,14 @@ def emit_legacy_format(host: str, data: Dict[str, Any]) -> None:
         test_id = test.get("id", "unknown")
         passed = bool(test.get("passed", False))
         value = 0 if passed else 1
-        print(
-            render_metric(
-                "art_test_result",
-                {"host": host, "scenario": "legacy", "technique": test_id, "test": test_id, "status": "passed" if passed else "failed"},
-                value,
-            )
-        )
+        labels = {
+            "host": host,
+            "scenario": "legacy",
+            "technique": test_id,
+            "test": test_id,
+            "status": "passed" if passed else "failed",
+        }
+        print(render_metric("art_test_result", labels, value))
 
 
 def render_metric(name: str, labels: Dict[str, Any], value: Any) -> str:

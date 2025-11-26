@@ -55,7 +55,7 @@ receivers:
 # 1. Always use HTTPS in production - configure tls_config above
 # 2. Set webhook credentials via environment variables:
 #    - ALERTMANAGER_WEBHOOK_URL
-#    - ALERTMANAGER_WEBHOOK_USER  
+#    - ALERTMANAGER_WEBHOOK_USER
 #    - ALERTMANAGER_WEBHOOK_PASSWORD
 # 3. Consider using mutual TLS for internal services
 # 4. Rotate credentials regularly (recommended: every 90 days)

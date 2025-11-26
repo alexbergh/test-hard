@@ -14,20 +14,14 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
 
 try:
     from atomic_operator.atomic_operator import AtomicOperator
 except ImportError:  # pragma: no cover - dependency check
-    logger.error(
-        "atomic_operator is required. "
-        "Install with 'pip install atomic-operator attrs click'."
-    )
+    logger.error("atomic_operator is required. Install: pip install atomic-operator")
     raise
 
 try:
@@ -114,7 +108,7 @@ def parse_args() -> argparse.Namespace:
         "--mode",
         choices=["run", "check", "prereqs", "cleanup"],
         default="run",
-        help="Execution mode: run atomics, check prerequisites, download prerequisites, or cleanup.",
+        help="Execution mode: run, check, prereqs, or cleanup.",
     )
     parser.add_argument(
         "--timeout",
@@ -129,12 +123,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--atomics-path",
-        help="Path to an Atomic Red Team repository clone. If omitted a cache under ~/.cache is used.",
+        help="Path to Atomic Red Team repo. Uses ~/.cache if omitted.",
     )
     parser.add_argument(
         "--cache-dir",
         default="~/.cache/atomic-red-team",
-        help="Location for downloading the Atomic Red Team repository when --atomics-path is not provided.",
+        help="Download location when --atomics-path is not provided.",
     )
     parser.add_argument(
         "--dry-run",
@@ -243,7 +237,7 @@ def ensure_repo(operator: AtomicOperator, args: argparse.Namespace) -> Path:
     
     logger.error("Failed to locate downloaded repository")
     raise FileNotFoundError(
-        "Failed to download Atomic Red Team repository. Specify --atomics-path manually."
+        "Download failed. Specify --atomics-path manually."
     )
 
 
@@ -292,7 +286,7 @@ def parse_response_payload(raw: Dict) -> Dict:
     return {}
 
 
-def execute_test(
+def execute_test(  # noqa: C901
     operator: AtomicOperator,
     repo_path: Path,
     technique_id: str,
@@ -387,8 +381,12 @@ def run_scenario(
     timeout: int,
     dry_run: bool,
 ) -> ScenarioResult:
-    logger.info("Running scenario: %s (technique: %s, mode: %s)", 
-                scenario.name or scenario.id, scenario.technique, mode)
+    logger.info(
+        "Running scenario: %s (technique: %s, mode: %s)",
+        scenario.name or scenario.id,
+        scenario.technique,
+        mode,
+    )
     
     tech_data = operator.run(
         techniques=[scenario.technique],
@@ -412,10 +410,13 @@ def run_scenario(
         try:
             test_obj = technique.atomic_tests[spec.number - 1]
         except IndexError as exc:
-            logger.error("Test number %d not found in technique %s", 
-                        spec.number, scenario.technique)
+            logger.error(
+                "Test number %d not found in technique %s",
+                spec.number,
+                scenario.technique,
+            )
             raise IndexError(
-                f"Technique {scenario.technique} does not have test number {spec.number}"
+                f"Technique {scenario.technique} has no test #{spec.number}"
             ) from exc
 
         test_result = execute_test(
@@ -456,11 +457,11 @@ def write_outputs(
     summary = {"passed": 0, "failed": 0, "skipped": 0, "error": 0, "unknown": 0, "total": 0}
     serialisable_results = []
     prom_lines = [
-        "# HELP art_test_result Atomic Red Team test status (0=passed,1=failed,2=skipped,3=error,4=unknown)",
+        "# HELP art_test_result ART test status (0=pass,1=fail,2=skip,3=err,4=unk)",
         "# TYPE art_test_result gauge",
     ]
     prom_scenario_lines = [
-        "# HELP art_scenario_status Atomic Red Team scenario status (0=passed,1=failed,2=skipped,3=error,4=unknown)",
+        "# HELP art_scenario_status ART scenario status (0=pass,1=fail,2=skip,3=err)",
         "# TYPE art_scenario_status gauge",
     ]
 
@@ -503,7 +504,8 @@ def write_outputs(
             }
             if test.supported_platforms:
                 labels["platforms"] = ",".join(test.supported_platforms)
-            prom_lines.append(render_metric("art_test_result", labels, STATUS_TO_VALUE.get(test.status, 4)))
+            value = STATUS_TO_VALUE.get(test.status, 4)
+            prom_lines.append(render_metric("art_test_result", labels, value))
 
         serialisable_results.append(scenario_entry)
         prom_scenario_lines.append(

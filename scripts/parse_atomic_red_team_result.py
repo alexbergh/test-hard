@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Compatibility wrapper for parsing Atomic Red Team results."""
-from parsing.parse_atomic_red_team_result import (
-    STATUS_TO_VALUE,
-    emit_legacy_format,
-    emit_modern_format,
-    main,
-    render_metric,
-)
+from parsing.parse_atomic_red_team_result import main
+
+# Re-export for backward compatibility
+__all__ = ["main"]
 
 
 if __name__ == "__main__":

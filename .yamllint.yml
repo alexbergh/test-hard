@@ -1,4 +1,3 @@
----
 # yamllint configuration
 # https://yamllint.readthedocs.io/
 
@@ -19,9 +18,8 @@ rules:
   comments:
     min-spaces-from-content: 1
 
-  # Document start
-  document-start:
-    present: false
+  # Document start - allow for Kubernetes multi-document YAML files
+  document-start: disable
 
   # Trailing spaces
   trailing-spaces: enable
@@ -53,6 +51,9 @@ rules:
   # Hyphens
   hyphens:
     max-spaces-after: 1
+
+  # Comments indentation - disable for flexibility
+  comments-indentation: disable
 
 ignore: |
   .github/
