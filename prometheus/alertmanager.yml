@@ -20,13 +20,15 @@ receivers:
     webhook_configs:
       # SECURITY: Use HTTPS and authentication in production
       # Replace with your actual webhook endpoint
-      - url: '${ALERTMANAGER_WEBHOOK_URL:-http://host.docker.internal:5001/alerts}'
+      # NOTE: Alertmanager doesn't support shell-style env var substitution.
+      # For production, use envsubst or a config management tool.
+      - url: 'http://localhost:5001/alerts'
         send_resolved: true
-        # SECURITY: HTTP Basic Auth - credentials from environment
+        # SECURITY: HTTP Basic Auth - configure in production
         http_config:
           basic_auth:
-            username: '${ALERTMANAGER_WEBHOOK_USER:-alertmanager}'
-            password: '${ALERTMANAGER_WEBHOOK_PASSWORD:-CHANGE_ME_WEBHOOK_SECRET}'
+            username: 'alertmanager'
+            password: 'CHANGE_ME_WEBHOOK_SECRET'
           # SECURITY: TLS configuration for HTTPS endpoints
           # tls_config:
           #   ca_file: /etc/alertmanager/certs/ca.crt
@@ -40,12 +42,12 @@ receivers:
 
   - name: 'critical-alerts'
     webhook_configs:
-      - url: '${ALERTMANAGER_CRITICAL_WEBHOOK_URL:-http://host.docker.internal:5001/critical}'
+      - url: 'http://localhost:5001/critical'
         send_resolved: true
         http_config:
           basic_auth:
-            username: '${ALERTMANAGER_WEBHOOK_USER:-alertmanager}'
-            password: '${ALERTMANAGER_WEBHOOK_PASSWORD:-CHANGE_ME_WEBHOOK_SECRET}'
+            username: 'alertmanager'
+            password: 'CHANGE_ME_WEBHOOK_SECRET'
           # Bearer token alternative (uncomment to use instead of basic_auth):
           # authorization:
           #   type: Bearer
