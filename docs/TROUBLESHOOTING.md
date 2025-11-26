@@ -4,14 +4,14 @@
 
 ## Содержание
 
-- [Проблемы с Docker](#проблемы-с-docker)
-- [Проблемы с Grafana](#проблемы-с-grafana)
-- [Проблемы с Prometheus](#проблемы-с-prometheus)
-- [Проблемы с Telegraf](#проблемы-с-telegraf)
-- [Проблемы со сканированием](#проблемы-со-сканированием)
-- [Проблемы с сетью](#проблемы-с-сетью)
-- [Проблемы с производительностью](#проблемы-с-производительностью)
-- [Проблемы с безопасностью](#проблемы-с-безопасностью)
+* [Проблемы с Docker](#проблемы-с-docker)
+* [Проблемы с Grafana](#проблемы-с-grafana)
+* [Проблемы с Prometheus](#проблемы-с-prometheus)
+* [Проблемы с Telegraf](#проблемы-с-telegraf)
+* [Проблемы со сканированием](#проблемы-со-сканированием)
+* [Проблемы с сетью](#проблемы-с-сетью)
+* [Проблемы с производительностью](#проблемы-с-производительностью)
+* [Проблемы с безопасностью](#проблемы-с-безопасностью)
 
 ---
 
@@ -20,12 +20,14 @@
 ### Контейнеры не запускаются
 
 **Симптомы:**
+
 ```bash
 docker compose up -d
 # Контейнеры падают или не запускаются
 ```
 
 **Диагностика:**
+
 ```bash
 # Проверить логи
 docker compose logs
@@ -40,6 +42,7 @@ docker compose config
 **Решения:**
 
 1. **Порты заняты:**
+
    ```bash
    # Проверить занятые порты
    ss -tlnp | grep -E '3000|9090|9091|9093'
@@ -49,6 +52,7 @@ docker compose config
    ```
 
 2. **Недостаточно ресурсов:**
+
    ```bash
    # Проверить ресурсы
    docker system df
@@ -58,6 +62,7 @@ docker compose config
    ```
 
 3. **Проблемы с сетью:**
+
    ```bash
    # Пересоздать сеть
    docker compose down
@@ -70,18 +75,21 @@ docker compose config
 ### Docker съедает всю память
 
 **Симптомы:**
-- Система тормозит
-- OOM (Out of Memory) ошибки
-- Контейнеры перезапускаются
+
+* Система тормозит
+* OOM (Out of Memory) ошибки
+* Контейнеры перезапускаются
 
 **Решение:**
 
 1. **Проверить использование:**
+
    ```bash
    docker stats
    ```
 
 2. **Ограничения уже установлены в docker-compose.yml:**
+
    ```yaml
    services:
      prometheus:
@@ -90,6 +98,7 @@ docker compose config
    ```
 
 3. **Уменьшить retention в Prometheus:**
+
    ```yaml
    # prometheus/prometheus.yml
    --storage.tsdb.retention.time=15d  # было 30d
@@ -97,6 +106,7 @@ docker compose config
    ```
 
 4. **Настроить Docker daemon:**
+
    ```json
    # /etc/docker/daemon.json
    {
@@ -113,11 +123,13 @@ docker compose config
 ### Permission denied при доступе к Docker
 
 **Симптомы:**
+
 ```
 Got permission denied while trying to connect to the Docker daemon socket
 ```
 
 **НЕ ДЕЛАЙТЕ:**
+
 ```bash
 # НЕ добавляйте пользователя в docker group!
 sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
@@ -126,6 +138,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 **Правильное решение:**
 
 1. **Используйте Docker Socket Proxy (уже настроен):**
+
    ```yaml
    # docker-compose.yml
    docker-proxy:
