@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 IFS=' ' read -r -a targets <<< "${TARGET_CONTAINERS:-}"

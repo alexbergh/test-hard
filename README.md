@@ -7,8 +7,8 @@
 ![Kubernetes](https://img.shields.io/badge/kubernetes-ready-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 
-
 ## Цель
+
 Автоматизированная платформа для security hardening и мониторинга контейнеров. Включает security сканирование (OpenSCAP, Lynis), мониторинг (Prometheus, Grafana), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
 
 ## Возможности
@@ -28,10 +28,12 @@
 
 ## Быстрый старт
 
-### Для нового хоста:
+### Для нового хоста
+
 См. **[docs/QUICKSTART.md](docs/QUICKSTART.md)** для быстрого развертывания (5-10 минут)
 
-### Для разработки:
+### Для разработки
+
 ```bash
 # (опционально) создайте .env, чтобы переопределить учетные данные Grafana
 cp .env.example .env
