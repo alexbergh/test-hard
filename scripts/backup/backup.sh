@@ -124,6 +124,7 @@ KEEP_BACKUPS="${KEEP_BACKUPS:-5}"
 if [ "$KEEP_BACKUPS" -gt 0 ]; then
     log "Cleaning up old backups (keeping last $KEEP_BACKUPS)..."
     cd "$BACKUP_DIR"
+    # shellcheck disable=SC2012
     ls -t test-hard-backup-*.tar.gz 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs rm -f
     log "[OK] Cleanup complete"
 fi

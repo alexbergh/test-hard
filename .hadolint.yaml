@@ -1,0 +1,23 @@
+# Hadolint configuration
+# https://github.com/hadolint/hadolint
+
+# Ignore warnings - these are best practices but not critical
+ignored:
+  - DL3008  # Pin versions in apt get install
+  - DL3013  # Pin versions in pip
+  - DL3015  # Avoid additional packages
+  - DL3032  # yum clean all missing
+  - DL3033  # Specify version with yum
+  - DL3040  # dnf clean all missing
+  - DL3041  # Specify version with dnf
+
+# Treat these as warnings instead of errors
+warning:
+  - DL3003  # Use WORKDIR to switch to a directory
+  - DL3006  # Always tag the version of an image explicitly
+
+# Trust these registries
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+  - registry.fedoraproject.org

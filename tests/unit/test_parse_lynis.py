@@ -7,7 +7,7 @@ import pytest
 
 # Import the module to test
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
-from parse_lynis_report import parse_lynis_report
+from parse_lynis_report import parse_lynis_report  # noqa: E402
 
 
 class TestParseLynisReport:

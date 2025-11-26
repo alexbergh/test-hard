@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
-from parse_openscap_report import main, _latest_report
+from parse_openscap_report import _latest_report, main  # noqa: E402
 
 
 class TestParseOpenSCAPReport:
