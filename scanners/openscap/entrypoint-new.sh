@@ -124,12 +124,9 @@ extract_openscap_metrics() {
   # Извлечь количество passed, failed, notselected правил
   local pass_count
   local fail_count
-  local notselected_count
-  
   # Использовать grep -o для подсчета всех вхождений
   pass_count=$(grep -o '<result>pass</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
   fail_count=$(grep -o '<result>fail</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
-  notselected_count=$(grep -o '<result>notselected</result>' "$xml_file" 2>/dev/null | wc -l | tr -cd '0-9')
   
   # Если пустые, установить 0
   pass_count=${pass_count:-0}
@@ -173,7 +170,7 @@ EOF
         title=$(echo "$rule_id" | sed 's/_/ /g' | cut -c1-60)
         
         # Экранировать кавычки
-        title=$(echo "$title" | sed 's/"//g')
+        title=${title//\"/}
         
         echo "openscap_rule_result{host=\"${name}\",rule_id=\"${rule_id}\",severity=\"${severity}\",title=\"${title}\"} 0"
       fi

@@ -1,9 +1,9 @@
 """Unit tests for parse_lynis_report.py"""
 import json
-import pytest
-from pathlib import Path
-from io import StringIO
 import sys
+from pathlib import Path
+
+import pytest
 
 # Import the module to test
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))

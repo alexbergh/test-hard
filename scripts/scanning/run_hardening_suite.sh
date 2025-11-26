@@ -104,9 +104,9 @@ for target in "${targets[@]}"; do
   mkdir -p reports/openscap
   
   # Копируем напрямую через docker cp
-  docker cp openscap-scanner:/reports/openscap/${target}.xml "reports/openscap/${target}.xml" 2>/dev/null || echo "No XML for $target"
-  docker cp openscap-scanner:/reports/openscap/${target}.html "reports/openscap/${target}.html" 2>/dev/null || echo "No HTML for $target"
-  docker cp openscap-scanner:/reports/openscap/${target}_metrics.prom "reports/openscap/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
+  docker cp "openscap-scanner:/reports/openscap/${target}.xml" "reports/openscap/${target}.xml" 2>/dev/null || echo "No XML for $target"
+  docker cp "openscap-scanner:/reports/openscap/${target}.html" "reports/openscap/${target}.html" 2>/dev/null || echo "No HTML for $target"
+  docker cp "openscap-scanner:/reports/openscap/${target}_metrics.prom" "reports/openscap/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
 done
 
 # Lynis отчёты - копируем через docker cp
@@ -115,9 +115,9 @@ for target in "${targets[@]}"; do
   mkdir -p reports/lynis
   
   # Копируем напрямую через docker cp
-  docker cp lynis-scanner:/reports/lynis/${target}.log "reports/lynis/${target}.log" 2>/dev/null || echo "No log for $target"
-  docker cp lynis-scanner:/reports/lynis/${target}.dat "reports/lynis/${target}.dat" 2>/dev/null || echo "No dat for $target"
-  docker cp lynis-scanner:/reports/lynis/${target}_metrics.prom "reports/lynis/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
+  docker cp "lynis-scanner:/reports/lynis/${target}.log" "reports/lynis/${target}.log" 2>/dev/null || echo "No log for $target"
+  docker cp "lynis-scanner:/reports/lynis/${target}.dat" "reports/lynis/${target}.dat" 2>/dev/null || echo "No dat for $target"
+  docker cp "lynis-scanner:/reports/lynis/${target}_metrics.prom" "reports/lynis/${target}_metrics.prom" 2>/dev/null || echo "No metrics for $target"
 done
 
 # Проверить финальные файлы перед остановкой

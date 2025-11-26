@@ -1,9 +1,10 @@
 """Integration tests for Docker Compose stack."""
-import pytest
-import requests
 import subprocess
 import time
 from pathlib import Path
+
+import pytest
+import requests
 
 
 @pytest.mark.integration

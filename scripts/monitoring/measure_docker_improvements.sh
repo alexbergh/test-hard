@@ -23,7 +23,7 @@ format_size() {
     if [[ $size == *"GB"* ]]; then
         size=$(echo "$size" | sed 's/GB//' | awk '{print $1 * 1024}')
     elif [[ $size == *"MB"* ]]; then
-        size=$(echo "$size" | sed 's/MB//')
+        size=${size//MB/}
     elif [[ $size == *"KB"* ]]; then
         size=$(echo "$size" | sed 's/KB//' | awk '{print $1 / 1024}')
     fi

@@ -1,7 +1,8 @@
 """Unit tests for parse_openscap_report.py"""
-import pytest
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 from parse_openscap_report import main, _latest_report
@@ -45,8 +46,7 @@ class TestParseOpenSCAPReport:
         invalid_xml.write_text("<invalid>xml<unclosed>")
 
         result = main([str(invalid_xml)])
-
-        captured = capsys.readouterr()
+        # capsys output not needed for this test
         assert result == 1
 
     def test_latest_report_found(self, tmp_path):
