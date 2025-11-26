@@ -4,27 +4,29 @@
 
 Данное руководство описывает установку платформы test-hard на физических серверах или виртуальных машинах без использования Docker. Подходит для:
 
-- Production серверов, где Docker запрещен политиками безопасности
-- BSD систем (FreeBSD, OpenBSD)
-- Минимальных установок Linux
-- Встроенных систем и appliance
+* Production серверов, где Docker запрещен политиками безопасности
+* BSD систем (FreeBSD, OpenBSD)
+* Минимальных установок Linux
+* Встроенных систем и appliance
 
 ---
 
 ## Поддерживаемые платформы
 
 ### Linux
-- Debian 11, 12
-- Ubuntu 20.04, 22.04, 24.04
-- Fedora 39, 40
-- CentOS Stream 9
-- ALT Linux c10f2, latest
-- RHEL 8, 9
-- Rocky Linux 8, 9
+
+* Debian 11, 12
+* Ubuntu 20.04, 22.04, 24.04
+* Fedora 39, 40
+* CentOS Stream 9
+* ALT Linux c10f2, latest
+* RHEL 8, 9
+* Rocky Linux 8, 9
 
 ### BSD
-- FreeBSD 13.x, 14.x
-- OpenBSD 7.x
+
+* FreeBSD 13.x, 14.x
+* OpenBSD 7.x
 
 ---
 
@@ -372,6 +374,7 @@ doas rcctl restart telegraf      # OpenBSD
 ### Prometheus
 
 **Debian/Ubuntu:**
+
 ```bash
 sudo apt-get install -y prometheus
 
@@ -384,6 +387,7 @@ sudo chown -R prometheus:prometheus /opt/prometheus
 ```
 
 **FreeBSD:**
+
 ```bash
 sudo pkg install -y net-mgmt/prometheus2
 sudo sysrc prometheus_enable="YES"
@@ -416,6 +420,7 @@ sudo service prometheus restart    # FreeBSD
 ### Grafana
 
 **Debian/Ubuntu:**
+
 ```bash
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
@@ -427,6 +432,7 @@ sudo systemctl enable --now grafana-server
 ```
 
 **Fedora/RHEL:**
+
 ```bash
 sudo tee /etc/yum.repos.d/grafana.repo << 'EOF'
 [grafana]
@@ -445,6 +451,7 @@ sudo systemctl enable --now grafana-server
 ```
 
 **FreeBSD:**
+
 ```bash
 sudo pkg install -y grafana9
 sudo sysrc grafana_enable="YES"
@@ -576,6 +583,7 @@ curl http://localhost:3000
 ```
 
 **Запуск:**
+
 ```bash
 ansible-playbook -i inventory.ini playbook-install-hardening.yml
 ```
@@ -631,18 +639,21 @@ sudo firewall-cmd --reload
 ### Firewall правила
 
 **Linux (ufw):**
+
 ```bash
 # Разрешить только с monitoring сервера
 sudo ufw allow from <monitoring-server-ip> to any port 9091 proto tcp
 ```
 
 **Linux (firewalld):**
+
 ```bash
 sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="<monitoring-server-ip>" port port="9091" protocol="tcp" accept'
 sudo firewall-cmd --reload
 ```
 
 **FreeBSD (pf):**
+
 ```bash
 # /etc/pf.conf
 pass in on em0 proto tcp from <monitoring-server-ip> to any port 9091
@@ -679,11 +690,11 @@ openssl req -x509 -newkey rsa:4096 -keyout /etc/telegraf/key.pem -out /etc/teleg
 
 ## Дополнительные ресурсы
 
-- **Lynis**: https://cisofy.com/lynis/
-- **OpenSCAP**: https://www.open-scap.org/
-- **Telegraf**: https://docs.influxdata.com/telegraf/
-- **Prometheus**: https://prometheus.io/docs/
-- **Grafana**: https://grafana.com/docs/
+* **Lynis**: <https://cisofy.com/lynis/>
+* **OpenSCAP**: <https://www.open-scap.org/>
+* **Telegraf**: <https://docs.influxdata.com/telegraf/>
+* **Prometheus**: <https://prometheus.io/docs/>
+* **Grafana**: <https://grafana.com/docs/>
 
 ---
 

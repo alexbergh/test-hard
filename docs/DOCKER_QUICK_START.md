@@ -185,6 +185,7 @@ docker inspect --format='{{.State.Health.Status}}' telegraf
 ### Проблема: BuildKit не работает
 
 **Решение:**
+
 ```bash
 # Проверить версию Docker
 docker version | grep BuildKit
@@ -206,6 +207,7 @@ sudo systemctl restart docker
 ### Проблема: Медленная сборка несмотря на кэш
 
 **Решение:**
+
 ```bash
 # 1. Проверить .dockerignore
 ls -la docker/ubuntu/Dockerfile.dockerignore
@@ -221,6 +223,7 @@ docker build --progress=plain -f docker/ubuntu/Dockerfile . 2>&1 | grep "transfe
 ### Проблема: Контейнер показывает unhealthy
 
 **Решение:**
+
 ```bash
 # 1. Проверить логи
 docker logs telegraf
@@ -235,6 +238,7 @@ docker exec -it telegraf curl http://localhost:9091/metrics
 ### Проблема: Нехватка места на диске
 
 **Решение:**
+
 ```bash
 # 1. Посмотреть что занимает место
 docker system df -v

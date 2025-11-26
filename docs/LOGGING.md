@@ -5,9 +5,10 @@
 ## Обзор
 
 Платформа использует **Grafana Loki** для централизованного сбора и анализа логов:
-- **Loki** - хранилище логов
-- **Promtail** - агент сбора логов
-- **Grafana** - визуализация и поиск
+
+* **Loki** - хранилище логов
+* **Promtail** - агент сбора логов
+* **Grafana** - визуализация и поиск
 
 ## Быстрый старт
 
@@ -23,7 +24,7 @@ make logging
 
 ### Доступ к логам
 
-1. Откройте Grafana: http://localhost:3000
+1. Откройте Grafana: <http://localhost:3000>
 2. Перейдите в Explore
 3. Выберите datasource "Loki"
 4. Используйте LogQL для поиска
@@ -58,18 +59,20 @@ make logging
 Конфигурация: `loki/loki-config.yml`
 
 **Основные настройки:**
-- Retention: 31 день (744h)
-- Storage: filesystem (для production используйте S3/GCS)
-- Compaction: каждые 10 минут
+
+* Retention: 31 день (744h)
+* Storage: filesystem (для production используйте S3/GCS)
+* Compaction: каждые 10 минут
 
 ### Promtail
 
 Конфигурация: `loki/promtail-config.yml`
 
 **Собирает логи из:**
-- Docker контейнеров (через Docker socket)
-- Системных логов `/var/log`
-- Security scanner отчетов `/reports`
+
+* Docker контейнеров (через Docker socket)
+* Системных логов `/var/log`
+* Security scanner отчетов `/reports`
 
 ## Запросы LogQL
 
@@ -128,10 +131,11 @@ topk(10, sum by (container) (count_over_time({compose_project="test-hard"}[1h]))
 Предустановленный дашборд: `grafana/dashboards/logs-analysis.json`
 
 **Панели:**
-- All Container Logs
-- Prometheus Logs
-- Grafana Logs
-- Security Scanner Logs
+
+* All Container Logs
+* Prometheus Logs
+* Grafana Logs
+* Security Scanner Logs
 
 ### Создание custom дашборда
 

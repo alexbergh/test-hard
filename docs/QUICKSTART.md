@@ -48,8 +48,9 @@ open http://localhost:3000
 ```
 
 **Дашборды:**
-- Security Monitoring: http://localhost:3000/d/security-monitoring/security-monitoring-dashboard
-- Security Issues Details: http://localhost:3000/d/security-issues-details/security-issues-details
+
+* Security Monitoring: <http://localhost:3000/d/security-monitoring/security-monitoring-dashboard>
+* Security Issues Details: <http://localhost:3000/d/security-issues-details/security-issues-details>
 
 ---
 
@@ -84,7 +85,8 @@ curl http://localhost:3000/api/health
 
 ## Устранение неполадок
 
-### Перезапуск всего:
+### Перезапуск всего
+
 ```bash
 docker compose down
 docker compose up -d
@@ -92,7 +94,8 @@ sleep 30
 ./scripts/run_hardening_suite.sh
 ```
 
-### Полная очистка и пересборка:
+### Полная очистка и пересборка
+
 ```bash
 docker compose down -v
 docker compose build --no-cache
@@ -100,7 +103,8 @@ docker compose up -d
 ./scripts/run_hardening_suite.sh
 ```
 
-### Проверка логов:
+### Проверка логов
+
 ```bash
 docker compose logs -f telegraf
 docker compose logs -f prometheus
@@ -111,14 +115,16 @@ docker compose logs -f grafana
 
 ## Ожидаемые результаты
 
-### Метрики:
-- **Lynis**: 4 хоста × (score + warnings + suggestions) = 12 агрегированных метрик
-- **Lynis детальные**: ~63 метрики (warnings + suggestions)
-- **OpenSCAP**: 1 хост × (score + pass + fail) = 3 агрегированные метрики
-- **OpenSCAP детальные**: ~4 метрики (failed rules)
-- **Всего**: ~82 метрики
+### Метрики
 
-### Дашборды:
+* **Lynis**: 4 хоста × (score + warnings + suggestions) = 12 агрегированных метрик
+* **Lynis детальные**: ~63 метрики (warnings + suggestions)
+* **OpenSCAP**: 1 хост × (score + pass + fail) = 3 агрегированные метрики
+* **OpenSCAP детальные**: ~4 метрики (failed rules)
+* **Всего**: ~82 метрики
+
+### Дашборды
+
 1. **Security Monitoring** - показывает score и графики
 2. **Security Issues Details** - показывает детальные таблицы проблем
 
@@ -126,11 +132,11 @@ docker compose logs -f grafana
 
 ## Требования
 
-- Docker 20.10+
-- Docker Compose 2.0+
-- 4GB RAM
-- 10GB disk space
-- Linux/macOS
+* Docker 20.10+
+* Docker Compose 2.0+
+* 4GB RAM
+* 10GB disk space
+* Linux/macOS
 
 ---
 
@@ -140,6 +146,6 @@ docker compose logs -f grafana
 
 ---
 
-## Готово!
+## Готово
 
 После выполнения команд система готова к использованию.

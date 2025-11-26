@@ -285,10 +285,10 @@ docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | \
 
 ## Дополнительные ресурсы
 
-- [Docker BuildKit Documentation](https://docs.docker.com/build/buildkit/)
-- [Multi-stage builds best practices](https://docs.docker.com/build/building/multi-stage/)
-- [BuildKit cache mounts](https://docs.docker.com/build/guide/mounts/)
-- [HEALTHCHECK instruction](https://docs.docker.com/engine/reference/builder/#healthcheck)
+* [Docker BuildKit Documentation](https://docs.docker.com/build/buildkit/)
+* [Multi-stage builds best practices](https://docs.docker.com/build/building/multi-stage/)
+* [BuildKit cache mounts](https://docs.docker.com/build/guide/mounts/)
+* [HEALTHCHECK instruction](https://docs.docker.com/engine/reference/builder/#healthcheck)
 
 ## Troubleshooting
 

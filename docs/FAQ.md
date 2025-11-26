@@ -8,34 +8,37 @@ test-hard - это автоматизированная платформа дл�
 
 ### Для кого предназначен проект?
 
-- DevOps инженеры
-- Security специалисты
-- System administrators
-- Разработчики, заботящиеся о безопасности
+* DevOps инженеры
+* Security специалисты
+* System administrators
+* Разработчики, заботящиеся о безопасности
 
 ### Какие Linux дистрибутивы поддерживаются?
 
 Сканирование поддерживает:
-- Debian / Ubuntu
-- Fedora
-- CentOS Stream
-- ALT Linux
-- RHEL-based системы
-- BSD системы (ограниченная поддержка)
+
+* Debian / Ubuntu
+* Fedora
+* CentOS Stream
+* ALT Linux
+* RHEL-based системы
+* BSD системы (ограниченная поддержка)
 
 ## Установка и настройка
 
 ### Какие требования для запуска?
 
 **Минимальные:**
-- Docker 20.10+
-- Docker Compose v2.0+
-- 2 CPU, 4 GB RAM, 10 GB disk
+
+* Docker 20.10+
+* Docker Compose v2.0+
+* 2 CPU, 4 GB RAM, 10 GB disk
 
 **Рекомендуемые:**
-- Docker 24.0+
-- Docker Compose v2.20+
-- 4 CPU, 8 GB RAM, 50 GB disk
+
+* Docker 24.0+
+* Docker Compose v2.20+
+* 4 CPU, 8 GB RAM, 50 GB disk
 
 ### Как быстро развернуть платформу?
 
@@ -81,24 +84,28 @@ docker exec container-name lynis audit system
 
 ### Где посмотреть результаты?
 
-**Grafana:** http://localhost:3000
-- Дашборды с визуализацией метрик
-- Login: admin / admin (измените!)
+**Grafana:** <http://localhost:3000>
 
-**Prometheus:** http://localhost:9090
-- Сырые метрики
-- Queries и alerts
+* Дашборды с визуализацией метрик
+* Login: admin / admin (измените!)
+
+**Prometheus:** <http://localhost:9090>
+
+* Сырые метрики
+* Queries и alerts
 
 **Отчеты:**
-- HTML: `reports/openscap/*.html`
-- JSON: `reports/lynis/*.json`
+
+* HTML: `reports/openscap/*.html`
+* JSON: `reports/lynis/*.json`
 
 ### Как часто запускать сканирование?
 
 **Рекомендации:**
-- Development: по запросу
-- Staging: ежедневно
-- Production: еженедельно или после изменений
+
+* Development: по запросу
+* Staging: ежедневно
+* Production: еженедельно или после изменений
 
 Можно настроить через cron или CI/CD.
 
@@ -114,11 +121,13 @@ docker exec container-name lynis audit system
 ### Grafana показывает "No data"
 
 **Причины:**
+
 1. Telegraf не собирает метрики
 2. Prometheus не scraping Telegraf
 3. Сканирование еще не запускалось
 
 **Решение:**
+
 ```bash
 # Проверить Telegraf
 curl http://localhost:9091/metrics | grep security
@@ -138,12 +147,14 @@ make scan
 
 1. Ограничить ресурсы в docker-compose.yml (уже настроено)
 2. Очистить неиспользуемые ресурсы:
+
 ```bash
 docker system prune -a
 docker volume prune
 ```
 
 3. Настроить Docker daemon:
+
 ```json
 {
   "default-ulimits": {
@@ -184,9 +195,10 @@ find scripts -name "*.sh" -exec chmod +x {} \;
 **Не добавляйте пользователя в docker group!**
 
 Используйте:
-- Docker Socket Proxy (рекомендуется)
-- sudo с ограниченными правами
-- Rootless Docker
+
+* Docker Socket Proxy (рекомендуется)
+* sudo с ограниченными правами
+* Rootless Docker
 
 См. [USER-SETUP.md](USER-SETUP.md).
 
@@ -195,20 +207,22 @@ find scripts -name "*.sh" -exec chmod +x {} \;
 ### Безопасно ли использовать в production?
 
 Да, при соблюдении рекомендаций:
-- Измените пароли по умолчанию
-- Используйте Docker Socket Proxy
-- Настройте TLS/SSL
-- Ограничьте сетевой доступ
-- Регулярно обновляйте компоненты
+
+* Измените пароли по умолчанию
+* Используйте Docker Socket Proxy
+* Настройте TLS/SSL
+* Ограничьте сетевой доступ
+* Регулярно обновляйте компоненты
 
 См. [SECURITY.md](SECURITY.md).
 
 ### Как защитить Docker socket?
 
 Используется Docker Socket Proxy:
-- Только чтение
-- Ограниченные API endpoints
-- Нет доступа к VOLUMES, NETWORKS
+
+* Только чтение
+* Ограниченные API endpoints
+* Нет доступа к VOLUMES, NETWORKS
 
 Настроено по умолчанию в docker-compose.yml.
 
@@ -217,6 +231,7 @@ find scripts -name "*.sh" -exec chmod +x {} \;
 По умолчанию тесты запускаются в **dry-run режиме** - не вносят изменений.
 
 Для реальных тестов:
+
 ```bash
 ATOMIC_DRY_RUN=false docker compose up
 ```
@@ -245,6 +260,7 @@ ssh-copy-id -i ~/.ssh/scanner_key_new.pub user@host
 3. Перезапустите: `docker compose restart alertmanager`
 
 Пример:
+
 ```yaml
 receivers:
   - name: 'email'
@@ -257,12 +273,14 @@ receivers:
 ### Сколько места занимают данные?
 
 **Примерно:**
-- Prometheus data: 1-5 GB (зависит от retention)
-- Grafana data: 100-500 MB
-- Reports: 50-200 MB
-- Loki logs: 500 MB - 2 GB
+
+* Prometheus data: 1-5 GB (зависит от retention)
+* Grafana data: 100-500 MB
+* Reports: 50-200 MB
+* Loki logs: 500 MB - 2 GB
 
 **Настройка retention:**
+
 ```yaml
 # prometheus.yml
 --storage.tsdb.retention.time=30d
@@ -357,11 +375,12 @@ pytest --cov=scripts tests/
 
 ### Какой стиль кода использовать?
 
-- **Python:** PEP 8, max line 120
-- **Bash:** shellcheck compliant
-- **YAML:** 2 spaces indent
+* **Python:** PEP 8, max line 120
+* **Bash:** shellcheck compliant
+* **YAML:** 2 spaces indent
 
 Используйте pre-commit hooks:
+
 ```bash
 pre-commit install
 pre-commit run --all-files
@@ -423,15 +442,17 @@ docker compose up -d
 ### Есть ли готовые дашборды?
 
 Да, в `grafana/dashboards/`:
-- Security Scanners Dashboard
-- System Metrics Dashboard
-- Logs Analysis Dashboard (Loki)
+
+* Security Scanners Dashboard
+* System Metrics Dashboard
+* Logs Analysis Dashboard (Loki)
 
 ### Поддерживается ли Windows/macOS?
 
 Да, через Docker Desktop:
-- Windows 10/11 + WSL2
-- macOS (Intel/Apple Silicon)
+
+* Windows 10/11 + WSL2
+* macOS (Intel/Apple Silicon)
 
 **Но:** нативное сканирование только для Linux/BSD.
 
