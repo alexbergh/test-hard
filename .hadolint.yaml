@@ -6,6 +6,7 @@ ignored:
   - DL3008  # Pin versions in apt get install
   - DL3013  # Pin versions in pip
   - DL3015  # Avoid additional packages
+  - DL3026  # Use only an allowed registry (we use various distro registries)
   - DL3032  # yum clean all missing
   - DL3033  # Specify version with yum
   - DL3040  # dnf clean all missing
@@ -20,4 +21,7 @@ warning:
 trustedRegistries:
   - docker.io
   - ghcr.io
+  - quay.io
   - registry.fedoraproject.org
+  - registry.astralinux.ru
+  - registry.red-soft.ru
