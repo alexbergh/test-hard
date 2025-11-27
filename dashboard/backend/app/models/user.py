@@ -2,10 +2,9 @@
 
 from typing import TYPE_CHECKING
 
+from app.models.base import Base, TimestampMixin
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.scan import Scan, ScanSchedule

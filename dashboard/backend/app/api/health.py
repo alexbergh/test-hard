@@ -1,9 +1,8 @@
 """Health check endpoints."""
 
+from app.config import get_settings
 from fastapi import APIRouter
 from pydantic import BaseModel
-
-from app.config import get_settings
 
 router = APIRouter()
 settings = get_settings()

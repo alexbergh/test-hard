@@ -4,16 +4,15 @@ import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from app.config import get_settings
+from app.database import get_session_context
+from app.models import Scan, ScanSchedule
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
 
-from app.config import get_settings
-from app.database import get_session_context
-from app.models import Scan, ScanSchedule
-
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -66,9 +65,7 @@ class SchedulerService:
     async def _load_schedules(self) -> None:
         """Load all active schedules from database."""
         async with get_session_context() as session:
-            result = await session.execute(
-                select(ScanSchedule).where(ScanSchedule.is_active == True)  # noqa: E712
-            )
+            result = await session.execute(select(ScanSchedule).where(ScanSchedule.is_active == True))  # noqa: E712
             schedules = result.scalars().all()
 
             for schedule in schedules:

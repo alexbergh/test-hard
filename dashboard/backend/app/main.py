@@ -4,16 +4,15 @@ import logging
 import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from prometheus_client import make_asgi_app
-
 from app.api import api_router
 from app.config import get_settings
 from app.database import init_db
 from app.services.scheduler import scheduler_service
 from app.tracing import setup_tracing
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from prometheus_client import make_asgi_app
 
 settings = get_settings()
 

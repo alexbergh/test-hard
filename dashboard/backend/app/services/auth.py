@@ -3,13 +3,12 @@
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from jose import JWTError, jwt
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.config import get_settings
 from app.models import User
 from app.schemas import Token, TokenData, UserCreate
+from jose import JWTError, jwt
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 settings = get_settings()
 
@@ -23,26 +22,18 @@ class AuthService:
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash."""
-        return bcrypt.checkpw(
-            plain_password.encode("utf-8"),
-            hashed_password.encode("utf-8")
-        )
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
     @staticmethod
     def get_password_hash(password: str) -> str:
         """Hash a password."""
-        return bcrypt.hashpw(
-            password.encode("utf-8"),
-            bcrypt.gensalt()
-        ).decode("utf-8")
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     @staticmethod
     def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
         """Create a JWT access token."""
         to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + (
-            expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
-        )
+        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.access_token_expire_minutes))
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
@@ -101,9 +92,7 @@ class AuthService:
 
     def create_token_for_user(self, user: User) -> Token:
         """Create access token for a user."""
-        access_token = self.create_access_token(
-            data={"sub": user.username, "user_id": user.id, "role": user.role}
-        )
+        access_token = self.create_access_token(data={"sub": user.username, "user_id": user.id, "role": user.role})
         return Token(
             access_token=access_token,
             token_type="bearer",

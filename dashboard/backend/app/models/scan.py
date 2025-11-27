@@ -3,10 +3,9 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
+from app.models.base import Base, TimestampMixin
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.host import Host
@@ -56,7 +55,9 @@ class Scan(Base, TimestampMixin):
     host: Mapped["Host"] = relationship("Host", back_populates="scans")
     user: Mapped["User | None"] = relationship("User", back_populates="scans")
     schedule: Mapped["ScanSchedule | None"] = relationship("ScanSchedule", back_populates="scans")
-    results: Mapped[list["ScanResult"]] = relationship("ScanResult", back_populates="scan", cascade="all, delete-orphan")
+    results: Mapped[list["ScanResult"]] = relationship(
+        "ScanResult", back_populates="scan", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Scan(id={self.id}, host_id={self.host_id}, scanner={self.scanner}, status={self.status})>"

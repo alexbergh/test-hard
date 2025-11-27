@@ -1,10 +1,9 @@
 """Authentication endpoints."""
 
-from fastapi import APIRouter, HTTPException, status
-
 from app.api.deps import CurrentUser, DbSession
 from app.schemas import Token, UserCreate, UserLogin, UserResponse
 from app.services.auth import AuthService
+from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter()
 

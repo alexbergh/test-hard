@@ -1,18 +1,17 @@
 """Scan execution service."""
 
 import asyncio
-import subprocess
-from datetime import datetime, timezone
+import datetime
+from datetime import timezone
 from pathlib import Path
 from typing import Sequence
 
+from app.config import get_settings
+from app.models import Host, Scan
+from app.schemas import ScanCreate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
-from app.config import get_settings
-from app.models import Host, Scan, ScanResult
-from app.schemas import ScanCreate
 
 settings = get_settings()
 
@@ -125,9 +124,7 @@ class ScanService:
                 # Update scan with results
                 scan.completed_at = datetime.now(timezone.utc)
                 if scan.started_at:
-                    scan.duration_seconds = int(
-                        (scan.completed_at - scan.started_at).total_seconds()
-                    )
+                    scan.duration_seconds = int((scan.completed_at - scan.started_at).total_seconds())
 
                 if result.get("success"):
                     scan.status = "completed"

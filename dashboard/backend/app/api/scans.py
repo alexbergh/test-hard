@@ -1,11 +1,10 @@
 """Scan management endpoints."""
 
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import FileResponse
-
 from app.api.deps import CurrentUser, DbSession, OperatorUser
 from app.schemas import ScanCreate, ScanResponse, ScanSummary
 from app.services.scan import ScanService
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import FileResponse
 
 router = APIRouter()
 

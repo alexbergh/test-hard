@@ -35,6 +35,7 @@
 ### 🎯 Приоритет: Высокий
 
 #### 1. Web Dashboard для управления сканированиями ✅
+
 - [x] **Backend API** (FastAPI)
   - REST API для запуска/остановки сканов
   - JWT аутентификация
@@ -50,12 +51,14 @@
   - Docker API через proxy
 
 #### 2. Scheduled Scanning ✅
+
 - [x] APScheduler для автоматических сканов
 - [x] Cron expressions для расписаний
 - [x] Поддержка различных расписаний для разных хостов
 - [x] Notification settings (готово к интеграции)
 
 #### 3. Distributed Tracing ✅
+
 - [x] Grafana Tempo конфигурация
 - [x] OpenTelemetry instrumentation в FastAPI
 - [x] Tempo datasource для Grafana
@@ -68,6 +71,7 @@
 ### 🎯 Приоритет: Высокий
 
 #### 4. Runtime Security с Falco
+
 - [ ] Falco deployment (Docker + Kubernetes)
 - [ ] Custom rules для hardening detection
 - [ ] Интеграция с Alertmanager
@@ -75,12 +79,14 @@
 - [ ] Automated response actions
 
 #### 5. Container Image Scanning
+
 - [ ] Trivy интеграция для vulnerability scanning
 - [ ] SBOM (Software Bill of Materials) генерация
 - [ ] Policy enforcement (OPA/Gatekeeper)
 - [ ] CI/CD блокировка уязвимых образов
 
 #### 6. Network Security Monitoring
+
 - [ ] Network policy enforcement (Kubernetes)
 - [ ] Traffic analysis и anomaly detection
 - [ ] Service mesh интеграция (Istio/Linkerd)
@@ -92,6 +98,7 @@
 ### 🎯 Приоритет: Средний
 
 #### 7. Compliance as Code
+
 - [ ] **InSpec profiles**
   - CIS Benchmarks
   - PCI-DSS
@@ -107,6 +114,7 @@
   - Remediation recommendations
 
 #### 8. ML-based Anomaly Detection
+
 - [ ] Baseline behavior profiling
 - [ ] Anomaly detection models (isolation forest, autoencoders)
 - [ ] Integration с Prometheus/Loki
@@ -114,6 +122,7 @@
 - [ ] Threat intelligence feeds
 
 #### 9. Multi-tenancy Support
+
 - [ ] Namespace isolation
 - [ ] Per-tenant dashboards
 - [ ] Resource quotas
@@ -126,6 +135,7 @@
 ### 🎯 Приоритет: Средний
 
 #### 10. Multi-Cloud Support
+
 - [ ] **AWS**
   - EC2 instance scanning
   - EKS integration
@@ -141,6 +151,7 @@
   - Security Command Center
 
 #### 11. Advanced Reporting & Analytics
+
 - [ ] Executive dashboards
 - [ ] Trend analysis
 - [ ] Risk scoring
@@ -148,6 +159,7 @@
 - [ ] Custom report builder
 
 #### 12. Integration Marketplace
+
 - [ ] Plugin architecture
 - [ ] Third-party scanner integrations
 - [ ] SIEM connectors (Splunk, Elastic, QRadar)
@@ -161,18 +173,21 @@
 ### 🔮 Исследование и разработка
 
 #### 13. AI-Powered Security
+
 - [ ] LLM-based remediation suggestions
 - [ ] Natural language queries для логов
 - [ ] Automated incident response playbooks
 - [ ] Predictive security analytics
 
 #### 14. Zero Trust Architecture
+
 - [ ] Identity-aware proxy
 - [ ] Continuous verification
 - [ ] Micro-segmentation
 - [ ] Device trust scoring
 
 #### 15. Edge Security
+
 - [ ] IoT device scanning
 - [ ] Edge Kubernetes (K3s, MicroK8s)
 - [ ] Lightweight agents
@@ -227,6 +242,7 @@
 ## Changelog
 
 ### v1.0.0 (Ноябрь 2025)
+
 - Initial production release
 - Full monitoring stack
 - Multi-distribution support

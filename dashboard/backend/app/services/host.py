@@ -3,13 +3,13 @@
 import asyncio
 from typing import Sequence
 
-import docker
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.config import get_settings
 from app.models import Host
 from app.schemas import HostCreate, HostUpdate
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+import docker
 
 settings = get_settings()
 

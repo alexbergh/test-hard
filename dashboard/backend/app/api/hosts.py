@@ -1,10 +1,9 @@
 """Host management endpoints."""
 
-from fastapi import APIRouter, HTTPException, status
-
 from app.api.deps import AdminUser, CurrentUser, DbSession, OperatorUser
 from app.schemas import HostCreate, HostResponse, HostUpdate
 from app.services.host import HostService
+from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter()
 
