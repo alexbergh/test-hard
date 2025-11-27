@@ -3,6 +3,19 @@
 .env.local
 .env.*.local
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+dist/
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
 # Prometheus / Grafana data directories
 prometheus_data/
 grafana_data/
@@ -10,10 +23,12 @@ grafana_data/
 # Generated artifacts and reports
 reports/
 *.arf
-*.html
+# *.html - removed to allow dashboard frontend
 *.json
 !grafana/dashboards/*.json
 !atomic-red-team/*.yaml
+!dashboard/frontend/*.json
+!dashboard/frontend/**/*.json
 __pycache__/
 *.pyc
 *.pyo

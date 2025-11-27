@@ -1,0 +1,35 @@
+# FastAPI Web Dashboard Backend
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic[email]>=2.5.0
+pydantic-settings>=2.1.0
+email-validator>=2.1.0
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+
+# Database
+sqlalchemy>=2.0.25
+alembic>=1.13.0
+aiosqlite>=0.19.0
+
+# Scheduling
+apscheduler>=3.10.4
+
+# Docker & Scanning
+docker>=7.0.0
+httpx>=0.26.0
+aiofiles>=23.2.1
+
+# Monitoring & Tracing
+opentelemetry-api>=1.22.0
+opentelemetry-sdk>=1.22.0
+opentelemetry-exporter-otlp>=1.22.0
+opentelemetry-instrumentation-fastapi>=0.43b0
+prometheus-client>=0.19.0
+
+# Utils
+pyyaml>=6.0.1
+python-dotenv>=1.0.0

@@ -1,0 +1,33 @@
+# Docker Compose overlay for distributed tracing with Grafana Tempo
+# Usage: docker compose -f docker-compose.yml -f docker-compose.tracing.yml up -d
+
+services:
+  # Grafana Tempo for distributed tracing
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"   # Tempo API
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    networks:
+      - default
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # Update Grafana to include Tempo datasource
+  grafana:
+    environment:
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - ./grafana/provisioning/datasources/tempo.yml:/etc/grafana/provisioning/datasources/tempo.yml:ro
+
+volumes:
+  tempo-data:

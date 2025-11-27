@@ -12,7 +12,7 @@ PYTHON ?= python3
 
 TARGET_SERVICES = target-fedora target-debian target-centos target-ubuntu
 SCANNER_SERVICES = openscap-scanner lynis-scanner
-MONITORING_SERVICES = docker-proxy prometheus alertmanager grafana telegraf
+MONITORING_SERVICES = docker-proxy prometheus alertmanager grafana telegraf loki promtail
 
 .PHONY: up up-targets monitor down logs restart hardening-suite scan clean check-deps health validate test \
 	test-unit test-integration test-all coverage install-dev ci lint format
@@ -31,6 +31,19 @@ up-with-logging: ## Start all services with centralized logging (Loki)
 
 logging: ## Start only logging stack (Loki, Promtail)
 	$(COMPOSE) -f docker-compose.yml -f docker-compose.logging.yml up -d loki promtail
+
+up-with-tracing: ## Start all services with distributed tracing (Tempo)
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.tracing.yml up -d
+
+tracing: ## Start only tracing stack (Tempo)
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.tracing.yml up -d tempo
+
+dashboard: ## Start dashboard (backend + frontend)
+	$(COMPOSE) -f dashboard/docker-compose.yml up -d
+
+dashboard-dev: ## Start dashboard in development mode
+	cd dashboard/backend && uvicorn app.main:app --reload &
+	cd dashboard/frontend && npm run dev
 
 down:
 	$(COMPOSE) down
