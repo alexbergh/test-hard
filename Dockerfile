@@ -35,6 +35,7 @@ RUN apt-get update && \
 
 # Stage 4: Install Telegraf
 FROM base AS telegraf-stage
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN wget -qO- https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor > /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg && \
     echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main" > /etc/apt/sources.list.d/influxdata.list && \
     apt-get update && \
