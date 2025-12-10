@@ -30,7 +30,7 @@ jobs:
       url: https://staging.example.com
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Read VERSION
         id: version
@@ -68,7 +68,7 @@ jobs:
     needs: []  # Add staging deployment as prerequisite if needed
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Read VERSION
         id: version
