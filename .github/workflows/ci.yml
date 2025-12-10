@@ -180,7 +180,7 @@ jobs:
 
       - name: Upload logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docker-logs
           path: logs.txt
@@ -272,7 +272,7 @@ jobs:
           echo "Commit: ${{ github.sha }}" >> build-info.txt
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-info
           path: build-info.txt
