@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Build and Push Unified Docker Image
 
 on:
   push:
@@ -11,29 +11,16 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
-    name: Build and Push Images
+    name: Build and Push Unified Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
-
-    strategy:
-      matrix:
-        image:
-          - name: openscap-scanner
-            context: ./scanners/openscap
-            dockerfile: ./scanners/openscap/Dockerfile
-          - name: lynis-scanner
-            context: ./scanners/lynis
-            dockerfile: ./scanners/lynis/Dockerfile
-          - name: telegraf
-            context: .
-            dockerfile: ./telegraf/Dockerfile
 
     steps:
       - name: Checkout code
@@ -53,7 +40,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -67,30 +54,46 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.image.context }}
-          file: ${{ matrix.image.dockerfile }}
+          context: .
+          file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
-          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Security scanner
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILDKIT_INLINE_CACHE=1
 
       - name: Install Cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3
 
-      - name: Sign the images with Cosign
+      - name: Sign the image with Cosign
         if: github.event_name != 'pull_request' && steps.build.outputs.digest != ''
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          # Sign using digest from build step
-          echo "Signing image: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}@${{ steps.build.outputs.digest }}"
+          echo "Signing image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
           cosign sign --yes --oidc-issuer=https://token.actions.githubusercontent.com \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.image.name }}@${{ steps.build.outputs.digest }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
         continue-on-error: true
+
+      - name: Generate SBOM
+        if: github.event_name != 'pull_request'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom
+          path: sbom.spdx.json
 
   update-version:
     name: Update VERSION file

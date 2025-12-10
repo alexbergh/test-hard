@@ -15,7 +15,37 @@ SCANNER_SERVICES = openscap-scanner lynis-scanner
 MONITORING_SERVICES = docker-proxy prometheus alertmanager grafana telegraf loki promtail
 
 .PHONY: up up-targets monitor down logs restart hardening-suite scan clean check-deps health validate test \
-	test-unit test-integration test-all coverage install-dev ci lint format
+	test-unit test-integration test-all coverage install-dev ci lint format build push run-lynis run-openscap run-all
+
+# Build unified image
+build: ## Build unified test-hard Docker image
+	docker build -t test-hard:latest -t ghcr.io/alexbergh/test-hard:latest .
+
+# Push unified image to registry
+push: build ## Build and push unified image to GitHub Container Registry
+	docker push ghcr.io/alexbergh/test-hard:latest
+
+# Run specific scanners using unified image
+run-lynis: ## Run Lynis scanner using unified image
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD)/reports:/opt/test-hard/reports \
+		ghcr.io/alexbergh/test-hard:latest scan-lynis
+
+run-openscap: ## Run OpenSCAP scanner using unified image
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD)/reports:/opt/test-hard/reports \
+		ghcr.io/alexbergh/test-hard:latest scan-openscap
+
+run-all: ## Run all scanners using unified image
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD)/reports:/opt/test-hard/reports \
+		ghcr.io/alexbergh/test-hard:latest scan-all
+
+run-atomic: ## Run Atomic Red Team tests using unified image
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD)/reports:/opt/test-hard/reports \
+		-v $(PWD)/art-storage:/var/lib/hardening/art-storage \
+		ghcr.io/alexbergh/test-hard:latest atomic --dry-run
 
 up: ## Start all services (targets, scanners, monitoring)
 	$(COMPOSE) up -d $(TARGET_SERVICES) $(SCANNER_SERVICES) $(MONITORING_SERVICES)

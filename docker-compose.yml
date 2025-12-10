@@ -49,9 +49,10 @@ services:
     container_name: target-alt-latest
     command: ["sleep", "infinity"]
   openscap-scanner:
-    build: ./scanners/openscap
-    image: test-hard/openscap-scanner:${VERSION:-latest}
+    build: .
+    image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: openscap-scanner
+    command: scan-openscap
     # SECURITY: Using specific capabilities instead of privileged mode
     cap_add:
       - SYS_PTRACE      # Required for process inspection
@@ -66,8 +67,9 @@ services:
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
+      RESULT_ROOT: /opt/test-hard/reports
     volumes:
-      - ./reports:/reports
+      - ./reports:/opt/test-hard/reports
       # SECURITY: Removed direct docker.sock mount - using docker-proxy instead
     networks:
       - default
@@ -86,9 +88,10 @@ services:
           cpus: '1.0'
           memory: 512M
   lynis-scanner:
-    build: ./scanners/lynis
-    image: test-hard/lynis-scanner:${VERSION:-latest}
+    build: .
+    image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: lynis-scanner
+    command: scan-lynis
     # SECURITY: Using specific capabilities instead of privileged mode
     cap_add:
       - SYS_PTRACE      # Required for process inspection
@@ -103,8 +106,9 @@ services:
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
+      RESULT_ROOT: /opt/test-hard/reports
     volumes:
-      - ./reports:/reports
+      - ./reports:/opt/test-hard/reports
       # SECURITY: Removed direct docker.sock mount - using docker-proxy instead
     networks:
       - default
@@ -123,11 +127,10 @@ services:
           cpus: '1.0'
           memory: 512M
   telegraf:
-    build:
-      context: .
-      dockerfile: telegraf/Dockerfile
-    image: test-hard/telegraf:${VERSION:-latest}
+    build: .
+    image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: telegraf
+    command: bash -c "telegraf --config /etc/telegraf/telegraf.conf"
     volumes:
       - /tmp/test_metrics:/tmp/test_metrics:ro
       - ./reports:/reports:ro
