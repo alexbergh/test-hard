@@ -130,7 +130,7 @@ services:
     build: .
     image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: telegraf
-    command: bash -c "telegraf --config /etc/telegraf/telegraf.conf"
+    command: telegraf
     volumes:
       - /tmp/test_metrics:/tmp/test_metrics:ro
       - ./reports:/reports:ro
