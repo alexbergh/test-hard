@@ -4,7 +4,8 @@
 
 Проект был переработан для использования **единого Docker образа** вместо раздельных пакетов для каждого сканера.
 
-### До изменений:
+### До изменений
+
 - 5 отдельных пакетов в GitHub Container Registry:
   - `test-hard/telegraf`
   - `test-hard/lynis-scanner`
@@ -12,7 +13,8 @@
   - `test-hard/lynis`
   - `test-hard/openscap`
 
-### После изменений:
+### После изменений
+
 - 1 единый образ: **`ghcr.io/alexbergh/test-hard`**
 
 ## Преимущества
@@ -94,6 +96,7 @@ docker run --rm \
 Единый образ поддерживает следующие команды через entrypoint:
 
 ### Сканеры
+
 - `lynis [args]` - Прямой запуск Lynis
 - `openscap [args]` - Прямой запуск OpenSCAP
 - `scan-lynis` - Lynis с настройками по умолчанию
@@ -102,11 +105,13 @@ docker run --rm \
 - `atomic [args]` - Atomic Red Team тесты
 
 ### Парсеры
+
 - `parse-lynis <file>` - Парсинг Lynis отчета в Prometheus формат
 - `parse-openscap <file>` - Парсинг OpenSCAP отчета в Prometheus формат
 - `parse-atomic <file>` - Парсинг результатов Atomic Red Team
 
 ### Утилиты
+
 - `bash` - Интерактивная bash оболочка
 - `help` - Показать справку
 
@@ -150,6 +155,7 @@ services:
 ## CI/CD
 
 GitHub Actions автоматически собирает и публикует образ при:
+
 - Push в `main` или `develop` ветки
 - Создании тега `v*`
 - Pull request в `main`
@@ -185,6 +191,7 @@ docker run --rm test-hard:dev oscap --version
 ### Ошибка "command not found"
 
 Убедитесь, что используете правильный entrypoint:
+
 ```bash
 docker run ghcr.io/alexbergh/test-hard help
 ```
@@ -192,6 +199,7 @@ docker run ghcr.io/alexbergh/test-hard help
 ### Проблемы с доступом к Docker socket
 
 Проверьте права на `/var/run/docker.sock`:
+
 ```bash
 ls -la /var/run/docker.sock
 # Должно быть: srw-rw---- root docker
@@ -200,6 +208,7 @@ ls -la /var/run/docker.sock
 ### Образ слишком большой
 
 Образ оптимизирован с помощью multi-stage build. Размер ~500-700 MB включает:
+
 - Все сканеры (Lynis, OpenSCAP)
 - Python окружение
 - SCAP контент для различных дистрибутивов
@@ -219,6 +228,6 @@ ls -la /var/run/docker.sock
 
 ## Ссылки
 
-- GitHub Repository: https://github.com/alexbergh/test-hard
-- Container Registry: https://ghcr.io/alexbergh/test-hard
-- Documentation: https://github.com/alexbergh/test-hard/tree/main/docs
+- GitHub Repository: <https://github.com/alexbergh/test-hard>
+- Container Registry: <https://ghcr.io/alexbergh/test-hard>
+- Documentation: <https://github.com/alexbergh/test-hard/tree/main/docs>
