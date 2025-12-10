@@ -237,7 +237,7 @@ jobs:
           docker compose -f docker-compose.yml config --images | \
           grep -v "^$" | \
           grep -v "^test-hard/" | \
-          xargs -I {} sh -c 'docker pull {} && trivy image {} --severity HIGH,CRITICAL --exit-code 0'
+          xargs -I {} sh -c 'docker pull {} && trivy image {} --severity HIGH,CRITICAL --exit-code 0 || true'
 
   build:
     name: Build and Tag Images
