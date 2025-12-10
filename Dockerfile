@@ -6,6 +6,9 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    wget \
+    gnupg \
+    lsb-release \
     python3 \
     python3-pip \
     docker.io \
@@ -19,15 +22,35 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends lynis && \
     rm -rf /var/lib/apt/lists/*
 
-# Stage 3: Install OpenSCAP (from Fedora for better SCAP support)
-FROM registry.fedoraproject.org/fedora:40 AS openscap-stage
-RUN dnf -y update && \
-    dnf -y install openscap-scanner scap-security-guide && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
+# Stage 3: Install OpenSCAP from Debian (compatible with base)
+FROM base AS openscap-stage
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libopenscap25 \
+    openscap-utils \
+    ssg-base \
+    ssg-debian \
+    ssg-debderived \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stage 4: Install Telegraf
+FROM base AS telegraf-stage
+RUN wget -qO- https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor > /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg && \
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main" > /etc/apt/sources.list.d/influxdata.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends telegraf && \
+    rm -rf /var/lib/apt/lists/*
 
 # Final stage: Combine everything
 FROM base
+
+# Install runtime dependencies for OpenSCAP
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libopenscap25 \
+    libxml2 \
+    libxslt1.1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy Lynis from lynis-stage
 COPY --from=lynis-stage /usr/sbin/lynis /usr/sbin/lynis
@@ -35,9 +58,12 @@ COPY --from=lynis-stage /usr/share/lynis /usr/share/lynis
 
 # Copy OpenSCAP from openscap-stage
 COPY --from=openscap-stage /usr/bin/oscap /usr/bin/oscap
-COPY --from=openscap-stage /usr/share/xml/scap /usr/share/xml/scap
 COPY --from=openscap-stage /usr/share/openscap /usr/share/openscap
-COPY --from=openscap-stage /usr/lib64/libopenscap* /usr/lib/x86_64-linux-gnu/
+COPY --from=openscap-stage /usr/share/xml/scap /usr/share/xml/scap
+
+# Copy Telegraf from telegraf-stage
+COPY --from=telegraf-stage /usr/bin/telegraf /usr/bin/telegraf
+COPY --from=telegraf-stage /etc/telegraf /etc/telegraf
 
 # Install Python dependencies
 COPY requirements.txt /tmp/requirements.txt
@@ -47,6 +73,9 @@ RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 # Copy all scripts
 COPY scripts/ /opt/test-hard/scripts/
 COPY atomic-red-team/ /opt/test-hard/atomic-red-team/
+
+# Copy custom Telegraf configuration
+COPY telegraf/telegraf.conf /etc/telegraf/telegraf.conf
 
 # Create necessary directories
 RUN mkdir -p /var/lib/hardening/results \

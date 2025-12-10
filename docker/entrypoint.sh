@@ -37,6 +37,10 @@ case "$COMMAND" in
     shift
     exec python3 /opt/test-hard/scripts/parsing/parse_atomic_red_team_result.py "$@"
     ;;
+  telegraf)
+    shift
+    exec /usr/bin/telegraf --config /etc/telegraf/telegraf.conf "$@"
+    ;;
   bash)
     exec /bin/bash
     ;;
