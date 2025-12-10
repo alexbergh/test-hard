@@ -158,7 +158,25 @@ jobs:
 
       - name: Start services
         run: |
-          make up
+          # Retry logic for potential network issues with external registries
+          max_attempts=3
+          attempt=0
+          until [ $attempt -ge $max_attempts ]; do
+            attempt=$((attempt+1))
+            echo "Attempt $attempt of $max_attempts to start services..."
+            if make up; then
+              echo "Services started successfully"
+              break
+            fi
+            if [ $attempt -lt $max_attempts ]; then
+              echo "Failed to start services, retrying in 10 seconds..."
+              docker compose down -v || true
+              sleep 10
+            else
+              echo "Failed to start services after $max_attempts attempts"
+              exit 1
+            fi
+          done
           sleep 60
           echo "Checking container status..."
           docker compose ps
