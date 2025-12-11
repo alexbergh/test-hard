@@ -49,7 +49,6 @@ make up
 * **[Быстрый старт](docs/QUICKSTART.md)** - развертывание за 5-10 минут
 * **[FAQ](docs/FAQ.md)** - часто задаваемые вопросы
 * **[Troubleshooting](docs/TROUBLESHOOTING.md)** - устранение неполадок
-* **[Contributing](CONTRIBUTING.md)** - как внести вклад в проект
 
 **Развертывание:**
 
