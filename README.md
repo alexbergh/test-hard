@@ -227,7 +227,7 @@ test-hard/
 │   ├── common/                # Общие entrypoint-скрипты для агентов
 │   ├── debian/                # Dockerfile для Debian 12
 │   ├── ubuntu/                # Dockerfile для Ubuntu 22.04
-│   ├── fedora/                # Dockerfile для Fedora 39
+│   ├── fedora/                # Dockerfile для Fedora 40
 │   └── centos/                # Dockerfile для CentOS Stream 9
 ├── grafana/
 │   └── provisioning/
