@@ -33,6 +33,13 @@ def main(path: str) -> int:
     if score is not None:
         metrics.append(f"lynis_score{{host=\"{hostname}\"}} {score}")
 
+    # Also emit dashboard-friendly metric names with a security_scanners_ prefix
+    metrics.append(f"security_scanners_lynis_failed{{host=\"{hostname}\"}} {failed}")
+    metrics.append(f"security_scanners_lynis_warnings{{host=\"{hostname}\"}} {warnings}")
+    metrics.append(f"security_scanners_lynis_suggestions{{host=\"{hostname}\"}} {suggestions}")
+    if score is not None:
+        metrics.append(f"security_scanners_lynis_score{{host=\"{hostname}\"}} {score}")
+
     out_file = p.with_name(f"{p.stem}_metrics.prom")
     out_file.write_text("\n".join(metrics) + "\n")
     print(f"Wrote Lynis metrics: {out_file}")

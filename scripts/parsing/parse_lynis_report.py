@@ -46,8 +46,14 @@ def parse_lynis_report(report_path: str) -> None:
     logger.info("Parsed Lynis report from %s: %d metrics", path, len(metrics))
 
     # Вывод метрик в формате Prometheus
-    for key, value in metrics.items():
-        print(f'{key}{{host="{hostname}"}} {value}')
+        for key, value in metrics.items():
+            print(f'{key}{{host="{hostname}"}} {value}')
+            # Also print prefixed metric names expected by dashboards
+            print(f'security_scanners_lynis_{key[len("lynis_"):]}{{host="{hostname}"}} {value}')
+
+        # Lynis score separately
+        if "lynis_score" in metrics:
+            print(f'security_scanners_lynis_score{{host="{hostname}"}} {metrics["lynis_score"]}')
 
 
 if __name__ == "__main__":
