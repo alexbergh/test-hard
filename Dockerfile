@@ -57,6 +57,18 @@ RUN apt-get update && \
 COPY --from=lynis-stage /usr/sbin/lynis /usr/sbin/lynis
 COPY --from=lynis-stage /usr/share/lynis /usr/share/lynis
 
+# Make Lynis usable when run inside the unified image:
+# - provide an /etc/lynis config location (some Lynis versions expect it)
+# - ensure a default profile is present so `lynis audit` doesn't fail
+RUN rm -rf /etc/lynis && \
+    mkdir -p /etc/lynis && \
+    cp -a /usr/share/lynis/* /etc/lynis/ || true && \
+    if [ ! -f /etc/lynis/default.prf ]; then cp /usr/share/lynis/include/profiles /etc/lynis/default.prf || true; fi && \
+    # Ensure plugin directories exist so Lynis can run non-interactively
+    mkdir -p /etc/lynis/plugins /usr/share/lynis/plugins && \
+    chown -R root:root /etc/lynis /usr/share/lynis && \
+    chmod -R u=rwX,go=rX /etc/lynis /usr/share/lynis
+
 # Copy OpenSCAP from openscap-stage
 COPY --from=openscap-stage /usr/bin/oscap /usr/bin/oscap
 COPY --from=openscap-stage /usr/share/openscap /usr/share/openscap

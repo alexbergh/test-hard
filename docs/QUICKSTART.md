@@ -20,7 +20,7 @@ docker compose up -d
 
 ```bash
 # Запустить полное сканирование
-./scripts/run_hardening_suite.sh
+./scripts/scanning/run_hardening_suite.sh
 ```
 
 ### 3. Проверка результатов
@@ -62,7 +62,7 @@ cd test-hard && \
 docker compose build --no-cache && \
 docker compose up -d && \
 sleep 30 && \
-./scripts/run_hardening_suite.sh && \
+./scripts/scanning/run_hardening_suite.sh && \
 echo "Готово! Открывайте http://localhost:3000 (admin/admin)"
 ```
 
@@ -91,7 +91,7 @@ curl http://localhost:3000/api/health
 docker compose down
 docker compose up -d
 sleep 30
-./scripts/run_hardening_suite.sh
+./scripts/scanning/run_hardening_suite.sh
 ```
 
 ### Полная очистка и пересборка
@@ -100,7 +100,7 @@ sleep 30
 docker compose down -v
 docker compose build --no-cache
 docker compose up -d
-./scripts/run_hardening_suite.sh
+./scripts/scanning/run_hardening_suite.sh
 ```
 
 ### Проверка логов

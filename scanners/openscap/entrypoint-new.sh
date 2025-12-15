@@ -22,8 +22,9 @@ install_openscap() {
       docker exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
       ;;
     target-debian|target-ubuntu)
-      # Р”Р»СЏ Debian/Ubuntu РЅРµ СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј - Р±СѓРґРµРј РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ host СЃРєР°РЅРµСЂ
-      echo "Skipping OpenSCAP install for $name - will use host scanner"
+      # For Debian/Ubuntu install openscap packages inside the target so
+      # scans can be executed there in a consistent way
+      docker exec "$name" sh -c "apt-get update && apt-get install -y --no-install-recommends openscap-scanner scap-security-guide || true"
       ;;
     *)
       echo "Unknown container $name for OpenSCAP install" >&2
@@ -88,23 +89,66 @@ scan_container() {
   echo "[OpenSCAP] Scanning $name using $datastream" >&2
 
   # Р—Р°РїСѓСЃС‚РёС‚СЊ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ РІРЅСѓС‚СЂРё РєРѕРЅС‚РµР№РЅРµСЂР°
-  if docker exec "$name" oscap xccdf eval \
-    --profile "$PROFILE" \
-    --results "$result_file" \
-    --report "$report_file" \
-    "$datastream" >/dev/null 2>&1 || true; then
+  # Make sure requested profile exists in datastream; if not, pick a fallback
+  available_profiles=$(docker exec "$name" oscap info "$datastream" 2>/dev/null | grep -Eo 'Profile ID: .*|Id: .*' | sed -E 's/(Profile ID: |Id: )//' || true)
+  if [[ -n "$available_profiles" ]]; then
+    if ! echo "$available_profiles" | grep -q "^${PROFILE}$"; then
+      echo "Requested profile ${PROFILE} not present in datastream; selecting fallback" >&2
+      if echo "$available_profiles" | grep -q "^xccdf_org.ssgproject.content_profile_standard$"; then
+        PROFILE="xccdf_org.ssgproject.content_profile_standard"
+      else
+        PROFILE=$(echo "$available_profiles" | head -n1)
+      fi
+      echo "Using profile: ${PROFILE}" >&2
+    fi
+  else
+    echo "No profiles discovered in datastream, proceeding with requested profile: ${PROFILE}" >&2
+  fi
 
-    # РЎРєРѕРїРёСЂРѕРІР°С‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚С‹
-    docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null || echo "Failed to copy XML"
-    docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null || echo "Failed to copy HTML"
+  # Run the scan. Prefer running oscap inside the target container; if oscap is
+  # not available in the target, fetch the datastream and run oscap locally
+  # inside this scanner container.
+  if docker exec "$name" command -v oscap >/dev/null 2>&1; then
+    docker exec "$name" oscap xccdf eval \
+      --profile "$PROFILE" \
+      --results "$result_file" \
+      --report "$report_file" \
+      "$datastream" >/dev/null 2>&1 || true
+  else
+    tmp_ds="/tmp/ssg-${name}.xml"
+    # try to copy datastream content via docker exec cat
+    if docker exec "$name" sh -c "cat \"$datastream\"" >"$tmp_ds" 2>/dev/null; then
+      oscap xccdf eval \
+        --profile "$PROFILE" \
+        --results "$result_file" \
+        --report "$report_file" \
+        "$tmp_ds" >/dev/null 2>&1 || true
+      rm -f "$tmp_ds" || true
+    else
+      echo "Failed to fetch datastream from $name: $datastream" >&2
+    fi
+  fi
 
-    # РР·РІР»РµС‡СЊ РјРµС‚СЂРёРєРё РёР· XML Рё СЃРѕР·РґР°С‚СЊ Prometheus metrics
-    extract_openscap_metrics "$name" "/reports/openscap/${name}.xml"
+  # Attempt to copy outputs even if the command exited non-zero
+  local copied_any=0
+  if docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null; then
+    copied_any=1
+  else
+    echo "Failed to copy XML from $name:$result_file" >&2
+  fi
 
+  if docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null; then
+    copied_any=1
+  else
+    echo "Failed to copy HTML from $name:$report_file" >&2
+  fi
+
+  if [[ $copied_any -eq 1 ]]; then
+    extract_openscap_metrics "$name" "/reports/openscap/${name}.xml" || true
     echo "[OpenSCAP] Scan completed for $name" >&2
     return 0
   else
-    echo "[OpenSCAP] Scan failed for $name" >&2
+    echo "[OpenSCAP] Scan failed for $name (no outputs copied)" >&2
     return 1
   fi
 }

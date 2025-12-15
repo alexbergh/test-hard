@@ -23,10 +23,33 @@ if [[ -z "${XCCDF}" ]]; then
   exit 1
 fi
 
+# Validate requested profile exists in the selected XCCDF; pick a reasonable fallback
+available_profiles=$(oscap info "$XCCDF" 2>/dev/null | grep -Eo 'Profile ID: .*|Id: .*' | sed -E 's/(Profile ID: |Id: )//' | tr -d '\r' || true)
+if [[ -z "${available_profiles}" ]]; then
+  echo "No profiles discovered in XCCDF, proceeding with requested profile: ${PROFILE}" >&2
+else
+  if ! echo "$available_profiles" | grep -q "^${PROFILE}$"; then
+    echo "Requested profile ${PROFILE} not present in XCCDF; selecting a fallback profile" >&2
+    if echo "$available_profiles" | grep -q "^xccdf_org.ssgproject.content_profile_standard$"; then
+      PROFILE="xccdf_org.ssgproject.content_profile_standard"
+      echo "Fallback to profile: ${PROFILE}" >&2
+    else
+      PROFILE=$(echo "$available_profiles" | head -n1)
+      echo "Fallback to first available profile: ${PROFILE}" >&2
+    fi
+  fi
+fi
+
 oscap xccdf eval \
   --profile "$PROFILE" \
   --results-arf "$REPORT_ARF" \
   --report "$REPORT_HTML" \
   "$XCCDF"
 
-"$(dirname "$0")/parse_openscap_report.py" "$REPORT_ARF"
+PARSE_SCRIPT="$(dirname "$0")/../parsing/parse_openscap_report.py"
+if [[ -x "$PARSE_SCRIPT" || -f "$PARSE_SCRIPT" ]]; then
+  "$PARSE_SCRIPT" "$REPORT_ARF"
+else
+  echo "Parser not found: $PARSE_SCRIPT" >&2
+  exit 1
+fi
