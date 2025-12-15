@@ -66,9 +66,10 @@ services:
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
-      RESULT_ROOT: /opt/test-hard/reports
+      HARDENING_RESULTS_DIR: /reports
+      RESULT_ROOT: /reports
     volumes:
-      - ./reports:/opt/test-hard/reports
+      - ./reports:/reports
       # SECURITY: Removed direct docker.sock mount - using docker-proxy instead
     networks:
       - default
@@ -104,9 +105,10 @@ services:
     environment:
       TARGET_CONTAINERS: target-fedora target-debian target-centos target-ubuntu target-alt-c10f2 target-alt-latest
       DOCKER_HOST: tcp://docker-proxy:2375
-      RESULT_ROOT: /opt/test-hard/reports
+      HARDENING_RESULTS_DIR: /reports
+      RESULT_ROOT: /reports
     volumes:
-      - ./reports:/opt/test-hard/reports
+      - ./reports:/reports
       # SECURITY: Removed direct docker.sock mount - using docker-proxy instead
     networks:
       - default
