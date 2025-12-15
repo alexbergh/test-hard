@@ -1,9 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ "${LYNIS_ALREADY_ESCALATED:-0}" != "1" && "$(id -u)" -ne 0 ]]; then
-  exec sudo -E LYNIS_ALREADY_ESCALATED=1 "$0" "$@"
-fi
+# Skip sudo escalation in Docker containers - run as root directly
+# Container should be started with proper capabilities
 
 HOSTNAME="$(hostname 2>/dev/null || echo "unknown-host")"
 RESULT_ROOT="${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}"

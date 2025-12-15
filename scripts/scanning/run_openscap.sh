@@ -23,7 +23,7 @@ if [[ -z "${XCCDF}" ]]; then
   exit 1
 fi
 
-sudo oscap xccdf eval \
+oscap xccdf eval \
   --profile "$PROFILE" \
   --results-arf "$REPORT_ARF" \
   --report "$REPORT_HTML" \
