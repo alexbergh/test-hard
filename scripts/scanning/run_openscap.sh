@@ -40,16 +40,17 @@ else
   fi
 fi
 
-oscap xccdf eval \
+if ! oscap xccdf eval \
   --profile "$PROFILE" \
   --results-arf "$REPORT_ARF" \
   --report "$REPORT_HTML" \
-  "$XCCDF"
+  "$XCCDF"; then
+  echo "[hardening] OpenSCAP returned non-zero status; continuing to post-process any generated outputs" >&2
+fi
 
-PARSE_SCRIPT="$(dirname "$0")/../parsing/parse_openscap_report.py"
-if [[ -x "$PARSE_SCRIPT" || -f "$PARSE_SCRIPT" ]]; then
-  "$PARSE_SCRIPT" "$REPORT_ARF"
+if [[ -f "$REPORT_ARF" && -s "$REPORT_ARF" ]]; then
+  python3 /opt/test-hard/scripts/parsing/parse_openscap_report.py "$REPORT_ARF" || echo "[hardening] OpenSCAP parser failed" >&2
 else
-  echo "Parser not found: $PARSE_SCRIPT" >&2
+  echo "[hardening] No ARF report generated: $REPORT_ARF" >&2
   exit 1
 fi

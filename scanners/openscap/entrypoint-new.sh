@@ -24,11 +24,23 @@ install_openscap() {
     target-debian|target-ubuntu)
       # For Debian/Ubuntu install openscap packages inside the target so
       # scans can be executed there in a consistent way
-      docker exec "$name" sh -c "apt-get update && apt-get install -y --no-install-recommends openscap-scanner scap-security-guide || true"
+      docker exec "$name" sh -c "apt-get update >/dev/null 2>&1 || true; \
+        if command -v add-apt-repository >/dev/null 2>&1; then \
+          add-apt-repository -y universe >/dev/null 2>&1 || true; \
+        else \
+          apt-get install -y --no-install-recommends software-properties-common >/dev/null 2>&1 || true; \
+          add-apt-repository -y universe >/dev/null 2>&1 || true; \
+        fi; \
+        apt-get update && apt-get install -y --no-install-recommends openscap-scanner scap-security-guide || true"
+
+      if ! docker exec "$name" command -v oscap >/dev/null 2>&1; then
+        echo "OpenSCAP not available in $name after install attempt; skipping" >&2
+        return 2
+      fi
       ;;
     *)
-      echo "Unknown container $name for OpenSCAP install" >&2
-      return 1
+      echo "Unknown container $name for OpenSCAP install; skipping" >&2
+      return 2
       ;;
   esac
 }
@@ -90,7 +102,7 @@ scan_container() {
 
   # Р—Р°РїСѓСЃС‚РёС‚СЊ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ РІРЅСѓС‚СЂРё РєРѕРЅС‚РµР№РЅРµСЂР°
   # Make sure requested profile exists in datastream; if not, pick a fallback
-  available_profiles=$(docker exec "$name" oscap info "$datastream" 2>/dev/null | grep -Eo 'Profile ID: .*|Id: .*' | sed -E 's/(Profile ID: |Id: )//' || true)
+  available_profiles=$(docker exec "$name" oscap info "$datastream" 2>/dev/null | grep -Eo 'Profile ID: .*' | sed -E 's/(Profile ID: )//' || true)
   if [[ -n "$available_profiles" ]]; then
     if ! echo "$available_profiles" | grep -q "^${PROFILE}$"; then
       echo "Requested profile ${PROFILE} not present in datastream; selecting fallback" >&2
@@ -109,11 +121,13 @@ scan_container() {
   # not available in the target, fetch the datastream and run oscap locally
   # inside this scanner container.
   if docker exec "$name" command -v oscap >/dev/null 2>&1; then
-    docker exec "$name" oscap xccdf eval \
+    if ! docker exec "$name" oscap xccdf eval \
       --profile "$PROFILE" \
       --results "$result_file" \
       --report "$report_file" \
-      "$datastream" >/dev/null 2>&1 || true
+      "$datastream"; then
+      echo "[OpenSCAP] oscap exited non-zero for $name (will still try to collect outputs)" >&2
+    fi
   else
     tmp_ds="/tmp/ssg-${name}.xml"
     # try to copy datastream content via docker exec cat
@@ -131,16 +145,30 @@ scan_container() {
 
   # Attempt to copy outputs even if the command exited non-zero
   local copied_any=0
+  if ! docker exec "$name" test -s "$result_file" 2>/dev/null; then
+    echo "[OpenSCAP] Result XML not found in $name at $result_file" >&2
+  fi
+  if ! docker exec "$name" test -s "$report_file" 2>/dev/null; then
+    echo "[OpenSCAP] Report HTML not found in $name at $report_file" >&2
+  fi
   if docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null; then
     copied_any=1
   else
-    echo "Failed to copy XML from $name:$result_file" >&2
+    if docker exec "$name" sh -c "cat '$result_file'" >"/reports/openscap/${name}.xml" 2>/dev/null; then
+      copied_any=1
+    else
+      echo "Failed to copy XML from $name:$result_file" >&2
+    fi
   fi
 
   if docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null; then
     copied_any=1
   else
-    echo "Failed to copy HTML from $name:$report_file" >&2
+    if docker exec "$name" sh -c "cat '$report_file'" >"/reports/openscap/${name}.html" 2>/dev/null; then
+      copied_any=1
+    else
+      echo "Failed to copy HTML from $name:$report_file" >&2
+    fi
   fi
 
   if [[ $copied_any -eq 1 ]]; then
@@ -228,7 +256,12 @@ EOF
 status=0
 
 for target in "${targets[@]}"; do
-  if ! install_openscap "$target"; then
+  install_openscap "$target"
+  rc=$?
+  if [[ $rc -eq 2 ]]; then
+    continue
+  fi
+  if [[ $rc -ne 0 ]]; then
     echo "Failed to install OpenSCAP in $target" >&2
     status=1
     continue

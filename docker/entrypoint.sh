@@ -13,9 +13,15 @@ case "$COMMAND" in
     exec /usr/bin/oscap "$@"
     ;;
   scan-lynis)
+    if [[ -x /opt/test-hard/scanners/lynis/entrypoint.sh ]]; then
+      exec /opt/test-hard/scanners/lynis/entrypoint.sh
+    fi
     exec /opt/test-hard/scripts/scanning/run_lynis.sh
     ;;
   scan-openscap)
+    if [[ -x /opt/test-hard/scanners/openscap/entrypoint-new.sh ]]; then
+      exec /opt/test-hard/scanners/openscap/entrypoint-new.sh
+    fi
     exec /opt/test-hard/scripts/scanning/run_openscap.sh
     ;;
   scan-all)

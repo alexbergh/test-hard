@@ -8,7 +8,7 @@ HOSTNAME="$(hostname 2>/dev/null || echo "unknown-host")"
 RESULT_ROOT="${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}"
 RESULT_DIR="${RESULT_ROOT%/}/lynis"
 TIMESTAMP="$(date +%Y%m%dT%H%M%S)"
-REPORT_FILE="${RESULT_DIR}/lynis-${HOSTNAME}-${TIMESTAMP}.txt"
+REPORT_FILE="${RESULT_DIR}/lynis-${HOSTNAME}-${TIMESTAMP}.log"
 
 install -d -m 0775 "$RESULT_DIR"
 
@@ -32,9 +32,23 @@ if [[ -d "$ROOTDIR" ]]; then
   cd "$ROOTDIR"
 fi
 
-if ! lynis --profile "$PROFILE" audit system --no-colors --quiet --nolog | tee "$REPORT_FILE"; then
+if ! lynis --profile "$PROFILE" audit system --no-colors --quiet \
+  --logfile "$REPORT_FILE" --report-file "${RESULT_DIR}/lynis-${HOSTNAME}-${TIMESTAMP}.dat"; then
   echo "[hardening] Lynis execution failed" >&2
-  exit 1
+  # Do not exit here; allow post-processing (metrics generation / copying)
 fi
 
 echo "[hardening] Lynis scan completed (JSON output not available in this version)"
+
+# Attempt to generate a Prometheus metrics file from the Lynis text report so
+# Telegraf can pick it up via the file input plugin. Use the script shipped in
+# scripts/parsing; tolerate failures so the scanner run overall doesn't fail.
+PARSER_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PARSER="$PARSER_DIR/parsing/generate_lynis_metrics.py"
+if [[ -x "$PARSER" || -f "$PARSER" ]]; then
+  if ! python3 "$PARSER" "$REPORT_FILE"; then
+    echo "[hardening] Lynis metrics generation failed" >&2
+  fi
+else
+  echo "[hardening] Lynis metrics generator not found: $PARSER" >&2
+fi

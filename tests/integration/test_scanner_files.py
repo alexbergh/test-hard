@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 
@@ -26,6 +25,13 @@ def test_run_lynis_profile_or_usecwd():
     assert p.exists()
     content = p.read_text()
     assert "--profile" in content or "--usecwd" in content
+
+
+def test_lynis_metrics_generator_exists_and_invoked():
+    p = Path("scripts/parsing/generate_lynis_metrics.py")
+    assert p.exists() and p.is_file()
+    content = Path("scripts/scanning/run_lynis.sh").read_text()
+    assert "generate_lynis_metrics.py" in content
 
 
 def test_dockerfile_contains_lynis_default_profile():

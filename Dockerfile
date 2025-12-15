@@ -13,6 +13,7 @@ RUN apt-get update && \
     python3-pip \
     docker.io \
     bash \
+    procps \
     git \
     && rm -rf /var/lib/apt/lists/*
 
@@ -86,6 +87,7 @@ RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 # Copy all scripts
 COPY scripts/ /opt/test-hard/scripts/
 COPY atomic-red-team/ /opt/test-hard/atomic-red-team/
+COPY scanners/ /opt/test-hard/scanners/
 
 # Copy custom Telegraf configuration
 COPY telegraf/telegraf.conf /etc/telegraf/telegraf.conf
@@ -95,6 +97,8 @@ RUN mkdir -p /var/lib/hardening/results \
     /var/lib/hardening/art-storage \
     /opt/test-hard/reports \
     && chmod -R 755 /opt/test-hard
+
+RUN find /opt/test-hard/scanners -type f -name "*.sh" -exec chmod +x {} \;
 
 # Set working directory
 WORKDIR /opt/test-hard

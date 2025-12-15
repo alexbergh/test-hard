@@ -4,6 +4,8 @@ import subprocess
 import time
 from pathlib import Path
 
+import os
+
 import pytest
 import requests
 
@@ -17,6 +19,12 @@ class TestDockerComposeIntegration:
     def docker_services(self):
         """Start Docker Compose services for testing."""
         project_root = Path(__file__).parent.parent.parent
+
+        subprocess.run(
+            ["docker", "build", "-t", "ghcr.io/alexbergh/test-hard:latest", "."],
+            cwd=project_root,
+            check=True,
+        )
 
         # Start services
         subprocess.run(["docker", "compose", "up", "-d"], cwd=project_root, check=True)
@@ -51,13 +59,34 @@ class TestDockerComposeIntegration:
 
     def test_grafana_datasource(self, docker_services):
         """Test that Grafana has Prometheus datasource configured."""
-        # Use credentials from .env.example (copied to .env in CI)
-        response = requests.get(
-            "http://localhost:3000/api/datasources",
-            auth=("CHANGE_ME_ADMIN_USER", "CHANGE_ME_GENERATE_WITH_openssl_rand_base64_32"),
-            timeout=5,
-        )
-        assert response.status_code == 200
+        # Grafana credentials can be overridden via env/.env in different environments.
+        # Try a small set of common credentials to make local runs reliable while
+        # still validating the datasource configuration.
+        candidates = []
+
+        env_user = os.getenv("GF_SECURITY_ADMIN_USER") or os.getenv("GRAFANA_ADMIN_USER")
+        env_pass = os.getenv("GF_SECURITY_ADMIN_PASSWORD") or os.getenv("GRAFANA_ADMIN_PASSWORD")
+        if env_user and env_pass:
+            candidates.append((env_user, env_pass))
+
+        # Defaults used in repo docs/CI templates
+        candidates.append(("CHANGE_ME_ADMIN_USER", "CHANGE_ME_GENERATE_WITH_openssl_rand_base64_32"))
+
+        # Grafana image defaults
+        candidates.append(("admin", "admin"))
+
+        response = None
+        for user, password in candidates:
+            response = requests.get(
+                "http://localhost:3000/api/datasources",
+                auth=(user, password),
+                timeout=5,
+            )
+            if response.status_code == 200:
+                break
+
+        assert response is not None
+        assert response.status_code == 200, f"Grafana /api/datasources returned {response.status_code}: {response.text}"
         datasources = response.json()
         prometheus_ds = [ds for ds in datasources if ds["type"] == "prometheus"]
         assert len(prometheus_ds) > 0
@@ -128,13 +157,13 @@ def test_makefile_commands():
 @pytest.mark.integration
 @pytest.mark.requires_docker
 def test_scanner_images_build():
-    """Test that scanner Docker images can be built."""
+    """Test that the unified scanner Docker image can be built."""
     project_root = Path(__file__).parent.parent.parent
 
     result = subprocess.run(
-        ["docker", "compose", "build", "openscap-scanner", "lynis-scanner"],
+        ["docker", "build", "-t", "ghcr.io/alexbergh/test-hard:latest", "."],
         cwd=project_root,
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0
+    assert result.returncode == 0, result.stderr
