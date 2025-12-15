@@ -20,6 +20,12 @@ class TestDockerComposeIntegration:
         """Start Docker Compose services for testing."""
         project_root = Path(__file__).parent.parent.parent
 
+        subprocess.run(
+            ["docker", "build", "-t", "ghcr.io/alexbergh/test-hard:latest", "."],
+            cwd=project_root,
+            check=True,
+        )
+
         # Start services
         subprocess.run(["docker", "compose", "up", "-d"], cwd=project_root, check=True)
 
