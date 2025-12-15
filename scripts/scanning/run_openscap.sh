@@ -48,13 +48,8 @@ if ! oscap xccdf eval \
   echo "[hardening] OpenSCAP returned non-zero status; continuing to post-process any generated outputs" >&2
 fi
 
-PARSE_SCRIPT="$(dirname "$0")/../parsing/parse_openscap_report.py"
 if [[ -f "$REPORT_ARF" && -s "$REPORT_ARF" ]]; then
-  if [[ -x "$PARSE_SCRIPT" ]]; then
-    "$PARSE_SCRIPT" "$REPORT_ARF" || echo "[hardening] OpenSCAP parser failed" >&2
-  else
-    python3 "$PARSE_SCRIPT" "$REPORT_ARF" || echo "[hardening] OpenSCAP parser failed" >&2
-  fi
+  python3 /opt/test-hard/scripts/parsing/parse_openscap_report.py "$REPORT_ARF" || echo "[hardening] OpenSCAP parser failed" >&2
 else
   echo "[hardening] No ARF report generated: $REPORT_ARF" >&2
   exit 1

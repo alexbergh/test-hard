@@ -8,7 +8,7 @@ HOSTNAME="$(hostname 2>/dev/null || echo "unknown-host")"
 RESULT_ROOT="${HARDENING_RESULTS_DIR:-/var/lib/hardening/results}"
 RESULT_DIR="${RESULT_ROOT%/}/lynis"
 TIMESTAMP="$(date +%Y%m%dT%H%M%S)"
-REPORT_FILE="${RESULT_DIR}/lynis-${HOSTNAME}-${TIMESTAMP}.txt"
+REPORT_FILE="${RESULT_DIR}/lynis-${HOSTNAME}-${TIMESTAMP}.log"
 
 install -d -m 0775 "$RESULT_DIR"
 
@@ -32,7 +32,8 @@ if [[ -d "$ROOTDIR" ]]; then
   cd "$ROOTDIR"
 fi
 
-if ! lynis --profile "$PROFILE" audit system --no-colors --quiet --nolog | tee "$REPORT_FILE"; then
+if ! lynis --profile "$PROFILE" audit system --no-colors --quiet \
+  --logfile "$REPORT_FILE" --report-file "${RESULT_DIR}/lynis-${HOSTNAME}-${TIMESTAMP}.dat"; then
   echo "[hardening] Lynis execution failed" >&2
   # Do not exit here; allow post-processing (metrics generation / copying)
 fi

@@ -52,6 +52,7 @@
         "defaults": {},
         "overrides": []
       },
+      "timeFrom": "now-24h",
       "gridPos": {
         "h": 8,
         "w": 12,

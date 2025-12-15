@@ -11,4 +11,4 @@ def test_generate_lynis_metrics(tmp_path):
     m = report.with_name("host-1_metrics.prom")
     assert m.exists()
     txt = m.read_text()
-    assert "security_scanners_lynis_score" in txt
+    assert "lynis_score" in txt

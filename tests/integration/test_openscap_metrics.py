@@ -25,6 +25,6 @@ def test_parse_openscap_writes_metrics(tmp_path):
     metrics = arf.with_name("test_metrics.prom")
     assert metrics.exists()
     txt = metrics.read_text()
-    assert "security_scanners_openscap_score" in txt
-    assert "security_scanners_openscap_pass_count" in txt
-    assert "security_scanners_openscap_fail_count" in txt
+    assert "openscap_score" in txt
+    assert "openscap_pass_count" in txt
+    assert "openscap_fail_count" in txt

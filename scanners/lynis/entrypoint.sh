@@ -23,8 +23,8 @@ run_install() {
       docker exec "$name" sh -c "apt-get update && apt-get install -y lynis procps"
       ;;
     *)
-      echo "Unknown container $name for Lynis install" >&2
-      return 1
+      echo "Unknown container $name for Lynis install; skipping" >&2
+      return 2
       ;;
   esac
 }
@@ -111,7 +111,12 @@ EOF
 status=0
 
 for target in "${targets[@]}"; do
-  if ! run_install "$target"; then
+  run_install "$target"
+  rc=$?
+  if [[ $rc -eq 2 ]]; then
+    continue
+  fi
+  if [[ $rc -ne 0 ]]; then
     status=1
     continue
   fi
