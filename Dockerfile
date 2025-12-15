@@ -1,5 +1,5 @@
 # Multi-stage build for unified test-hard package
-FROM debian:12-slim AS base
+FROM debian:13-slim AS base
 
 # Install common dependencies
 RUN apt-get update && \
