@@ -74,8 +74,7 @@ def main(path: str) -> int:
 
     if not details:
         details.append(
-            "lynis_test_result"
-            f'{{host="{esc(hostname)}",type="info",test_id="none",description="No issues found"}} 1'
+            "lynis_test_result" f'{{host="{esc(hostname)}",type="info",test_id="none",description="No issues found"}} 1'
         )
 
     details_file = p.with_name(f"{p.stem}_details.prom")

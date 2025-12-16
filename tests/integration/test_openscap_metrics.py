@@ -1,6 +1,5 @@
 import subprocess
 
-
 SAMPLE_ARF = """<?xml version="1.0"?>
 <arf:arf xmlns:arf="http://scap.nist.gov/schema/arf/1.1" xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2">
   <xccdf:rule-result>
