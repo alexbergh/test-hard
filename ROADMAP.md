@@ -30,7 +30,7 @@
 
 ---
 
-## Q1 2026 — Web UI & Automation ✅ COMPLETED
+## Q4 2025 — Web UI & Automation ✅ COMPLETED
 
 ### 🎯 Приоритет: Высокий
 
@@ -66,7 +66,7 @@
 
 ---
 
-## Q2 2026 — Runtime Security
+## Q1 2026 — Runtime Security
 
 ### 🎯 Приоритет: Высокий
 
@@ -93,7 +93,7 @@
 
 ---
 
-## Q3 2026 — Compliance & Intelligence
+## Q2 2026 — Compliance & Intelligence
 
 ### 🎯 Приоритет: Средний
 
@@ -130,7 +130,7 @@
 
 ---
 
-## Q4 2026 — Enterprise & Multi-Cloud
+## Q3 2026 — Enterprise & Multi-Cloud
 
 ### 🎯 Приоритет: Средний
 
@@ -168,7 +168,7 @@
 
 ---
 
-## 2027+ — Long-term Vision
+## Q4 2026 - 2027+ — Long-term Vision
 
 ### 🔮 Исследование и разработка
 
