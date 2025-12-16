@@ -49,6 +49,9 @@ services:
     container_name: target-alt-latest
     command: ["sleep", "infinity"]
   openscap-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: openscap-scanner
     command: scan-openscap
@@ -88,6 +91,9 @@ services:
           cpus: '1.0'
           memory: 512M
   lynis-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: lynis-scanner
     command: scan-lynis
@@ -127,6 +133,9 @@ services:
           cpus: '1.0'
           memory: 512M
   telegraf:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: telegraf
     command: telegraf
