@@ -167,6 +167,41 @@ docker volume prune
 }
 ```
 
+### Ошибка "denied" при pull образов из GHCR
+
+При запуске `docker compose up` появляется ошибка:
+
+```
+Error response from daemon: denied
+```
+
+**Причина:** Образы `openscap-scanner`, `lynis-scanner` и `telegraf` используют unified image из GitHub Container Registry (`ghcr.io/alexbergh/test-hard`), который может быть приватным.
+
+**Решение 1 — Авторизоваться в GHCR:**
+
+```bash
+# Создайте Personal Access Token на GitHub с правами read:packages
+# https://github.com/settings/tokens
+
+echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+```
+
+**Решение 2 — Собрать образ локально:**
+
+```bash
+# В корне проекта
+docker build -t ghcr.io/alexbergh/test-hard:latest .
+
+# Затем запустить как обычно
+docker compose up -d
+```
+
+**Решение 3 — Использовать dev-конфигурацию с локальной сборкой:**
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
+```
+
 ### Контейнеры не запускаются
 
 **Проверьте:**

@@ -1,8 +1,7 @@
-from pathlib import Path
 import subprocess
 
 
-SAMPLE_ARF = '''<?xml version="1.0"?>
+SAMPLE_ARF = """<?xml version="1.0"?>
 <arf:arf xmlns:arf="http://scap.nist.gov/schema/arf/1.1" xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2">
   <xccdf:rule-result>
     <xccdf:result>pass</xccdf:result>
@@ -11,7 +10,7 @@ SAMPLE_ARF = '''<?xml version="1.0"?>
     <xccdf:result>fail</xccdf:result>
   </xccdf:rule-result>
 </arf:arf>
-'''
+"""
 
 
 def test_parse_openscap_writes_metrics(tmp_path):

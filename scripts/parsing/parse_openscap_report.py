@@ -154,6 +154,7 @@ def main(argv: list[str]) -> int:  # noqa: C901
 
         # Write details file with failed rules, so Grafana can show a table.
         try:
+
             def escape_label_value(val: str) -> str:
                 return str(val).replace("\\", "\\\\").replace('"', "")
 
@@ -164,13 +165,13 @@ def main(argv: list[str]) -> int:  # noqa: C901
                 severity = escape_label_value(rule["severity"])
                 details_lines.append(
                     "openscap_rule_result"
-                    f"{{host=\"{escape_label_value(hostname)}\",rule_id=\"{rule_id}\",severity=\"{severity}\",title=\"{title}\"}} 0"
+                    f'{{host="{escape_label_value(hostname)}",rule_id="{rule_id}",severity="{severity}",title="{title}"}} 0'
                 )
 
             if not details_lines:
                 details_lines.append(
                     "openscap_rule_result"
-                    f"{{host=\"{escape_label_value(hostname)}\",rule_id=\"none\",severity=\"none\",title=\"No failed rules\"}} 1"
+                    f'{{host="{escape_label_value(hostname)}",rule_id="none",severity="none",title="No failed rules"}} 1'
                 )
 
             details_file = arf_path.with_name(f"{arf_path.stem}_details.prom")

@@ -33,11 +33,11 @@ def main(path: str) -> int:
     # Telegraf reads these files with name_override="security_scanners",
     # so it will export them as security_scanners_<metric_name>. Do NOT prefix here.
     metrics: list[str] = []
-    metrics.append(f"lynis_failed{{host=\"{hostname}\"}} {failed}")
-    metrics.append(f"lynis_warnings{{host=\"{hostname}\"}} {warnings}")
-    metrics.append(f"lynis_suggestions{{host=\"{hostname}\"}} {suggestions}")
+    metrics.append(f'lynis_failed{{host="{hostname}"}} {failed}')
+    metrics.append(f'lynis_warnings{{host="{hostname}"}} {warnings}')
+    metrics.append(f'lynis_suggestions{{host="{hostname}"}} {suggestions}')
     if score is not None:
-        metrics.append(f"lynis_score{{host=\"{hostname}\"}} {score}")
+        metrics.append(f'lynis_score{{host="{hostname}"}} {score}')
 
     out_file = p.with_name(f"{p.stem}_metrics.prom")
     out_file.write_text("\n".join(metrics) + "\n")
@@ -46,7 +46,7 @@ def main(path: str) -> int:
     # Write details file (warnings/suggestions with test IDs) for Grafana tables.
     # Expected by dashboard via Telegraf: security_scanners_lynis_test_result{host,type,test_id,description}
     def esc(val: str) -> str:
-        return str(val).replace("\\", "\\\\").replace('"', "\\\"")
+        return str(val).replace("\\", "\\\\").replace('"', '\\"')
 
     details: list[str] = []
     # Lynis commonly includes [test:XYZ-1234] markers.
@@ -69,13 +69,13 @@ def main(path: str) -> int:
         description = re.sub(r"\s+", " ", description)[:120]
         details.append(
             "lynis_test_result"
-            f"{{host=\"{esc(hostname)}\",type=\"{esc(issue_type)}\",test_id=\"{esc(test_id)}\",description=\"{esc(description)}\"}} 1"
+            f'{{host="{esc(hostname)}",type="{esc(issue_type)}",test_id="{esc(test_id)}",description="{esc(description)}"}} 1'
         )
 
     if not details:
         details.append(
             "lynis_test_result"
-            f"{{host=\"{esc(hostname)}\",type=\"info\",test_id=\"none\",description=\"No issues found\"}} 1"
+            f'{{host="{esc(hostname)}",type="info",test_id="none",description="No issues found"}} 1'
         )
 
     details_file = p.with_name(f"{p.stem}_details.prom")

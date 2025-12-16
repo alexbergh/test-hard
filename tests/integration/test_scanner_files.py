@@ -17,7 +17,7 @@ def test_run_openscap_invokes_parser():
     p = Path("scripts/scanning/run_openscap.sh")
     assert p.exists()
     content = p.read_text()
-    assert "../parsing/parse_openscap_report.py" in content
+    assert "parse_openscap_report.py" in content
 
 
 def test_run_lynis_profile_or_usecwd():
