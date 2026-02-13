@@ -83,4 +83,4 @@
 
     - name: Display scan summary
       debug:
-        msg: "✅ Scan complete for {{ inventory_hostname }}"
+        msg: "Scan complete for {{ inventory_hostname }}"

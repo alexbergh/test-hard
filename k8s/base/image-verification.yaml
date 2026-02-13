@@ -1,0 +1,188 @@
+# =============================================================================
+# Image Verification and Integrity Control
+# Based on CIS Kubernetes Benchmark and FSTEK requirements
+#
+# Components:
+#   1. Kyverno ClusterPolicy — verify Cosign signatures on container images
+#   2. AlwaysPullImages enforcement — ensure images are always pulled from registry
+#   3. ImagePullPolicy Gatekeeper policy — runtime enforcement
+#
+# Prerequisites:
+#   - Kyverno installed: kubectl apply -f https://github.com/kyverno/kyverno/releases/latest/download/install.yaml
+#   - Cosign keys generated: cosign generate-key-pair
+#   - Images signed: cosign sign --key cosign.key ghcr.io/alexbergh/test-hard:v1.0.0
+# =============================================================================
+
+---
+# Kyverno: Verify image signatures with Cosign
+# All container images must be signed using digital signatures
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signatures
+  annotations:
+    policies.kyverno.io/title: Verify Image Signatures
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: |
+      Verifies that container images are signed with Cosign.
+      Images from trusted registries must have valid signatures.
+      Based on CIS and FSTEK image integrity requirements.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+  rules:
+    # Verify images from project registry
+    - name: verify-ghcr-images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - monitoring
+                - production
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/alexbergh/*"
+          attestors:
+            - entries:
+                - keys:
+                    # Replace with your actual Cosign public key
+                    # Generate: cosign generate-key-pair
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      <REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY>
+                      -----END PUBLIC KEY-----
+
+    # Verify images from Docker Hub official repos
+    - name: verify-official-images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - production
+      verifyImages:
+        - imageReferences:
+            - "docker.io/library/*"
+          attestors:
+            - entries:
+                - keys:
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      <REPLACE_WITH_DOCKER_OFFICIAL_COSIGN_KEY>
+                      -----END PUBLIC KEY-----
+          required: false  # Warn only for official images
+
+---
+# Kyverno: Enforce imagePullPolicy: Always
+# CIS 1.2.11 — AlwaysPullImages admission plugin
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: always-pull-images
+  annotations:
+    policies.kyverno.io/title: Always Pull Images
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: |
+      Ensures all containers have imagePullPolicy set to Always.
+      This prevents use of locally cached images that may be tampered with.
+      CIS 1.2.11: AlwaysPullImages admission controller.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-always-pull
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - monitoring
+                - production
+      validate:
+        message: "imagePullPolicy must be Always (CIS 1.2.11)"
+        pattern:
+          spec:
+            containers:
+              - imagePullPolicy: Always
+            =(initContainers):
+              - imagePullPolicy: Always
+
+---
+# Kyverno: Mutate to add imagePullPolicy: Always if missing
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: mutate-always-pull-images
+  annotations:
+    policies.kyverno.io/title: Mutate Always Pull Images
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: low
+spec:
+  background: false
+  rules:
+    - name: set-image-pull-policy
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - monitoring
+                - production
+      mutate:
+        patchStrategicMerge:
+          spec:
+            containers:
+              - (name): "*"
+                imagePullPolicy: Always
+            =(initContainers):
+              - (name): "*"
+                imagePullPolicy: Always
+
+---
+# Kyverno: Restrict automountServiceAccountToken
+# CIS 5.1.6: ServiceAccount tokens should be mounted only when necessary
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-automount-sa-token
+  annotations:
+    policies.kyverno.io/title: Restrict Automount ServiceAccount Token
+    policies.kyverno.io/category: Pod Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: |
+      ServiceAccount tokens should not be automounted unless explicitly needed.
+      CIS 5.1.6: Ensure that Service Account Tokens are only mounted where necessary.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: validate-automount-sa-token
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - monitoring
+                - production
+      exclude:
+        any:
+          - resources:
+              kinds:
+                - Pod
+            clusterRoles:
+                - "system:*"
+      validate:
+        message: "automountServiceAccountToken should be false unless explicitly needed (CIS 5.1.6)"
+        pattern:
+          spec:
+            automountServiceAccountToken: false

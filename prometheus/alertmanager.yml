@@ -8,6 +8,20 @@ route:
   group_interval: 5m
   repeat_interval: 12h
   routes:
+    # Route Falco runtime security alerts
+    - match:
+        source: falco
+      receiver: 'falco-alerts'
+      group_by: ['alertname', 'rule', 'container']
+      group_wait: 5s
+      repeat_interval: 30m
+      routes:
+        - match:
+            severity: critical
+          receiver: 'falco-critical'
+          group_wait: 0s
+          repeat_interval: 15m
+
     # Route critical alerts immediately
     - match:
         severity: critical
@@ -48,6 +62,24 @@ receivers:
           # authorization:
           #   type: Bearer
           #   credentials: '${ALERTMANAGER_BEARER_TOKEN}'
+
+  - name: 'falco-alerts'
+    webhook_configs:
+      - url: 'http://localhost:5001/falco'
+        send_resolved: true
+        http_config:
+          basic_auth:
+            username: 'alertmanager'
+            password: 'CHANGE_ME_WEBHOOK_SECRET'
+
+  - name: 'falco-critical'
+    webhook_configs:
+      - url: 'http://localhost:5001/falco-critical'
+        send_resolved: true
+        http_config:
+          basic_auth:
+            username: 'alertmanager'
+            password: 'CHANGE_ME_WEBHOOK_SECRET'
 
 # SECURITY NOTES:
 # 1. Always use HTTPS in production - configure tls_config above

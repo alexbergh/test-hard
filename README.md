@@ -9,21 +9,24 @@
 
 ## Цель
 
-Автоматизированная платформа для security hardening и мониторинга контейнеров. Включает security сканирование (OpenSCAP, Lynis), мониторинг (Prometheus, Grafana), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
+Автоматизированная платформа для security hardening, runtime-безопасности и мониторинга контейнеров. Включает security-сканирование (OpenSCAP, Lynis), runtime-защиту (Falco), сканирование образов (Trivy), мониторинг (Prometheus, Grafana), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
 
 ## Возможности
 
 * **Security Scanning** — автоматическое сканирование контейнеров (OpenSCAP, Lynis)
+* **Runtime Security** — Falco + Falcosidekick + автоматические реакции на угрозы
+* **Container Image Scanning** — Trivy для сканирования уязвимостей + SBOM + OPA/Gatekeeper
 * **Monitoring Stack** — Prometheus + Grafana + Alertmanager для визуализации метрик безопасности
 * **Centralized Logging** — Loki + Promtail для централизованного сбора и анализа логов
 * **Atomic Red Team** — тестирование техник MITRE ATT&CK в режиме dry-run
 * **GitOps Deployment** — автоматический deployment с ArgoCD
 * **Container Registry** — автоматическая публикация образов в GitHub Container Registry
 * **Multi-Environment** — поддержка dev/staging/prod через Docker Compose
-* **CI/CD Ready** — GitHub Actions для автоматического тестирования и сканирования
+* **CI/CD Ready** — GitHub Actions (9 workflows) для тестирования, сканирования и блокировки
 * **Multi-Distribution** — сканирование Debian, Ubuntu, Fedora, CentOS Stream, ALT Linux
 * **Metrics Collection** — Telegraf для сбора и экспорта метрик в Prometheus
 * **Docker Security** — изолированный доступ к Docker API через security proxy
+* **Policy Enforcement** — OPA/Gatekeeper политики для Kubernetes
 * **High Test Coverage** — 80%+ покрытие тестами (unit, integration, E2E, shell)
 
 ## Быстрый старт
@@ -99,6 +102,9 @@ make help              # показать все доступные команд
 * Prometheus: <http://localhost:9090>
 * Alertmanager: <http://localhost:9093>
 * Grafana: <http://localhost:3000> (учётные данные из `.env`)
+* Falcosidekick: <http://localhost:2801>
+* Trivy Server: <http://localhost:4954>
+* Falco Responder: <http://localhost:5080>
 
 ## Демонстрационная мультидистрибутивная среда
 
@@ -180,7 +186,19 @@ pip install atomic-operator attrs click pyyaml
 
 ## Дашборды Grafana
 
-Файлы JSON с дашбордами поместите в `grafana/provisioning/dashboards/` — Grafana автоматически подхватит их при старте согласно `grafana/provisioning/dashboards/default.yml`.
+Дашборды автоматически загружаются из `grafana/dashboards/` при старте Grafana.
+
+| Дашборд | Описание |
+|----------|----------|
+| **Security Overview** | Общий обзор безопасности: Lynis, OpenSCAP, Atomic Red Team |
+| **Host Compliance** | Подробности соответствия по каждому хосту |
+| **System Resources** | CPU, память, диск, сеть, процессы |
+| **Security Issues Details** | Таблицы Lynis/OpenSCAP проблем |
+| **Logs Analysis** | Анализ логов через Loki |
+| **Falco Runtime Security** | Runtime-события Falco, правила, доставка через Falcosidekick |
+| **Container Image Security** | Уязвимости образов Trivy, тренды, таблицы |
+| **Network Security Monitoring** | Bandwidth, packets, errors/drops, TCP states, Falco network events |
+| **Security Monitoring** | Метрики сканеров в динамике |
 
 ### Диагностика 401 при обращении к Grafana API
 
@@ -221,44 +239,38 @@ pip install atomic-operator attrs click pyyaml
 
 ```text
 test-hard/
-├── .env.example               # Пример переменных окружения Grafana
-├── docker-compose.yml         # Prometheus, Grafana и доступные агенты
-├── docker/
-│   ├── common/                # Общие entrypoint-скрипты для агентов
-│   ├── debian/                # Dockerfile для Debian 12
-│   ├── ubuntu/                # Dockerfile для Ubuntu 22.04
-│   ├── fedora/                # Dockerfile для Fedora 40
-│   └── centos/                # Dockerfile для CentOS Stream 9
+├── .env.example               # Переменные окружения
+├── docker-compose.yml         # Все сервисы: мониторинг, сканеры, Falco, Trivy
+├── Dockerfile                 # Единый multi-stage образ
+├── docker/                    # Dockerfiles для целевых ОС (Debian, Ubuntu, Fedora, CentOS, ALT)
+├── falco/
+│   ├── falco.yaml             # Конфигурация Falco
+│   ├── falcosidekick.yaml     # Маршрутизация событий (Alertmanager, Loki, webhook)
+│   ├── rules.d/               # Кастомные правила для hardening detection
+│   └── responder/             # Автоматические реакции (kill, stop, isolate)
+├── trivy/
+│   ├── trivy.yaml             # Конфигурация Trivy
+│   └── .trivyignore           # Игнорируемые CVE
 ├── grafana/
-│   └── provisioning/
-│       ├── dashboards/
-│       │   └── default.yml    # Автоматическая загрузка дашбордов
-│       └── datasources/
-│           └── prometheus.yml # Datasource Grafana → Prometheus
-├── osquery/
-│   ├── osquery.conf
-│   ├── osquery.yaml
-│   └── pack.conf
-├── atomic-red-team/
-│   └── scenarios.yaml         # Подготовленные сценарии Atomic Red Team
+│   ├── dashboards/            # 8 преднастроенных дашбордов
+│   └── provisioning/          # Datasources (Prometheus, Loki, Tempo)
 ├── prometheus/
-│   ├── alert.rules.yml
-│   ├── alertmanager.yml
-│   └── prometheus.yml
+│   ├── alert.rules.yml        # Правила алертинга (вкл. Falco)
+│   ├── alertmanager.yml        # Маршрутизация алертов (вкл. Falco)
+│   └── prometheus.yml         # Конфиг скрейпинга (Telegraf, Falco, Falcosidekick)
 ├── scripts/
-│   ├── parse_atomic_red_team_result.py
-│   ├── parse_lynis_report.py
-│   ├── parse_openscap_report.py
-│   ├── run_all_checks.sh
-│   ├── run_atomic_red_team_test.sh
-│   ├── run_hardening_suite.sh
-│   ├── run_lynis.sh
-│   └── run_openscap.sh
-├── art-storage/               # Хранилище результатов Atomic Red Team (latest.json, history/, prometheus/)
-│   └── results/               # Метрики и итоги комплексных проверок
+│   ├── scanning/              # Сканирование: Lynis, OpenSCAP, ART, scan-images.sh
+│   ├── parsing/               # Парсеры отчётов
+│   └── setup/                 # Скрипты настройки
+├── k8s/
+│   ├── base/                  # Kustomize: Prometheus, Grafana, Telegraf, Falco, Gatekeeper
+│   └── overlays/              # Оверлеи для dev/staging/prod
+├── dashboard/
+│   ├── backend/               # FastAPI backend (JWT, RBAC, SQLAlchemy)
+│   └── frontend/              # React + TailwindCSS frontend
 ├── telegraf/
-│   └── telegraf.conf
-└── Makefile                   # Упрощённые команды docker compose
+│   └── telegraf.conf          # Сбор метрик (system, Lynis, OpenSCAP, ART, Trivy)
+└── Makefile                   # Упрощённые команды
 ```
 
 ## Makefile
@@ -310,12 +322,17 @@ make test-coverage
 
 ## CI/CD
 
-Проект включает GitHub Actions workflows:
+Проект включает 9 GitHub Actions workflows:
 
-* **Security Scanning** — автоматическое сканирование при каждом push
-* **Docker Build** — проверка сборки образов
-* **Pytest Tests** — запуск unit и integration тестов
-* **Secret Scanning** — поиск случайно закоммиченных секретов
+* **CI Pipeline** — lint, валидация, unit/integration тесты, сборка
+* **Security Scanning** — Trivy FS, Bandit, TruffleHog
+* **Container Image Security** — сканирование образов, SBOM, блокировка уязвимых
+* **Build and Push** — сборка, публикация в GHCR, Cosign signing, SBOM
+* **CodeQL** — статический анализ кода
+* **CD Pipeline** — деплой в staging/production
+* **Docker Publish** — публикация Docker-образов
+* **Hardening Suite** — запуск hardening-проверок
+* **Dependency Update** — автообновление зависимостей
 
 ## Kubernetes
 
@@ -329,62 +346,145 @@ kubectl apply -k k8s/overlays/dev
 kubectl apply -k k8s/overlays/prod
 ```
 
-## Новые возможности (Октябрь 2025)
+## Runtime Security (Falco)
 
-### Centralized Logging
+Платформа включает Falco для runtime-защиты контейнеров:
 
-* **Loki** для хранения логов
-* **Promtail** для сбора логов из контейнеров
-* **LogQL** для мощного поиска и анализа
-* Готовый дашборд для анализа логов
-* Документация: [docs/LOGGING.md](docs/LOGGING.md)
+* **Falco** — мониторинг syscalls с 30+ кастомными правилами (7 категорий)
+* **Falcosidekick** — маршрутизация событий в Alertmanager, Loki, webhook
+* **Falco Exporter** — Prometheus-метрики через gRPC
+* **Falco Responder** — автоматические реакции (kill, stop, isolate, pause)
+* **10 Prometheus alert rules** для Falco-событий
 
-### GitOps Deployment
+Категории правил: целостность файлов, эскалация привилегий, безопасность контейнеров, сетевая безопасность, доступ к учётным данным, целостность ядра, фальсификация логов.
 
-* **ArgoCD** для автоматического deployment
-* Автоматическая синхронизация для dev/staging
-* Ручное подтверждение для production
-* Rollback support
-* Документация: [argocd/README.md](argocd/README.md)
+## Network Security Monitoring
 
-### Container Registry
+* **NetworkPolicy** — 11 Kubernetes-политик (default-deny + per-service allow) для всех компонентов
+* **Traffic Analysis** — мониторинг bandwidth, packets, errors, drops через Telegraf + Prometheus
+* **Anomaly Detection** — 8 alert rules: traffic spikes, error rate, packet drops, connection count, TIME_WAIT, DNS query rate, Falco network events
+* **TCP Connection Tracking** — Telegraf netstat для ESTABLISHED, TIME_WAIT, CLOSE_WAIT, SYN_RECV
+* **Service Mesh** — Istio (mTLS, AuthorizationPolicy, DestinationRule с circuit breakers) и Linkerd (Server, ServerAuthorization)
+* **Grafana Dashboard** — Network Security Monitoring: bandwidth, packets, errors/drops, TCP states, Falco network events, active alerts
 
-* Автоматическая публикация в **GitHub Container Registry**
-* Image signing с Cosign
-* Multi-platform builds (amd64, arm64)
-* Семантическое версионирование
+## CIS Benchmarks Compliance
 
-### Расширенное тестирование
+Политики безопасности основаны на актуальных требованиях из CIS Kubernetes Benchmark v1.12.0, CIS Docker Benchmark v1.8.0 и FSTEK.
 
-* **80%+ test coverage**
-* Unit, integration, E2E тесты
-* Shell script тесты с bats
-* Kubernetes deployment тесты
-* Coverage reporting
+### OPA Gatekeeper — 14 политик
+
+| # | Политика | CIS Ref | Назначение |
+|---|----------|---------|------------|
+| 1 | Disallowed Tags | 5.5.1 | Запрет :latest |
+| 2 | Allowed Repos | 5.5.1, FSTEK | Только доверенные реестры |
+| 3 | Privileged Container | 5.2.1 | Запрет privileged |
+| 4 | RunAsNonRoot | 5.2.6 | Non-root пользователь |
+| 5 | Required Resources | best practice | CPU/memory лимиты |
+| 6 | Block Docker Socket | Docker 5.31 | Запрет /var/run/docker.sock |
+| 7 | Required Probes | best practice | liveness + readiness |
+| 8 | Privilege Escalation | 5.2.5 | allowPrivilegeEscalation: false |
+| 9 | Dangerous Capabilities | 5.2.7/5.2.8 | Блокировка SYS_ADMIN, SYS_MODULE и др. |
+| 10 | Drop ALL Caps | 5.2.7/5.2.8 | capabilities.drop: ALL |
+| 11 | Seccomp Profile | 5.7.2 | RuntimeDefault обязателен |
+| 12 | Host Namespaces | 5.2.2-5.2.4 | Запрет hostNetwork/PID/IPC |
+| 13 | ReadOnly RootFS | 5.2.x | readOnlyRootFilesystem: true |
+| 14 | Require NetworkPolicy | 5.3.2 | NetworkPolicy на каждый namespace |
+
+### Pod Security Admission (K8s 1.25+)
+
+| Namespace | Enforce | Audit | Warn |
+|-----------|---------|-------|------|
+| monitoring | restricted | restricted | restricted |
+| production | restricted | restricted | restricted |
+| staging | baseline | restricted | restricted |
+| kube-system | privileged | - | - |
+
+### kube-bench (60 проверок)
+
+| Группа | Проверок | CIS |
+|--------|-----------|-----|
+| Control Plane Files | 9 | 1.1.x |
+| API Server | 20 | 1.2.x |
+| Controller Manager | 7 | 1.3.x |
+| Scheduler | 2 | 1.4.x |
+| ETCD | 7 | 2.x |
+| TLS Hardening | 4 | 1.2.22, 1.2.29, 2.1.5-6 |
+| Kubelet | 7 | 4.2.x |
+
+```bash
+kube-bench --config k8s/base/kube-bench-config.yaml
+```
+
+### Kyverno — Image Verification & Supply Chain
+
+| Политика | CIS | Назначение |
+|----------|-------------|------------|
+| verify-image-signatures | Контроль целостности | Cosign верификация подписей образов |
+| always-pull-images | CIS 1.2.11 | imagePullPolicy: Always |
+| restrict-automount-sa-token | CIS 5.1.6 | automountServiceAccountToken: false |
+
+### RBAC Hardening (CIS 5.1.x)
+
+* **monitoring-viewer** — read-only для разработчиков
+* **monitoring-operator** — управление мониторингом для администраторов
+* **security-auditor** — ClusterRole для аудита безопасности
+* Выделенные ServiceAccount для каждого компонента (prometheus, grafana, telegraf, promtail)
+
+### Покрытие требований безопасности
+
+| Требование | Реализация | Статус |
+|--------------------|------------|--------|
+| Изоляция контейнеров | Namespaces, NetworkPolicy (11), securityContext | Done |
+| Контроль Capabilities | Gatekeeper #9/#10, capabilities-config.yaml | Done |
+| Privilege Escalation | Gatekeeper #8, Falco rules | Done |
+| Запись в файловую систему | Gatekeeper #13 readOnlyRootFilesystem | Done |
+| Централизованное управление образами | Gatekeeper #1/#2, Kyverno AlwaysPullImages | Done |
+| Ограничение привилегий | Gatekeeper #3/#4/#12, Pod Security Admission | Done |
+| Регистрация событий | Falco, Loki, Prometheus alerts, audit-log | Done |
+| Управление доступом | RBAC roles, NodeRestriction, SA tokens | Done |
+| TLS настройки API-сервера | kube-bench TLS group, tls-min-version | Done |
+| Шифрование секретов | encryption-config.yaml (AES-CBC) | Done |
+| TLS для etcd | kube-bench ETCD group, cert-file, client-cert-auth | Done |
+| Разграничение доступа | NetworkPolicy, RBAC, Namespaces | Done |
+| Выявление уязвимостей | Trivy scanning, CI/CD blocking | Done |
+| Контроль целостности | Kyverno Cosign verification | Done |
+
+## Container Image Scanning (Trivy)
+
+* **Trivy Server** — локальное сканирование образов (docker-compose, :4954)
+* **SBOM** — генерация CycloneDX + SPDX
+* **CI/CD блокировка** — автоматическая блокировка образов с CRITICAL/HIGH уязвимостями
+* **OPA/Gatekeeper** — 14 CIS-политик для Kubernetes (CIS 5.2.x, 5.3.x, 5.5.x, 5.7.x)
+
+```bash
+# Сканировать все образы из docker-compose
+./scripts/scanning/scan-images.sh --all --sbom
+
+# Сканировать конкретный образ
+./scripts/scanning/scan-images.sh --image nginx:latest --fail-on CRITICAL
+```
 
 ## План развития
 
-**Статус проекта:** Production Ready (9.0/10)  
+**Статус проекта:** Production Ready  
 **Test Coverage:** 80%+
 
-Полный план развития на 2026 год:
+Полный план развития: **[ROADMAP.md](ROADMAP.md)**
 
-* **[ROADMAP.md](ROADMAP.md)** - детальный roadmap с задачами по кварталам
+### Выполнено (Q1 2026)
 
-### Ближайшие задачи (Q1 2026)
+* Runtime Security с Falco (deployment, правила, реакции, дашборд)
+* Container Image Scanning с Trivy (SBOM, OPA/Gatekeeper, CI/CD блокировка)
+* Network Security Monitoring (NetworkPolicy, traffic analysis, service mesh)
+* CIS Compliance (14 Gatekeeper политик, Kyverno, RBAC, kube-bench 60 проверок, Encryption, TLS)
 
-* Web UI для управления сканированиями
-* Scheduled scanning
-* Distributed tracing с Grafana Tempo
+### Ближайшие задачи (Q2 2026)
 
-### Среднесрочные (Q2-Q3 2026)
-
-* Runtime security с Falco
 * Compliance as Code (InSpec, OPA)
 * ML-based anomaly detection
 * Multi-tenancy support
 
-### Долгосрочные (Q4 2026)
+### Долгосрочные (Q3-Q4 2026)
 
 * Multi-cloud support (AWS, Azure, GCP)
 * Advanced reporting и analytics

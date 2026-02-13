@@ -3,38 +3,41 @@
 **Версия:** 1.0.0  
 **Статус:** Production Ready (9.0/10)  
 **Test Coverage:** 80%+  
-**Последнее обновление:** Декабрь 2025
+**Последнее обновление:** Февраль 2026
 
 ---
 
 ## Текущее состояние проекта
 
-### Реализовано ✅
+### Реализовано
 
 | Компонент | Статус | Описание |
 |-----------|--------|----------|
-| **Security Scanning** | ✅ Ready | OpenSCAP, Lynis для контейнеров |
-| **Monitoring Stack** | ✅ Ready | Prometheus + Grafana + Alertmanager |
-| **Centralized Logging** | ✅ Ready | Loki + Promtail |
-| **Atomic Red Team** | ✅ Ready | MITRE ATT&CK тесты (dry-run) |
-| **GitOps Deployment** | ✅ Ready | ArgoCD интеграция |
-| **Container Registry** | ✅ Ready | GitHub Container Registry + Cosign |
-| **Multi-Environment** | ✅ Ready | dev/staging/prod через Docker Compose |
-| **CI/CD Pipeline** | ✅ Ready | GitHub Actions (7 workflows) |
-| **Kubernetes Support** | ✅ Ready | Kustomize overlays (dev/staging/prod) |
-| **Multi-Distribution** | ✅ Ready | Debian, Ubuntu, Fedora, CentOS, ALT Linux |
-| **Metrics Collection** | ✅ Ready | Telegraf → Prometheus |
-| **Docker Security** | ✅ Ready | Docker Socket Proxy |
-| **Test Suite** | ✅ Ready | Unit + Integration + E2E + Shell |
-| **Documentation** | ✅ Ready | 13 документов в docs/ |
+| **Security Scanning** | Ready | OpenSCAP, Lynis для контейнеров |
+| **Monitoring Stack** | Ready | Prometheus + Grafana + Alertmanager |
+| **Centralized Logging** | Ready | Loki + Promtail |
+| **Atomic Red Team** | Ready | MITRE ATT&CK тесты (dry-run) |
+| **GitOps Deployment** | Ready | ArgoCD интеграция |
+| **Container Registry** | Ready | GitHub Container Registry + Cosign |
+| **Multi-Environment** | Ready | dev/staging/prod через Docker Compose |
+| **CI/CD Pipeline** | Ready | GitHub Actions (8 workflows) |
+| **Kubernetes Support** | Ready | Kustomize overlays (dev/staging/prod) |
+| **Multi-Distribution** | Ready | Debian, Ubuntu, Fedora, CentOS, ALT Linux |
+| **Metrics Collection** | Ready | Telegraf → Prometheus |
+| **Docker Security** | Ready | Docker Socket Proxy |
+| **Test Suite** | Ready | Unit + Integration + E2E + Shell |
+| **Documentation** | Ready | 13 документов в docs/ |
+| **Runtime Security** | Ready | Falco + Falcosidekick + автоматические реакции |
+| **Container Image Scanning** | Ready | Trivy + SBOM + OPA/Gatekeeper |
+| **Grafana Dashboards** | Ready | 7 дашбордов (security, compliance, resources, Falco, images) |
 
 ---
 
-## Q4 2025 — Web UI & Automation ✅ COMPLETED
+## Q4 2025 — Web UI & Automation [COMPLETED]
 
-### 🎯 Приоритет: Высокий
+### Приоритет: Высокий
 
-#### 1. Web Dashboard для управления сканированиями ✅
+#### 1. Web Dashboard для управления сканированиями [DONE]
 
 - [x] **Backend API** (FastAPI)
   - REST API для запуска/остановки сканов
@@ -50,14 +53,14 @@
   - Prometheus/Grafana интеграция
   - Docker API через proxy
 
-#### 2. Scheduled Scanning ✅
+#### 2. Scheduled Scanning [DONE]
 
 - [x] APScheduler для автоматических сканов
 - [x] Cron expressions для расписаний
 - [x] Поддержка различных расписаний для разных хостов
 - [x] Notification settings (готово к интеграции)
 
-#### 3. Distributed Tracing ✅
+#### 3. Distributed Tracing [DONE]
 
 - [x] Grafana Tempo конфигурация
 - [x] OpenTelemetry instrumentation в FastAPI
@@ -66,36 +69,54 @@
 
 ---
 
-## Q1 2026 — Runtime Security
+## Q1 2026 — Runtime Security & Image Scanning [COMPLETED]
 
-### 🎯 Приоритет: Высокий
+### Приоритет: Высокий
 
-#### 4. Runtime Security с Falco
+#### 4. Runtime Security с Falco [DONE]
 
-- [ ] Falco deployment (Docker + Kubernetes)
-- [ ] Custom rules для hardening detection
-- [ ] Интеграция с Alertmanager
-- [ ] Grafana дашборды для Falco events
-- [ ] Automated response actions
+- [x] Falco deployment (Docker + Kubernetes)
+- [x] Custom rules для hardening detection (30+ правил, 7 категорий)
+- [x] Интеграция с Alertmanager (через Falcosidekick)
+- [x] Grafana дашборд для Falco events
+- [x] Automated response actions (falco-responder: kill, stop, isolate, pause)
+- [x] Falco-exporter для Prometheus метрик
+- [x] 10 Prometheus alert rules для Falco
 
-#### 5. Container Image Scanning
+#### 5. Container Image Scanning [DONE]
 
-- [ ] Trivy интеграция для vulnerability scanning
-- [ ] SBOM (Software Bill of Materials) генерация
-- [ ] Policy enforcement (OPA/Gatekeeper)
-- [ ] CI/CD блокировка уязвимых образов
+- [x] Trivy интеграция для vulnerability scanning
+- [x] SBOM (Software Bill of Materials) генерация (CycloneDX + SPDX)
+- [x] Policy enforcement (OPA/Gatekeeper — 7 политик)
+- [x] CI/CD блокировка уязвимых образов (GitHub Actions workflow)
+- [x] Trivy-сервер в docker-compose для локального сканирования
+- [x] Grafana дашборд для результатов сканирования
+- [x] Скрипт scan-images.sh для локального сканирования
 
-#### 6. Network Security Monitoring
+#### 6. Network Security Monitoring [DONE]
 
-- [ ] Network policy enforcement (Kubernetes)
-- [ ] Traffic analysis и anomaly detection
-- [ ] Service mesh интеграция (Istio/Linkerd)
+- [x] Network policy enforcement (Kubernetes) — 11 NetworkPolicy для всех сервисов
+- [x] Traffic analysis и anomaly detection — Prometheus alerts, Telegraf netstat, Grafana дашборд
+- [x] Service mesh интеграция (Istio/Linkerd) — PeerAuthentication, AuthorizationPolicy, DestinationRule, Server, ServerAuthorization
+
+#### 6a. CIS Benchmarks Compliance [DONE]
+
+- [x] OPA Gatekeeper — 14 CIS-политик (CIS K8s v1.12.0: 5.2.x, 5.3.x, 5.5.x, 5.7.x)
+- [x] Pod Security Admission — restricted/baseline/privileged per namespace (K8s 1.25+)
+- [x] kube-bench config — 60 проверок (Control Plane, API Server, Controller Manager, Scheduler, ETCD, TLS, Kubelet)
+- [x] Capabilities management — risk matrix, namespace rules, blocked/approved lists
+- [x] CIS-compliant deployment template (5.2.1-5.2.8, 5.7.2)
+- [x] Kyverno — Cosign image verification, AlwaysPullImages, automountServiceAccountToken control
+- [x] RBAC hardening — dedicated ServiceAccounts, least privilege roles, cluster-admin restriction (CIS 5.1.x)
+- [x] EncryptionConfiguration template — Secrets at rest encryption (CIS 1.2.12, AES-CBC)
+- [x] TLS hardening — tls-min-version, cipher-suites, etcd IP restrictions (CIS 1.2.22/1.2.29)
+- [x] Kubelet hardening — protect-kernel-defaults, rotate-certificates, event-qps (CIS 4.2.x)
 
 ---
 
 ## Q2 2026 — Compliance & Intelligence
 
-### 🎯 Приоритет: Средний
+### Приоритет: Средний
 
 #### 7. Compliance as Code
 
@@ -132,7 +153,7 @@
 
 ## Q3 2026 — Enterprise & Multi-Cloud
 
-### 🎯 Приоритет: Средний
+### Приоритет: Средний
 
 #### 10. Multi-Cloud Support
 
@@ -170,7 +191,7 @@
 
 ## Q4 2026 - 2027+ — Long-term Vision
 
-### 🔮 Исследование и разработка
+### Исследование и разработка
 
 #### 13. AI-Powered Security
 
@@ -197,7 +218,7 @@
 
 ## Технический долг
 
-### 🔧 Требует внимания
+### Требует внимания
 
 | Задача | Приоритет | Сложность |
 |--------|-----------|-----------|

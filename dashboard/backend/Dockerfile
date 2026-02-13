@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 
-# Create data directory
-RUN mkdir -p /app/data /app/reports
+# Create data and reports directories with proper permissions
+RUN mkdir -p /app/data /app/reports/lynis /app/reports/openscap /app/reports/trivy /app/reports/atomic
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \

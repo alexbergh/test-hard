@@ -1,0 +1,133 @@
+# Capabilities management configuration
+# Based on CIS Docker Benchmark v1.8.0 and CIS Kubernetes Benchmark v1.12.0
+#
+# Defines allowed/blocked Linux capabilities per namespace and application type
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: allowed-capabilities-config
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: test-hard
+    app.kubernetes.io/component: security
+data:
+  # Standard web applications (minimal privileges)
+  web-app.yaml: |
+    capabilities:
+      drop:
+        - ALL
+      add: []
+
+  # Applications requiring privileged port binding (< 1024)
+  web-app-privileged-ports.yaml: |
+    capabilities:
+      drop:
+        - ALL
+      add:
+        - NET_BIND_SERVICE
+
+  # Network applications (proxies, load balancers)
+  network-app.yaml: |
+    capabilities:
+      drop:
+        - ALL
+      add:
+        - NET_BIND_SERVICE
+        - NET_RAW
+        - NET_ADMIN
+
+  # File management applications
+  file-management-app.yaml: |
+    capabilities:
+      drop:
+        - ALL
+      add:
+        - CHOWN
+        - FOWNER
+        - DAC_OVERRIDE
+
+  # Capabilities reference
+  capabilities-reference.txt: |
+    AUDIT_WRITE       - Write to audit log
+    CHOWN             - Change file ownership
+    DAC_OVERRIDE      - Bypass file permission checks
+    FOWNER            - Bypass checks for file operations
+    FSETID            - Do not clear setuid/setgid bits
+    KILL              - Send signals to any process
+    MKNOD             - Create special files
+    NET_BIND_SERVICE  - Bind to ports < 1024
+    NET_RAW           - Use RAW and PACKET sockets
+    NET_ADMIN         - Network administration
+    SETFCAP           - Set file capabilities
+    SETGID            - Change process GID
+    SETPCAP           - Change process capabilities
+    SETUID            - Change process UID
+    SYS_CHROOT        - Use chroot
+    SYS_ADMIN         - Broad administrative rights (DANGEROUS)
+    SYS_TIME          - Change system time
+
+  # Risk matrix for capabilities
+  risk-matrix.yaml: |
+    # NEVER allow (blocked by Gatekeeper policy 9)
+    high-risk:
+      - SYS_ADMIN
+      - SYS_MODULE
+      - SYS_PTRACE
+      - SYS_RAWIO
+      - DAC_READ_SEARCH
+      - LINUX_IMMUTABLE
+      - NET_BROADCAST
+      - SYS_BOOT
+
+    # Require explicit approval
+    medium-risk:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_TIME
+      - SYS_RESOURCE
+
+    # Acceptable for specific use cases
+    low-risk:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+
+  # Namespace-specific rules
+  namespace-rules.yaml: |
+    monitoring:
+      max_allowed: 1
+      whitelist:
+        - NET_BIND_SERVICE
+
+    production:
+      max_allowed: 1
+      whitelist:
+        - NET_BIND_SERVICE
+
+    staging:
+      max_allowed: 3
+      whitelist:
+        - NET_BIND_SERVICE
+        - CHOWN
+        - FOWNER
+        - DAC_OVERRIDE
+
+    default:
+      max_allowed: 0
+      whitelist: []
+
+  # Required security context (enforced by Gatekeeper policies 3,4,8,10,11,12,13)
+  required-security-context.yaml: |
+    pod:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    container:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      capabilities:
+        drop:
+          - ALL

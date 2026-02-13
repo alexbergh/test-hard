@@ -217,14 +217,14 @@ ls -la /var/run/docker.sock
 
 ### v1.1.0 - Unified Image Release
 
-- ✅ Создан единый Docker образ для всех компонентов
-- ✅ Multi-stage build для оптимизации размера
-- ✅ Универсальный entrypoint с множественными командами
-- ✅ Обновлен GitHub Actions workflow
-- ✅ Обновлен docker-compose.yml
-- ✅ Добавлены Makefile команды (build, push, run-*)
-- ✅ SBOM генерация через Anchore
-- ✅ Cosign signing для безопасности
+- Создан единый Docker образ для всех компонентов
+- Multi-stage build для оптимизации размера
+- Универсальный entrypoint с множественными командами
+- Обновлен GitHub Actions workflow
+- Обновлен docker-compose.yml
+- Добавлены Makefile команды (build, push, run-*)
+- SBOM генерация через Anchore
+- Cosign signing для безопасности
 
 ## Ссылки
 

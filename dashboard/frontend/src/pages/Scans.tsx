@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { scansApi, hostsApi, CreateScanData } from '../lib/api'
+import { scansApi, hostsApi } from '../lib/api'
+import { useI18n } from '../lib/i18n'
 import { Play, XCircle, CheckCircle, Clock, AlertTriangle, Download } from 'lucide-react'
 
 interface Scan {
@@ -25,12 +26,15 @@ interface Host {
 
 export default function Scans() {
   const [showNewScan, setShowNewScan] = useState(false)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const queryClient = useQueryClient()
+  const { t } = useI18n()
 
   const { data: scans = [], isLoading } = useQuery<Scan[]>({
     queryKey: ['scans'],
     queryFn: async () => {
-      const res = await scansApi.getAll()
+      const res = await scansApi.getAll({ limit: 500 })
       return res.data
     },
     refetchInterval: 5000,
@@ -39,6 +43,18 @@ export default function Scans() {
   const cancelMutation = useMutation({
     mutationFn: scansApi.cancel,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scans'] }),
+  })
+
+  const filteredScans = scans.filter((scan) => {
+    if (dateFrom && scan.started_at) {
+      const scanDate = new Date(scan.started_at).toISOString().slice(0, 10)
+      if (scanDate < dateFrom) return false
+    }
+    if (dateTo && scan.started_at) {
+      const scanDate = new Date(scan.started_at).toISOString().slice(0, 10)
+      if (scanDate > dateTo) return false
+    }
+    return true
   })
 
   const statusIcon = (status: string) => {
@@ -55,34 +71,63 @@ export default function Scans() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Scans</h1>
-          <p className="text-gray-500">Security scan history and results</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('scans.title')}</h1>
+          <p className="text-gray-500">{t('scans.subtitle')}</p>
         </div>
         <button onClick={() => setShowNewScan(true)} className="btn btn-primary">
           <Play className="h-4 w-4 mr-2" />
-          New Scan
+          {t('scans.new_scan')}
         </button>
       </div>
 
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-500">{t('scans.date_from')}:</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="text-sm border border-gray-300 rounded-lg px-2 py-1 bg-white text-gray-700"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-500">{t('scans.date_to')}:</label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="text-sm border border-gray-300 rounded-lg px-2 py-1 bg-white text-gray-700"
+          />
+        </div>
+        {(dateFrom || dateTo) && (
+          <button
+            onClick={() => { setDateFrom(''); setDateTo('') }}
+            className="text-sm text-gray-400 hover:text-gray-600"
+          >
+            {t('common.clear')}
+          </button>
+        )}
+      </div>
+
       {isLoading ? (
-        <div className="text-center py-12">Loading...</div>
+        <div className="text-center py-12">{t('common.loading')}</div>
       ) : (
         <div className="card overflow-hidden p-0">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Host</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scanner</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Results</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('scans.status')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('scans.host')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('scans.scanner')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('scans.score')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('scans.results')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('scans.duration')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('scans.started')}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('scans.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {scans.map((scan) => (
+              {filteredScans.map((scan) => (
                 <tr key={scan.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">{statusIcon(scan.status)}</td>
                   <td className="px-6 py-4 font-medium text-gray-900">{scan.host_name}</td>
@@ -96,9 +141,9 @@ export default function Scans() {
                     ) : '-'}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    <span className="text-success-600">{scan.passed} passed</span>
+                    <span className="text-success-600">{scan.passed} {t('scans.passed')}</span>
                     {' / '}
-                    <span className="text-danger-600">{scan.failed} failed</span>
+                    <span className="text-danger-600">{scan.failed} {t('scans.failed')}</span>
                   </td>
                   <td className="px-6 py-4 text-gray-500">
                     {scan.duration_seconds ? `${scan.duration_seconds}s` : '-'}
@@ -125,7 +170,7 @@ export default function Scans() {
               {scans.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    No scans yet. Start a new scan to see results.
+                    {t('scans.no_scans')}
                   </td>
                 </tr>
               )}
@@ -140,11 +185,12 @@ export default function Scans() {
 }
 
 function NewScanModal({ onClose }: { onClose: () => void }) {
-  const [formData, setFormData] = useState<CreateScanData>({
-    host_id: 0,
-    scanner: 'lynis',
-  })
+  const [hostId, setHostId] = useState<number>(-1)
+  const [scanner, setScanner] = useState<string>('lynis')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [progress, setProgress] = useState('')
   const queryClient = useQueryClient()
+  const { t } = useI18n()
 
   const { data: hosts = [] } = useQuery<Host[]>({
     queryKey: ['hosts'],
@@ -154,43 +200,66 @@ function NewScanModal({ onClose }: { onClose: () => void }) {
     },
   })
 
-  const createMutation = useMutation({
-    mutationFn: scansApi.create,
-    onSuccess: () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (hostId === -1 && hosts.length === 0) return
+    if (hostId === 0 && hosts.length === 0) return
+
+    setIsSubmitting(true)
+
+    try {
+      if (hostId === -1) {
+        // All hosts
+        for (let i = 0; i < hosts.length; i++) {
+          const host = hosts[i]
+          setProgress(`${i + 1} / ${hosts.length}: ${host.name}`)
+          try {
+            await scansApi.create({
+              host_id: host.id,
+              scanner: scanner as 'lynis' | 'openscap' | 'trivy' | 'atomic',
+            })
+          } catch {
+            // Continue with other hosts if one fails
+          }
+        }
+      } else {
+        await scansApi.create({
+          host_id: hostId,
+          scanner: scanner as 'lynis' | 'openscap' | 'trivy' | 'atomic',
+        })
+      }
       queryClient.invalidateQueries({ queryKey: ['scans'] })
       onClose()
-    },
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (formData.host_id) createMutation.mutate(formData)
+    } catch {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">New Scan</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{t('scans.new_title')}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Host</label>
+            <label className="block text-sm font-medium text-gray-700">{t('scans.host')}</label>
             <select
               required
-              value={formData.host_id}
-              onChange={(e) => setFormData({ ...formData, host_id: Number(e.target.value) })}
+              value={hostId}
+              onChange={(e) => setHostId(Number(e.target.value))}
               className="input mt-1"
             >
-              <option value="">Select host...</option>
+              <option value={0}>{t('scans.select_host')}</option>
+              <option value={-1}>{t('scans.all_hosts')}</option>
               {hosts.map((host) => (
                 <option key={host.id} value={host.id}>{host.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Scanner</label>
+            <label className="block text-sm font-medium text-gray-700">{t('scans.scanner')}</label>
             <select
-              value={formData.scanner}
-              onChange={(e) => setFormData({ ...formData, scanner: e.target.value as 'lynis' | 'openscap' | 'trivy' | 'atomic' })}
+              value={scanner}
+              onChange={(e) => setScanner(e.target.value)}
               className="input mt-1"
             >
               <option value="lynis">Lynis</option>
@@ -199,10 +268,13 @@ function NewScanModal({ onClose }: { onClose: () => void }) {
               <option value="atomic">Atomic Red Team</option>
             </select>
           </div>
+          {progress && (
+            <p className="text-sm text-gray-500">{progress}</p>
+          )}
           <div className="flex gap-2 pt-4">
-            <button type="button" onClick={onClose} className="btn btn-secondary flex-1">Cancel</button>
-            <button type="submit" disabled={createMutation.isPending || !formData.host_id} className="btn btn-primary flex-1">
-              {createMutation.isPending ? 'Starting...' : 'Start Scan'}
+            <button type="button" onClick={onClose} disabled={isSubmitting} className="btn btn-secondary flex-1">{t('common.cancel')}</button>
+            <button type="submit" disabled={isSubmitting || hostId === 0} className="btn btn-primary flex-1">
+              {isSubmitting ? t('scans.starting') : t('scans.start_btn')}
             </button>
           </div>
         </form>

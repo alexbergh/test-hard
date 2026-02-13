@@ -7,10 +7,14 @@ import Hosts from './pages/Hosts'
 import Scans from './pages/Scans'
 import Schedules from './pages/Schedules'
 import Settings from './pages/Settings'
+import Users from './pages/Users'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+  const mustChangePassword = useAuthStore((state) => state.mustChangePassword)
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (mustChangePassword) return <Navigate to="/login" replace />
+  return <>{children}</>
 }
 
 export default function App() {
@@ -30,6 +34,7 @@ export default function App() {
         <Route path="scans" element={<Scans />} />
         <Route path="schedules" element={<Schedules />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="users" element={<Users />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

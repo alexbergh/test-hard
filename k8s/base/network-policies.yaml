@@ -19,7 +19,238 @@ spec:
     - Egress
 
 ---
-# Allow Grafana to receive traffic from ingress and query Prometheus
+# Allow Loki to receive logs from Promtail and Falcosidekick, and serve queries to Grafana
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-loki
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: loki
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Promtail pushes logs
+    - from:
+        - podSelector:
+            matchLabels:
+              app: promtail
+      ports:
+        - protocol: TCP
+          port: 3100
+    # Falcosidekick pushes Falco events
+    - from:
+        - podSelector:
+            matchLabels:
+              app: falcosidekick
+      ports:
+        - protocol: TCP
+          port: 3100
+    # Grafana queries logs
+    - from:
+        - podSelector:
+            matchLabels:
+              app: grafana
+      ports:
+        - protocol: TCP
+          port: 3100
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Allow Promtail to push logs to Loki
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-promtail
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: promtail
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: loki
+      ports:
+        - protocol: TCP
+          port: 3100
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Allow Falco to send events to Falcosidekick and expose metrics
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-falco
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: falco
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Falco webserver health check
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8765
+    # Prometheus scrapes falco-exporter sidecar
+    - from:
+        - podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 9376
+  egress:
+    # Send events to Falcosidekick
+    - to:
+        - podSelector:
+            matchLabels:
+              app: falcosidekick
+      ports:
+        - protocol: TCP
+          port: 2801
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Allow Falco Responder to receive events and manage pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-falco-responder
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: falco-responder
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Falcosidekick sends events
+    - from:
+        - podSelector:
+            matchLabels:
+              app: falcosidekick
+      ports:
+        - protocol: TCP
+          port: 5080
+  egress:
+    # Talk to K8s API server for pod management
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Allow Trivy Server to receive scan requests and download vulnerability DB
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-trivy-server
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: trivy-server
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow internal scanning requests
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 4954
+  egress:
+    # Download vulnerability DB from ghcr.io
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Allow Grafana to receive traffic from ingress and query Prometheus, Loki, Tempo
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -59,6 +290,22 @@ spec:
       ports:
         - protocol: TCP
           port: 9090
+    # Allow queries to Loki
+    - to:
+        - podSelector:
+            matchLabels:
+              app: loki
+      ports:
+        - protocol: TCP
+          port: 3100
+    # Allow queries to Tempo
+    - to:
+        - podSelector:
+            matchLabels:
+              app: tempo
+      ports:
+        - protocol: TCP
+          port: 3200
     # Allow DNS resolution
     - to:
         - namespaceSelector: {}
@@ -112,6 +359,22 @@ spec:
       ports:
         - protocol: TCP
           port: 9091
+    # Allow scraping Falco Exporter
+    - to:
+        - podSelector:
+            matchLabels:
+              app: falco
+      ports:
+        - protocol: TCP
+          port: 9376
+    # Allow scraping Falcosidekick metrics
+    - to:
+        - podSelector:
+            matchLabels:
+              app: falcosidekick
+      ports:
+        - protocol: TCP
+          port: 2801
     # Allow sending alerts to Alertmanager
     - to:
         - podSelector:

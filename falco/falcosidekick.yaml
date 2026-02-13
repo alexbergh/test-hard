@@ -1,0 +1,50 @@
+# Falcosidekick Configuration
+# Routes Falco events to Alertmanager, Prometheus, Loki, and webhook for auto-response
+#
+# Part of test-hard security hardening platform
+
+# Debug logging
+debug: false
+
+# Minimum priority to forward (emergency|alert|critical|error|warning|notice|informational|debug)
+customfields:
+  environment: "test-hard"
+  platform: "security-hardening"
+
+# ---- Alertmanager ----
+alertmanager:
+  hostport: "http://alertmanager:9093"
+  minimumpriority: "warning"
+  endpoint: "/api/v1/alerts"
+  expiresafter: 600
+  extralabels: "source:falco,platform:test-hard"
+
+# ---- Prometheus ----
+# Falcosidekick has built-in Prometheus metrics at /metrics
+prometheus:
+  extralabels: "source:falco"
+
+# ---- Loki ----
+loki:
+  hostport: "http://loki:3100"
+  minimumpriority: "notice"
+  endpoint: "/loki/api/v1/push"
+  tenant: ""
+  extralabels: "source:falco"
+  customheaders: ""
+
+# ---- Webhook for automated response ----
+webhook:
+  address: "http://falco-responder:5080/respond"
+  minimumpriority: "critical"
+  method: "POST"
+  customheaders: ""
+  mutualtls: false
+
+# ---- Web UI output settings ----
+webui:
+  url: ""
+
+# ---- Metrics server ----
+listenaddress: ""
+listenport: 2801

@@ -97,4 +97,15 @@ class AuthService:
             access_token=access_token,
             token_type="bearer",
             expires_in=settings.access_token_expire_minutes * 60,
+            must_change_password=user.must_change_password,
         )
+
+    async def change_password(self, user: User, current_password: str, new_password: str) -> bool:
+        """Change user password and clear must_change_password flag."""
+        if not self.verify_password(current_password, user.hashed_password):
+            return False
+        user.hashed_password = self.get_password_hash(new_password)
+        user.must_change_password = False
+        user.password_changed_at = datetime.now(timezone.utc)
+        await self.session.flush()
+        return True

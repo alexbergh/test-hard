@@ -18,6 +18,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - scanner-net
+      - default
     deploy:
       resources:
         limits:
@@ -132,6 +133,30 @@ services:
         limits:
           cpus: '1.0'
           memory: 512M
+  network-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
+    container_name: network-scanner
+    command: scan-network --targets 192.168.1.0/24 172.17.0.0/24 --scan-type ping --output /var/lib/network-scan
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    cap_drop:
+      - ALL
+    volumes:
+      - network-scan-data:/var/lib/network-scan
+      - ./reports:/reports
+    profiles:
+      - network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
   telegraf:
     build:
       context: .
@@ -139,11 +164,18 @@ services:
     image: ghcr.io/alexbergh/test-hard:${VERSION:-latest}
     container_name: telegraf
     command: telegraf
+    environment:
+      DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - /tmp/test_metrics:/tmp/test_metrics:ro
       - ./reports:/reports:ro
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - art-storage:/var/lib/atomic-results
+      - network-scan-data:/var/lib/network-scan
     ports:
       - "9091:9091"
+    depends_on:
+      - docker-proxy
     networks:
       - default
     healthcheck:
@@ -213,7 +245,7 @@ services:
           cpus: '1.0'
           memory: 1G
   grafana:
-    image: grafana/grafana:11.0.0
+    image: grafana/grafana:12.3.3
     container_name: grafana
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
@@ -274,7 +306,7 @@ services:
 
   # Log collector - Promtail
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:3.3.0
     container_name: promtail
     volumes:
       - ./loki/promtail-config.yml:/etc/promtail/config.yml:ro
@@ -293,6 +325,222 @@ services:
           cpus: '0.25'
           memory: 256M
 
+  # ---- Container Image Scanning: Trivy ----
+  trivy-server:
+    image: aquasec/trivy:0.58.0
+    container_name: trivy-server
+    command:
+      - server
+      - "--listen"
+      - "0.0.0.0:4954"
+      - "--cache-dir"
+      - "/tmp/trivy-cache"
+    volumes:
+      - trivy-cache:/tmp/trivy-cache
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "4954:4954"
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "trivy", "--version"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  # ---- Runtime Security: Falco ----
+  falco:
+    image: falcosecurity/falco-no-driver:0.38.1
+    container_name: falco
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock:ro
+      - /dev:/host/dev:ro
+      - /proc:/host/proc:ro
+      - /boot:/host/boot:ro
+      - /lib/modules:/host/lib/modules:ro
+      - /usr:/host/usr:ro
+      - /etc:/host/etc:ro
+      - ./falco/falco.yaml:/etc/falco/falco.yaml:ro
+      - ./falco/rules.d:/etc/falco/rules.d:ro
+      - falco-logs:/var/log/falco
+      - falco-run:/run/falco
+    networks:
+      - default
+    depends_on:
+      - falcosidekick
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  # Falcosidekick — routes Falco events to Alertmanager, Loki, Prometheus, webhook
+  falcosidekick:
+    image: falcosecurity/falcosidekick:2.29.0
+    container_name: falcosidekick
+    environment:
+      - ALERTMANAGER_HOSTPORT=http://alertmanager:9093
+      - ALERTMANAGER_MINIMUMPRIORITY=warning
+      - ALERTMANAGER_EXPIRESAFTER=600
+      - ALERTMANAGER_EXTRALABELS=source:falco,platform:test-hard
+      - LOKI_HOSTPORT=http://loki:3100
+      - LOKI_MINIMUMPRIORITY=notice
+      - WEBHOOK_ADDRESS=http://falco-responder:5080/respond
+      - WEBHOOK_MINIMUMPRIORITY=critical
+    ports:
+      - "2801:2801"
+    networks:
+      - default
+    depends_on:
+      - alertmanager
+      - loki
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:2801/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # Falco Exporter — exports Falco metrics to Prometheus via gRPC
+  falco-exporter:
+    image: falcosecurity/falco-exporter:0.8.7
+    container_name: falco-exporter
+    command:
+      - "--falco-grpc-unix-socket=/run/falco/falco.sock"
+      - "--listen-address=0.0.0.0:9376"
+    volumes:
+      - falco-run:/run/falco:ro
+    ports:
+      - "9376:9376"
+    networks:
+      - default
+    depends_on:
+      - falco
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9376/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # Falco Responder — automated response actions for critical events
+  falco-responder:
+    build:
+      context: ./falco/responder
+      dockerfile: Dockerfile
+    container_name: falco-responder
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DRY_RUN=${FALCO_DRY_RUN:-false}
+      - PORT=5080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./falco/responder/response_actions.yaml:/app/response_actions.yaml:ro
+    ports:
+      - "5080:5080"
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # ---- Custom Dashboard ----
+  dashboard-backend:
+    build: ./dashboard/backend
+    image: test-hard/dashboard-backend:${VERSION:-latest}
+    container_name: dashboard-backend
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/dashboard.db
+      SECRET_KEY: ${DASHBOARD_SECRET_KEY:-change-me-in-production}
+      DEBUG: ${DEBUG:-false}
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      LOKI_URL: http://loki:3100
+      DOCKER_HOST: tcp://docker-proxy:2375
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      NOTIFICATION_EMAIL: ${NOTIFICATION_EMAIL:-}
+    volumes:
+      - dashboard-data:/app/data
+      - ./reports:/app/reports
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+      - scanner-net
+    depends_on:
+      - docker-proxy
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  dashboard-frontend:
+    build:
+      context: ./dashboard/frontend
+      dockerfile: Dockerfile
+    image: test-hard/dashboard-frontend:${VERSION:-latest}
+    container_name: dashboard-frontend
+    ports:
+      - "3001:80"
+    networks:
+      - default
+    depends_on:
+      - dashboard-backend
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
 networks:
   default:
     driver: bridge
@@ -304,3 +552,9 @@ volumes:
   grafana-data: {}
   prometheus-data: {}
   loki-data: {}
+  art-storage: {}
+  network-scan-data: {}
+  dashboard-data: {}
+  falco-logs: {}
+  falco-run: {}
+  trivy-cache: {}

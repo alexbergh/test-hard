@@ -1,7 +1,7 @@
 # Multi-stage build for unified test-hard package
 FROM debian:12-slim AS base
 
-# Install common dependencies
+# Install common dependencies + Docker CLI from official repo (API v1.47+)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -11,10 +11,15 @@ RUN apt-get update && \
     lsb-release \
     python3 \
     python3-pip \
-    docker.io \
     bash \
     procps \
     git \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Install Lynis
@@ -37,8 +42,8 @@ RUN apt-get update && \
 # Stage 4: Install Telegraf
 FROM base AS telegraf-stage
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN wget -qO- https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor > /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg && \
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main" > /etc/apt/sources.list.d/influxdata.list && \
+RUN wget -qO- https://repos.influxdata.com/influxdata-archive.key | gpg --dearmor > /etc/apt/trusted.gpg.d/influxdata-archive.gpg && \
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main" > /etc/apt/sources.list.d/influxdata.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends telegraf && \
     rm -rf /var/lib/apt/lists/*
@@ -46,12 +51,13 @@ RUN wget -qO- https://repos.influxdata.com/influxdata-archive_compat.key | gpg -
 # Final stage: Combine everything
 FROM base
 
-# Install runtime dependencies for OpenSCAP
+# Install runtime dependencies for OpenSCAP + nmap for network scanning
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libopenscap25 \
     libxml2 \
     libxslt1.1 \
+    nmap \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Lynis from lynis-stage

@@ -1,0 +1,63 @@
+# Конфигурация Trivy для сканирования контейнерных образов
+# Часть платформы безопасности test-hard
+#
+# Использование:
+#   trivy image --config trivy/trivy.yaml <image>
+#   trivy fs --config trivy/trivy.yaml .
+#   trivy sbom --config trivy/trivy.yaml <image>
+
+# Общие настройки
+cache:
+  dir: /tmp/trivy-cache
+
+# Настройки отчётов
+format: table
+output: ""
+
+# Уровни серьёзности для блокировки
+severity:
+  - CRITICAL
+  - HIGH
+
+# Игнорирование незафиксированных уязвимостей
+ignore-unfixed: true
+
+# Типы уязвимостей для сканирования
+vulnerability:
+  type:
+    - os
+    - library
+
+# Сканирование секретов
+secret:
+  config: ""
+
+# Сканирование лицензий
+license:
+  full: false
+  forbidden:
+    - AGPL-1.0
+    - AGPL-3.0
+    - GPL-2.0
+    - GPL-3.0
+  confidence-level: 0.9
+
+# Настройки для Docker образов
+image:
+  removed-pkgs: false
+  input: ""
+
+# DB — база данных уязвимостей
+db:
+  skip-update: false
+  no-progress: false
+  repository: "ghcr.io/aquasecurity/trivy-db"
+  java-repository: "ghcr.io/aquasecurity/trivy-java-db"
+
+# Rego-политики (custom OPA checks)
+misconfiguration:
+  scanners:
+    - dockerfile
+    - kubernetes
+  policy-namespaces:
+    - user

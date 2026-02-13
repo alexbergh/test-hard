@@ -31,6 +31,8 @@ class UserResponse(BaseModel):
     full_name: str | None
     is_active: bool
     is_superuser: bool
+    must_change_password: bool
+    password_changed_at: datetime | None = None
     role: str
     created_at: datetime
 
@@ -43,6 +45,14 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int
+    must_change_password: bool = False
+
+
+class PasswordChange(BaseModel):
+    """Schema for password change."""
+
+    current_password: str
+    new_password: str = Field(..., min_length=8)
 
 
 class TokenData(BaseModel):

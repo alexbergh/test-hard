@@ -9,7 +9,7 @@
   "links": [],
   "panels": [
     {
-      "datasource": "Prometheus",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -79,7 +79,7 @@
       "type": "gauge"
     },
     {
-      "datasource": "Prometheus",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -134,6 +134,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
           "expr": "security_scanners_openscap_score",
           "legendFormat": "{{host}}",
@@ -145,7 +146,7 @@
       "type": "gauge"
     },
     {
-      "datasource": "Prometheus",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -218,6 +219,7 @@
       },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
           "expr": "security_scanners_lynis_warnings",
           "legendFormat": "Lynis Warnings - {{host}}",
@@ -225,6 +227,7 @@
           "refId": "A"
         },
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
           "expr": "security_scanners_openscap_fail_count",
           "hide": false,
@@ -237,7 +240,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": "Prometheus",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -285,6 +288,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
           "expr": "{__name__=~\"security_scanners.*\"}",
           "format": "table",

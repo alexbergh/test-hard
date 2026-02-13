@@ -1,7 +1,7 @@
 """Authentication endpoints."""
 
 from app.api.deps import CurrentUser, DbSession
-from app.schemas import Token, UserCreate, UserLogin, UserResponse
+from app.schemas import PasswordChange, Token, UserCreate, UserLogin, UserResponse
 from app.services.auth import AuthService
 from fastapi import APIRouter, HTTPException, status
 
@@ -53,6 +53,56 @@ async def login(credentials: UserLogin, session: DbSession) -> Token:
         )
 
     return auth_service.create_token_for_user(user)
+
+
+@router.post("/change-password")
+async def change_password(
+    data: PasswordChange,
+    session: DbSession,
+    current_user: CurrentUser,
+) -> dict:
+    """Change current user's password."""
+    auth_service = AuthService(session)
+    success = await auth_service.change_password(current_user, data.current_password, data.new_password)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+    return {"message": "Password changed successfully"}
+
+
+@router.patch("/me/email")
+async def update_email(
+    data: dict,
+    session: DbSession,
+    current_user: CurrentUser,
+) -> dict:
+    """Update current user's email."""
+    from sqlalchemy import select
+    from app.models import User
+
+    new_email = data.get("email", "").strip()
+    if not new_email or "@" not in new_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email address",
+        )
+
+    # Check if email is already taken by another user
+    result = await session.execute(
+        select(User).where(User.email == new_email, User.id != current_user.id)
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already in use",
+        )
+
+    current_user.email = new_email
+    await session.flush()
+    await session.refresh(current_user)
+    return {"message": "Email updated successfully", "email": current_user.email}
 
 
 @router.get("/me", response_model=UserResponse)

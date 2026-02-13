@@ -1,0 +1,178 @@
+# Pod Security Admission Configuration for Kubernetes 1.25+
+# Based on CIS Kubernetes Benchmark v1.12.0 and FSTEK requirements
+# Replaces deprecated PodSecurityPolicy
+#
+# Levels: privileged (system only), baseline (staging), restricted (production)
+
+---
+# monitoring namespace — restricted (CIS 5.2.x full compliance)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+    app.kubernetes.io/part-of: test-hard
+
+---
+# production namespace — restricted
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+
+---
+# staging namespace — baseline enforce, restricted audit/warn
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+
+---
+# kube-system — privileged (system components only)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+
+---
+# AdmissionConfiguration for cluster-level defaults
+# Apply via --admission-control-config-file in kube-apiserver
+apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: PodSecurity
+  configuration:
+    apiVersion: pod-security.admission.config.k8s.io/v1
+    kind: PodSecurityConfiguration
+
+    # Default settings for namespaces without explicit labels
+    defaults:
+      enforce: baseline
+      enforce-version: latest
+      audit: restricted
+      audit-version: latest
+      warn: restricted
+      warn-version: latest
+
+    # Exemptions for system namespaces
+    exemptions:
+      usernames: []
+      runtimeClasses: []
+      namespaces:
+        - kube-system
+        - kube-public
+        - kube-node-lease
+
+---
+# CIS-compliant Deployment template for monitoring namespace
+# Satisfies: CIS 5.2.1-5.2.8, 5.7.2, FSTEK 1-4
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-app-template
+  namespace: monitoring
+  labels:
+    app: secure-app-template
+    app.kubernetes.io/part-of: test-hard
+  annotations:
+    description: "CIS-compliant deployment template based on CIS K8s Benchmark v1.12.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: secure-app-template
+  template:
+    metadata:
+      labels:
+        app: secure-app-template
+    spec:
+      # Pod-level security context (CIS 5.2.6, 5.7.2)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      automountServiceAccountToken: false
+
+      containers:
+      - name: app
+        image: nginx:1.27-alpine
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+
+        # Container-level security context (CIS 5.2.1-5.2.8)
+        securityContext:
+          allowPrivilegeEscalation: false    # CIS 5.2.5
+          privileged: false                  # CIS 5.2.1
+          readOnlyRootFilesystem: true       # CIS best practice
+          runAsNonRoot: true                 # CIS 5.2.6
+          capabilities:
+            drop:
+              - ALL                          # CIS 5.2.7/5.2.8
+
+        # Resource limits (CIS recommendation)
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+
+        # Health probes
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: cache
+          mountPath: /var/cache/nginx
+        - name: run
+          mountPath: /var/run
+
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: cache
+        emptyDir: {}
+      - name: run
+        emptyDir: {}

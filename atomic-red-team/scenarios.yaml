@@ -16,14 +16,16 @@ scenarios:
         maintenance windows.
     tests:
       - number: 3
-        description: "List OS information via uname and release files"
+        description: "List OS Information"
+      - number: 4
+        description: "Linux VM Check via Hardware"
       - number: 8
-        description: "Hostname discovery using built-in utilities"
-      - number: 12
-        description: "Enumerate environment variables from shell"
+        description: "Hostname Discovery"
+      - number: 25
+        description: "Linux List Kernel Modules"
 
   - id: linux_network_enumeration
-    name: "Linux network enumeration via netstat"
+    name: "Linux network enumeration via ss/lsof"
     technique: T1049
     technique_name: "System Network Connections Discovery"
     description: |
@@ -35,25 +37,7 @@ scenarios:
       - Baseline legitimate `netstat`, `ss`, or `lsof` usage and alert when
         enumeration utilities are executed by unusual accounts or at odd hours.
     tests:
-      - number: 3
-        description: "Discover network connections with shell utilities"
-
-  - id: windows_collection_baseline
-    name: "Windows automated collection primitives"
-    technique: T1119
-    technique_name: "Automated Collection"
-    description: |
-      Demonstrate native collection behaviours by staging data with Command
-      Prompt and PowerShell. The scenario produces telemetry suitable for tuning
-      detections around bulk data staging prior to exfiltration.
-    supported_platforms: [windows]
-    detection:
-      - Watch for invocations of archive utilities (zip, tar) from temporary
-        directories combined with wildcard collection patterns.
-      - Inspect PowerShell transcript logs for scripted staging of user profiles
-        or document folders.
-    tests:
-      - number: 1
-        description: "Automated collection with Command Prompt"
-      - number: 2
-        description: "Automated collection with PowerShell"
+      - number: 4
+        description: "System Network Connections Discovery via ss or lsof"
+      - number: 6
+        description: "System Network Connections Discovery via sockstat"

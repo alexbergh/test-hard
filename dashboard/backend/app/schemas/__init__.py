@@ -1,6 +1,6 @@
 """Pydantic schemas for API."""
 
-from app.schemas.auth import Token, TokenData, UserCreate, UserLogin, UserResponse
+from app.schemas.auth import PasswordChange, Token, TokenData, UserCreate, UserLogin, UserResponse
 from app.schemas.host import HostCreate, HostResponse, HostUpdate
 from app.schemas.scan import (
     ScanCreate,
@@ -13,6 +13,7 @@ from app.schemas.scan import (
 )
 
 __all__ = [
+    "PasswordChange",
     "Token",
     "TokenData",
     "UserCreate",

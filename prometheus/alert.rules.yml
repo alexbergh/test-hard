@@ -124,6 +124,109 @@ groups:
             Host: {{ $labels.host }}
             Review individual test results and remediate issues.
 
+  - name: falco-runtime-security
+    rules:
+      - alert: FalcoHighSeverityEvents
+        expr: sum(rate(falco_events{priority=~"critical|alert|emergency"}[5m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Falco detecting high severity runtime events"
+          description: |
+            Falco is reporting critical/alert/emergency runtime security events.
+            Rate: {{ $value }} events/sec over 5m.
+            Investigate immediately via Grafana Falco dashboard.
+
+      - alert: FalcoWarningEventSpike
+        expr: sum(rate(falco_events{priority="warning"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spike in Falco warning events"
+          description: |
+            High rate of Falco warning-level events: {{ $value }} events/sec.
+            Check for systematic issues or ongoing attack.
+
+      - alert: FalcoContainerEscape
+        expr: sum(rate(falco_events{rule=~".*Docker Socket.*|.*Privileged.*|.*Sensitive Mount.*"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Falco detected potential container escape"
+          description: |
+            Container escape indicators detected: Docker socket mount, privileged mode, or sensitive host mounts.
+            Immediate investigation required.
+
+      - alert: FalcoCredentialAccess
+        expr: sum(rate(falco_events{rule=~".*Sensitive Credentials.*|.*Private Key.*|.*shadow.*"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Falco detected credential access"
+          description: |
+            Unauthorized access to credentials or private keys detected.
+            Rule: {{ $labels.rule }}
+
+      - alert: FalcoCryptoMiner
+        expr: sum(rate(falco_events{rule="Crypto Miner Binary Detected"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Falco detected crypto miner execution"
+          description: "A cryptocurrency mining binary was detected running in the environment."
+
+      - alert: FalcoReverseShell
+        expr: sum(rate(falco_events{rule="Netcat or Reverse Shell Tool"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Falco detected reverse shell tool"
+          description: "A reverse shell or network exploitation tool was detected."
+
+      - alert: FalcoLogTampering
+        expr: sum(rate(falco_events{rule=~".*Log File Deletion.*|.*History File Tampered.*"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Falco detected log tampering"
+          description: "Log file deletion or shell history tampering detected — possible evidence destruction."
+
+      - alert: FalcoExporterDown
+        expr: up{job="falco-exporter"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Falco exporter is unreachable"
+          description: "Falco exporter has been down for more than 2 minutes. Runtime security monitoring is degraded."
+
+      - alert: FalcosidekickDown
+        expr: up{job="falcosidekick"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Falcosidekick is unreachable"
+          description: "Falcosidekick has been down for more than 2 minutes. Falco event routing is not operational."
+
+      - alert: FalcoSyscallDrops
+        expr: rate(falco_syscall_evt_drop_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Falco is dropping syscall events"
+          description: |
+            Falco is dropping syscall events at {{ $value }} drops/sec.
+            This may indicate insufficient CPU resources for Falco.
+
   - name: system-resources
     rules:
       - alert: HighCPUUsage
@@ -155,3 +258,110 @@ groups:
             Less than 15% disk space remaining on {{ $labels.host }}
             Path: {{ $labels.path }}
             Free: {{ $value }}%
+
+  # ---- Network Security Monitoring ----
+  - name: network-security
+    rules:
+      # Anomalous outbound traffic spike
+      - alert: NetworkTrafficSpikeOutbound
+        expr: |
+          rate(net_bytes_sent[5m]) > 2 * avg_over_time(rate(net_bytes_sent[5m])[1h:5m])
+          and rate(net_bytes_sent[5m]) > 1048576
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbound traffic spike on {{ $labels.host }}"
+          description: |
+            Outbound network traffic on {{ $labels.host }} interface {{ $labels.interface }}
+            is more than 2x the hourly average and above 1 MB/s.
+            Current rate: {{ $value | humanize1024 }}B/s
+
+      # Anomalous inbound traffic spike
+      - alert: NetworkTrafficSpikeInbound
+        expr: |
+          rate(net_bytes_recv[5m]) > 2 * avg_over_time(rate(net_bytes_recv[5m])[1h:5m])
+          and rate(net_bytes_recv[5m]) > 1048576
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Inbound traffic spike on {{ $labels.host }}"
+          description: |
+            Inbound network traffic on {{ $labels.host }} interface {{ $labels.interface }}
+            is more than 2x the hourly average and above 1 MB/s.
+
+      # High network error rate
+      - alert: NetworkErrorRateHigh
+        expr: |
+          (rate(net_err_in[5m]) + rate(net_err_out[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network error rate on {{ $labels.host }}"
+          description: |
+            Network errors on {{ $labels.host }} interface {{ $labels.interface }}
+            exceed 10 errors/sec. This may indicate network issues or an attack.
+
+      # High packet drop rate
+      - alert: NetworkPacketDropHigh
+        expr: |
+          (rate(net_drop_in[5m]) + rate(net_drop_out[5m])) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High packet drop rate on {{ $labels.host }}"
+          description: |
+            Packet drops on {{ $labels.host }} interface {{ $labels.interface }}
+            exceed 50 drops/sec. Possible congestion or misconfiguration.
+
+      # Suspicious high connection count
+      - alert: HighConnectionCount
+        expr: netstat_tcp_established > 500
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High TCP connection count on {{ $labels.host }}"
+          description: |
+            {{ $labels.host }} has {{ $value }} established TCP connections.
+            This may indicate a DDoS attack or connection leak.
+
+      # TIME_WAIT connection accumulation
+      - alert: HighTimeWaitConnections
+        expr: netstat_tcp_time_wait > 1000
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "High TIME_WAIT connections on {{ $labels.host }}"
+          description: |
+            {{ $labels.host }} has {{ $value }} TIME_WAIT TCP connections.
+            This may indicate rapid connection churn or a scanning activity.
+
+      # Falco network-related rule triggers
+      - alert: FalcoNetworkAnomaly
+        expr: |
+          rate(falco_events{rule=~".*network.*|.*reverse.*shell.*|.*outbound.*|.*inbound.*"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Falco detected network anomaly"
+          description: |
+            Falco rule '{{ $labels.rule }}' triggered with priority {{ $labels.priority }}.
+            This indicates suspicious network activity in the environment.
+
+      # DNS query anomaly (high volume)
+      - alert: HighDNSQueryRate
+        expr: rate(net_udp_outdatagrams[5m]) > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High DNS/UDP query rate on {{ $labels.host }}"
+          description: |
+            {{ $labels.host }} is sending {{ $value }} UDP datagrams/sec.
+            Potential DNS tunneling or exfiltration attempt.

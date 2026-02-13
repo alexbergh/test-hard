@@ -1,0 +1,984 @@
+---
+# =============================================================================
+# OPA Gatekeeper — Политики безопасности контейнерных образов
+# Часть платформы безопасности test-hard
+#
+# Политики основаны на:
+#   - CIS Kubernetes Benchmark v1.12.0 (разделы 5.2.x, 5.3.x, 5.7.x)
+#   - CIS Docker Benchmark v1.8.0
+#   - FSTEK requirements for containerization
+#   - OWASP Container Security / NIST SP 800-190
+#
+# 13 политик: image tags, repos, privileged, non-root, resources,
+# docker socket, probes, privilege escalation, dangerous capabilities,
+# drop ALL caps, seccomp profile, host namespaces, readOnlyRootFilesystem,
+# require NetworkPolicy
+# =============================================================================
+
+# ─────────────────────────────────────────────────
+# 1. Запрет образов с тегом :latest (CIS 5.5.1)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdisallowedtags
+  annotations:
+    description: "Запрет использования определённых тегов образов (например, :latest)"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDisallowedTags
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            tags:
+              type: array
+              items:
+                type: string
+              description: "Список запрещённых тегов"
+            exemptImages:
+              type: array
+              items:
+                type: string
+              description: "Список исключений (regex)"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sdisallowedtags
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          tag := [split(container.image, ":")[1], "latest"][count(split(container.image, ":")) == 1]
+          tags := input.parameters.tags
+          tag == tags[_]
+          not is_exempt(container)
+          msg := sprintf("Образ '%v' использует запрещённый тег '%v'. Используйте конкретную версию.", [container.image, tag])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowedTags
+metadata:
+  name: disallow-latest-tag
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    tags: ["latest"]
+    exemptImages:
+      - "ghcr.io/alexbergh/test-hard-falco-responder:.*"
+
+---
+# ─────────────────────────────────────────────────
+# 2. Обязательный реестр образов (CIS 5.5.1, FSTEK 1-4)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sallowedrepos
+  annotations:
+    description: "Разрешить образы только из доверенных реестров"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sAllowedRepos
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            repos:
+              type: array
+              items:
+                type: string
+              description: "Список разрешённых префиксов реестров"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sallowedrepos
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not image_allowed(container.image)
+          msg := sprintf("Образ '%v' не из доверенного реестра. Разрешённые: %v", [container.image, input.parameters.repos])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        image_allowed(image) {
+          repo := input.parameters.repos[_]
+          startswith(image, repo)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sAllowedRepos
+metadata:
+  name: allowed-repos
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    repos:
+      - "ghcr.io/alexbergh/"
+      - "prom/"
+      - "grafana/"
+      - "falcosecurity/"
+      - "docker.io/prom/"
+      - "docker.io/grafana/"
+
+---
+# ─────────────────────────────────────────────────
+# 3. Запрет привилегированных контейнеров (CIS 5.2.1)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spsprivilegedcontainer
+  annotations:
+    description: "Запрет запуска привилегированных контейнеров"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPPrivilegedContainer
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spsprivilegedcontainer
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          container.securityContext.privileged == true
+          not is_exempt(container)
+          msg := sprintf("Привилегированный контейнер запрещён: '%v'. Используйте конкретные capabilities.", [container.name])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPPrivilegedContainer
+metadata:
+  name: deny-privileged-containers
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    exemptImages:
+      # Falco требует privileged для доступа к syscalls
+      - "falcosecurity/falco.*"
+
+---
+# ─────────────────────────────────────────────────
+# 4. Обязательный запуск от непривилегированного пользователя (CIS 5.2.6)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spsprunasnonroot
+  annotations:
+    description: "Требование запуска контейнеров от непривилегированного пользователя"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPRunAsNonRoot
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spsprunasnonroot
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not run_as_non_root(container)
+          not is_exempt(container)
+          msg := sprintf("Контейнер '%v' должен запускаться с runAsNonRoot: true", [container.name])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        run_as_non_root(container) {
+          container.securityContext.runAsNonRoot == true
+        }
+        run_as_non_root(container) {
+          input.review.object.spec.securityContext.runAsNonRoot == true
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPRunAsNonRoot
+metadata:
+  name: require-run-as-non-root
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    exemptImages:
+      - "falcosecurity/falco.*"
+      - "prom/prometheus.*"
+
+---
+# ─────────────────────────────────────────────────
+# 5. Обязательные ресурсные лимиты (CIS best practice)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredresources
+  annotations:
+    description: "Требование указания лимитов CPU и памяти для контейнеров"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredResources
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            limits:
+              type: array
+              items:
+                type: string
+              description: "Обязательные ресурсные лимиты (cpu, memory)"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredresources
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          required := input.parameters.limits[_]
+          not has_limit(container, required)
+          msg := sprintf("Контейнер '%v' не имеет ресурсного лимита '%v'", [container.name, required])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+
+        has_limit(container, "cpu") {
+          container.resources.limits.cpu
+        }
+        has_limit(container, "memory") {
+          container.resources.limits.memory
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredResources
+metadata:
+  name: require-resource-limits
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    limits:
+      - "cpu"
+      - "memory"
+
+---
+# ─────────────────────────────────────────────────
+# 6. Запрет монтирования Docker-сокета (CIS Docker 5.31)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sblockdockersocket
+  annotations:
+    description: "Запрет монтирования /var/run/docker.sock в контейнеры"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sBlockDockerSocket
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sblockdockersocket
+
+        violation[{"msg": msg}] {
+          volume := input.review.object.spec.volumes[_]
+          has_docker_socket(volume)
+          not all_containers_exempt
+          msg := sprintf("Монтирование Docker-сокета запрещено (volume: '%v'). Используйте docker-proxy.", [volume.name])
+        }
+
+        has_docker_socket(volume) {
+          volume.hostPath.path == "/var/run/docker.sock"
+        }
+
+        all_containers_exempt {
+          exempt := input.parameters.exemptImages
+          container := input.review.object.spec.containers[_]
+          image_match(container.image, exempt)
+        }
+
+        image_match(image, exemptions) {
+          exemption := exemptions[_]
+          regex.match(exemption, image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sBlockDockerSocket
+metadata:
+  name: block-docker-socket
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    exemptImages:
+      # Falco требует доступ к Docker-сокету для enrichment
+      - "falcosecurity/falco.*"
+
+---
+# ─────────────────────────────────────────────────
+# 7. Обязательные readiness/liveness probes (CIS best practice)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredprobes
+  annotations:
+    description: "Требование наличия liveness и readiness probes"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredProbes
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            probes:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredprobes
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          probe := input.parameters.probes[_]
+          not has_probe(container, probe)
+          msg := sprintf("Контейнер '%v' не имеет '%v' probe", [container.name, probe])
+        }
+
+        has_probe(container, "livenessProbe") {
+          container.livenessProbe
+        }
+        has_probe(container, "readinessProbe") {
+          container.readinessProbe
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredProbes
+metadata:
+  name: require-probes
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    probes:
+      - "livenessProbe"
+      - "readinessProbe"
+
+---
+# ─────────────────────────────────────────────────
+# 8. Запрет повышения привилегий (CIS 5.2.5)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spspallowprivilegeescalation
+  annotations:
+    description: "CIS 5.2.5 — allowPrivilegeEscalation должен быть false"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPAllowPrivilegeEscalation
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spspallowprivilegeescalation
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not container.securityContext.allowPrivilegeEscalation == false
+          not is_exempt(container)
+          msg := sprintf("CIS 5.2.5: allowPrivilegeEscalation должен быть false для '%v'", [container.name])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPAllowPrivilegeEscalation
+metadata:
+  name: deny-privilege-escalation
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    exemptImages:
+      - "falcosecurity/falco.*"
+
+---
+# ─────────────────────────────────────────────────
+# 9. Блокировка опасных capabilities (CIS 5.2.7/5.2.8)
+#    Список из CIS Docker Benchmark v1.8.0 + capabilities-config.yaml
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spspdangerouslcapabilities
+  annotations:
+    description: "CIS 5.2.7/5.2.8 — Блокировка опасных Linux capabilities"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPDangerousCapabilities
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            blockedCapabilities:
+              type: array
+              items:
+                type: string
+              description: "Запрещённые capabilities"
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spspdangerouslcapabilities
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          cap := container.securityContext.capabilities.add[_]
+          blocked := input.parameters.blockedCapabilities[_]
+          upper(cap) == upper(blocked)
+          not is_exempt(container)
+          msg := sprintf("CIS 5.2.7: Запрещённая capability '%v' у контейнера '%v'", [cap, container.name])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPDangerousCapabilities
+metadata:
+  name: block-dangerous-capabilities
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    # Список из capabilities-config.yaml (risk-matrix high + medium)
+    blockedCapabilities:
+      - SYS_ADMIN
+      - SYS_MODULE
+      - SYS_PTRACE
+      - SYS_RAWIO
+      - DAC_READ_SEARCH
+      - LINUX_IMMUTABLE
+      - NET_BROADCAST
+      - SYS_BOOT
+      - NET_ADMIN
+      - NET_RAW
+    exemptImages:
+      - "falcosecurity/falco.*"
+
+---
+# ─────────────────────────────────────────────────
+# 10. Обязательный drop ALL capabilities (CIS 5.2.7/5.2.8)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredropcapabilities
+  annotations:
+    description: "CIS 5.2.7/5.2.8 — Требование drop: ALL в capabilities"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredDropCapabilities
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredropcapabilities
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not drops_all(container)
+          not is_exempt(container)
+          msg := sprintf("CIS 5.2.7: Контейнер '%v' должен включать capabilities.drop: [ALL]", [container.name])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        drops_all(container) {
+          drop := container.securityContext.capabilities.drop[_]
+          drop == "ALL"
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredDropCapabilities
+metadata:
+  name: require-drop-all-capabilities
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    exemptImages:
+      - "falcosecurity/falco.*"
+      - "prom/prometheus.*"
+
+---
+# ─────────────────────────────────────────────────
+# 11. Обязательный Seccomp профиль (CIS 5.7.2)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredseccompprofile
+  annotations:
+    description: "CIS 5.7.2 — Требование использования Seccomp профиля RuntimeDefault"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredSeccompProfile
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedProfiles:
+              type: array
+              items:
+                type: string
+              description: "Разрешённые типы Seccomp профилей"
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredseccompprofile
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not has_seccomp_pod
+          not has_seccomp_container(container)
+          not is_exempt(container)
+          msg := sprintf("CIS 5.7.2: Контейнер '%v' должен использовать Seccomp профиль (RuntimeDefault или Localhost)", [container.name])
+        }
+
+        has_seccomp_pod {
+          profile := input.review.object.spec.securityContext.seccompProfile.type
+          allowed := input.parameters.allowedProfiles[_]
+          profile == allowed
+        }
+
+        has_seccomp_container(container) {
+          profile := container.securityContext.seccompProfile.type
+          allowed := input.parameters.allowedProfiles[_]
+          profile == allowed
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredSeccompProfile
+metadata:
+  name: require-seccomp-profile
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    allowedProfiles:
+      - RuntimeDefault
+      - Localhost
+    exemptImages:
+      - "falcosecurity/falco.*"
+
+---
+# ─────────────────────────────────────────────────
+# 12. Запрет Host Namespaces (CIS 5.2.2/5.2.3/5.2.4)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spsphostnamespace
+  annotations:
+    description: "CIS 5.2.2-5.2.4 — Запрет использования host network, PID и IPC namespaces"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPHostNamespace
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spsphostnamespace
+
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostNetwork == true
+          not all_exempt
+          msg := "CIS 5.2.4: Использование hostNetwork запрещено"
+        }
+
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostPID == true
+          not all_exempt
+          msg := "CIS 5.2.2: Использование hostPID запрещено"
+        }
+
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostIPC == true
+          not all_exempt
+          msg := "CIS 5.2.3: Использование hostIPC запрещено"
+        }
+
+        all_exempt {
+          exempt := input.parameters.exemptImages
+          container := input.review.object.spec.containers[_]
+          image_match(container.image, exempt)
+        }
+
+        image_match(image, exemptions) {
+          exemption := exemptions[_]
+          regex.match(exemption, image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPHostNamespace
+metadata:
+  name: deny-host-namespaces
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    exemptImages:
+      - "falcosecurity/falco.*"
+
+---
+# ─────────────────────────────────────────────────
+# 13. Обязательный readOnlyRootFilesystem (CIS 5.2.x)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spspreadonlyrootfilesystem
+  annotations:
+    description: "CIS 5.2.x — Требование readOnlyRootFilesystem: true"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPReadOnlyRootFilesystem
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spspreadonlyrootfilesystem
+
+        violation[{"msg": msg}] {
+          container := input_containers[_]
+          not container.securityContext.readOnlyRootFilesystem == true
+          not is_exempt(container)
+          msg := sprintf("Контейнер '%v' должен использовать readOnlyRootFilesystem: true. Используйте emptyDir для временных файлов.", [container.name])
+        }
+
+        input_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        is_exempt(container) {
+          exempt := input.parameters.exemptImages[_]
+          regex.match(exempt, container.image)
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPReadOnlyRootFilesystem
+metadata:
+  name: require-readonly-rootfs
+  namespace: monitoring
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "DaemonSet", "StatefulSet"]
+    namespaces: ["monitoring"]
+  parameters:
+    exemptImages:
+      - "falcosecurity/falco.*"
+      - "prom/prometheus.*"
+      - "grafana/grafana.*"
+
+---
+# ─────────────────────────────────────────────────
+# 14. Обязательный NetworkPolicy на Namespace (CIS 5.3.2)
+# ─────────────────────────────────────────────────
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequirenetworkpolicy
+  annotations:
+    description: "CIS 5.3.2 — Каждый namespace должен иметь NetworkPolicy"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireNetworkPolicy
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequirenetworkpolicy
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Namespace"
+          namespace := input.review.object.metadata.name
+          not has_network_policy(namespace)
+          msg := sprintf("CIS 5.3.2: Namespace '%v' должен иметь NetworkPolicy", [namespace])
+        }
+
+        has_network_policy(namespace) {
+          netpol := data.inventory.cluster["networking.k8s.io/v1"]["NetworkPolicy"][_]
+          netpol.metadata.namespace == namespace
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequireNetworkPolicy
+metadata:
+  name: require-networkpolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Namespace"]

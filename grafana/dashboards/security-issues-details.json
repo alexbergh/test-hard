@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
 
       },
       "fieldConfig": {
@@ -69,12 +69,12 @@
                       "warning": {
                         "color": "red",
                         "index": 0,
-                        "text": "⚠️ Warning"
+                        "text": "Warning"
                       },
                       "suggestion": {
                         "color": "yellow",
                         "index": 1,
-                        "text": "💡 Suggestion"
+                        "text": "Suggestion"
                       }
                     },
                     "type": "value"
@@ -137,7 +137,7 @@
         {
           "datasource": {
             "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
 
           },
           "editorMode": "code",
@@ -181,7 +181,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
 
       },
       "fieldConfig": {
@@ -226,17 +226,17 @@
                       "high": {
                         "color": "red",
                         "index": 0,
-                        "text": "🔴 High"
+                        "text": "High"
                       },
                       "medium": {
                         "color": "orange",
                         "index": 1,
-                        "text": "🟠 Medium"
+                        "text": "Medium"
                       },
                       "low": {
                         "color": "yellow",
                         "index": 2,
-                        "text": "🟡 Low"
+                        "text": "Low"
                       }
                     },
                     "type": "value"
@@ -287,7 +287,7 @@
                       "0": {
                         "color": "red",
                         "index": 0,
-                        "text": "❌ Failed"
+                        "text": "Failed"
                       }
                     },
                     "type": "value"
@@ -326,7 +326,7 @@
         {
           "datasource": {
             "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "prometheus"
 
           },
           "editorMode": "code",

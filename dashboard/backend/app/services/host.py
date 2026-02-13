@@ -10,8 +10,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import docker
+import logging
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+
+def _get_docker_client():
+    """Get Docker client using configured DOCKER_HOST."""
+    docker_host = settings.docker_host
+    if docker_host.startswith("tcp://"):
+        return docker.DockerClient(base_url=docker_host)
+    return docker.from_env()
 
 
 class HostService:
@@ -104,7 +114,7 @@ class HostService:
     async def _check_container_status(self, container_name: str) -> str:
         """Check Docker container status."""
         try:
-            client = docker.from_env()
+            client = _get_docker_client()
             container = client.containers.get(container_name)
             if container.status == "running":
                 return "online"
@@ -135,9 +145,10 @@ class HostService:
     async def sync_docker_containers(self) -> list[Host]:
         """Sync hosts from running Docker containers."""
         try:
-            client = docker.from_env()
+            client = _get_docker_client()
             containers = client.containers.list()
             created_hosts = []
+            logger.info("Found %d containers, syncing target-* hosts", len(containers))
 
             for container in containers:
                 name = container.name

@@ -1,15 +1,16 @@
 """Scheduled scanning service using APScheduler."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from app.config import get_settings
 from app.database import get_session_context
 from app.models import Scan, ScanSchedule
+from app.models.scan import ScanResult
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
@@ -52,6 +53,15 @@ class SchedulerService:
 
         # Load existing schedules from database
         await self._load_schedules()
+
+        # Add daily cleanup job for scan retention (30 days)
+        self.scheduler.add_job(
+            self._cleanup_old_scans,
+            CronTrigger(hour=3, minute=0),
+            id="scan_retention_cleanup",
+            name="Scan retention cleanup (30 days)",
+            replace_existing=True,
+        )
 
         self.scheduler.start()
         logger.info("Scheduler started")
@@ -157,6 +167,32 @@ class SchedulerService:
 
             scan_service = ScanService(session)
             await scan_service.start_scan(scan.id)
+
+    async def _cleanup_old_scans(self) -> None:
+        """Remove scans older than 30 days to enforce retention policy."""
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        logger.info(f"Running scan retention cleanup, removing scans before {cutoff}")
+
+        async with get_session_context() as session:
+            # Find old scan IDs
+            result = await session.execute(
+                select(Scan.id).where(Scan.created_at < cutoff)
+            )
+            old_ids = [row[0] for row in result.all()]
+
+            if old_ids:
+                # Delete results first (cascade should handle it, but be explicit)
+                await session.execute(
+                    delete(ScanResult).where(ScanResult.scan_id.in_(old_ids))
+                )
+                # Delete scans
+                await session.execute(
+                    delete(Scan).where(Scan.id.in_(old_ids))
+                )
+                await session.commit()
+                logger.info(f"Cleaned up {len(old_ids)} scans older than 30 days")
+            else:
+                logger.info("No old scans to clean up")
 
     async def get_schedule_status(self, schedule_id: int) -> dict | None:
         """Get status of a scheduled job."""

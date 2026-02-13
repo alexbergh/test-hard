@@ -1,0 +1,461 @@
+---
+# Falco DaemonSet — runs on every node for runtime syscall monitoring
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: falco
+  namespace: monitoring
+  labels:
+    app: falco
+    app.kubernetes.io/name: falco
+    app.kubernetes.io/component: runtime-security
+spec:
+  selector:
+    matchLabels:
+      app: falco
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: falco
+        app.kubernetes.io/name: falco
+        app.kubernetes.io/component: runtime-security
+    spec:
+      serviceAccountName: falco
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+      containers:
+        - name: falco
+          image: falcosecurity/falco-no-driver:0.38.1
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: dev
+              mountPath: /host/dev
+              readOnly: true
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: boot
+              mountPath: /host/boot
+              readOnly: true
+            - name: modules
+              mountPath: /host/lib/modules
+              readOnly: true
+            - name: usr
+              mountPath: /host/usr
+              readOnly: true
+            - name: etc
+              mountPath: /host/etc
+              readOnly: true
+            - name: docker-socket
+              mountPath: /host/var/run/docker.sock
+              readOnly: true
+            - name: falco-config
+              mountPath: /etc/falco/falco.yaml
+              subPath: falco.yaml
+              readOnly: true
+            - name: falco-rules
+              mountPath: /etc/falco/rules.d
+              readOnly: true
+            - name: falco-logs
+              mountPath: /var/log/falco
+            - name: falco-run
+              mountPath: /run/falco
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8765
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8765
+            initialDelaySeconds: 15
+            periodSeconds: 10
+        - name: falco-exporter
+          image: falcosecurity/falco-exporter:0.9.0
+          args:
+            - "--falco-grpc-unix-socket=/run/falco/falco.sock"
+            - "--listen-address=0.0.0.0:9376"
+          ports:
+            - containerPort: 9376
+              name: metrics
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          volumeMounts:
+            - name: falco-run
+              mountPath: /run/falco
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9376
+            initialDelaySeconds: 15
+            periodSeconds: 15
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: boot
+          hostPath:
+            path: /boot
+        - name: modules
+          hostPath:
+            path: /lib/modules
+        - name: usr
+          hostPath:
+            path: /usr
+        - name: etc
+          hostPath:
+            path: /etc
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+        - name: falco-config
+          configMap:
+            name: falco-config
+        - name: falco-rules
+          configMap:
+            name: falco-rules
+        - name: falco-logs
+          emptyDir: {}
+        - name: falco-run
+          emptyDir: {}
+
+---
+# Falco ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: falco
+  namespace: monitoring
+  labels:
+    app: falco
+
+---
+# Falco ClusterRole — read access for k8s metadata enrichment
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: falco
+  labels:
+    app: falco
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "namespaces", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: falco
+  labels:
+    app: falco
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: falco
+subjects:
+  - kind: ServiceAccount
+    name: falco
+    namespace: monitoring
+
+---
+# Service for falco-exporter Prometheus scraping
+apiVersion: v1
+kind: Service
+metadata:
+  name: falco-exporter
+  namespace: monitoring
+  labels:
+    app: falco-exporter
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9376"
+    prometheus.io/path: "/metrics"
+spec:
+  selector:
+    app: falco
+  ports:
+    - port: 9376
+      targetPort: 9376
+      protocol: TCP
+      name: metrics
+  type: ClusterIP
+
+---
+# Falcosidekick Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: falcosidekick
+  namespace: monitoring
+  labels:
+    app: falcosidekick
+    app.kubernetes.io/name: falcosidekick
+    app.kubernetes.io/component: runtime-security
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: falcosidekick
+  template:
+    metadata:
+      labels:
+        app: falcosidekick
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2801"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: falcosidekick
+          image: falcosecurity/falcosidekick:2.29.0
+          ports:
+            - containerPort: 2801
+              name: http
+              protocol: TCP
+          env:
+            - name: ALERTMANAGER_HOSTPORT
+              value: "http://alertmanager:9093"
+            - name: ALERTMANAGER_MINIMUMPRIORITY
+              value: "warning"
+            - name: ALERTMANAGER_EXPIRESAFTER
+              value: "600"
+            - name: ALERTMANAGER_EXTRALABELS
+              value: "source:falco,platform:test-hard"
+            - name: LOKI_HOSTPORT
+              value: "http://loki:3100"
+            - name: LOKI_MINIMUMPRIORITY
+              value: "notice"
+            - name: WEBHOOK_ADDRESS
+              value: "http://falco-responder:5080/respond"
+            - name: WEBHOOK_MINIMUMPRIORITY
+              value: "critical"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 2801
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 2801
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+# Falcosidekick Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: falcosidekick
+  namespace: monitoring
+  labels:
+    app: falcosidekick
+spec:
+  selector:
+    app: falcosidekick
+  ports:
+    - port: 2801
+      targetPort: 2801
+      protocol: TCP
+      name: http
+  type: ClusterIP
+
+---
+# Falco Responder Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: falco-responder
+  namespace: monitoring
+  labels:
+    app: falco-responder
+    app.kubernetes.io/name: falco-responder
+    app.kubernetes.io/component: runtime-security
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: falco-responder
+  template:
+    metadata:
+      labels:
+        app: falco-responder
+    spec:
+      serviceAccountName: falco-responder
+      containers:
+        - name: responder
+          image: ghcr.io/alexbergh/test-hard-falco-responder:latest
+          ports:
+            - containerPort: 5080
+              name: http
+              protocol: TCP
+          env:
+            - name: DRY_RUN
+              value: "false"
+            - name: PORT
+              value: "5080"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          volumeMounts:
+            - name: response-config
+              mountPath: /app/response_actions.yaml
+              subPath: response_actions.yaml
+              readOnly: true
+      volumes:
+        - name: response-config
+          configMap:
+            name: falco-responder-config
+
+---
+# Falco Responder Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: falco-responder
+  namespace: monitoring
+  labels:
+    app: falco-responder
+spec:
+  selector:
+    app: falco-responder
+  ports:
+    - port: 5080
+      targetPort: 5080
+      protocol: TCP
+      name: http
+  type: ClusterIP
+
+---
+# Falco Responder ServiceAccount with limited permissions
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: falco-responder
+  namespace: monitoring
+  labels:
+    app: falco-responder
+
+---
+# Falco Responder Role — can delete pods for automated response
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: falco-responder
+  labels:
+    app: falco-responder
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: falco-responder
+  labels:
+    app: falco-responder
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: falco-responder
+subjects:
+  - kind: ServiceAccount
+    name: falco-responder
+    namespace: monitoring
+
+---
+# NetworkPolicy — Falcosidekick can only talk to alertmanager, loki, responder
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: falcosidekick-egress
+  namespace: monitoring
+  labels:
+    app: falcosidekick
+spec:
+  podSelector:
+    matchLabels:
+      app: falcosidekick
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: alertmanager
+      ports:
+        - port: 9093
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app: loki
+      ports:
+        - port: 3100
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app: falco-responder
+      ports:
+        - port: 5080
+          protocol: TCP
+    # DNS
+    - to: []
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

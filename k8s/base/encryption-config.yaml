@@ -1,0 +1,34 @@
+# =============================================================================
+# EncryptionConfiguration for Kubernetes Secrets at rest
+# Based on CIS Kubernetes Benchmark v1.12.0, section 1.2.12
+# CIS 1.2.12: --encryption-provider-config
+#
+# Usage:
+#   1. Generate a 32-byte base64 key:
+#      head -c 32 /dev/urandom | base64
+#   2. Replace <BASE64_ENCODED_32_BYTE_KEY> with the generated key
+#   3. Copy to control plane node:
+#      scp encryption-config.yaml root@master:/etc/kubernetes/encryption-config.yaml
+#   4. Add to kube-apiserver:
+#      --encryption-provider-config=/etc/kubernetes/encryption-config.yaml
+#   5. Restart kube-apiserver
+#   6. Re-encrypt existing secrets:
+#      kubectl get secrets --all-namespaces -o json | kubectl replace -f -
+# =============================================================================
+
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+      - configmaps
+    providers:
+      # Primary: AES-CBC encryption (CIS recommended)
+      - aescbc:
+          keys:
+            - name: key1
+              # IMPORTANT: Replace with your own key
+              # Generate: head -c 32 /dev/urandom | base64
+              secret: <BASE64_ENCODED_32_BYTE_KEY>
+      # Fallback: identity (unencrypted, for reading old secrets)
+      - identity: {}

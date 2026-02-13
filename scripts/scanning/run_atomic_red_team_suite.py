@@ -282,6 +282,47 @@ def parse_response_payload(raw: Dict) -> Dict:
     return {}
 
 
+def _run_command_directly(
+    command: str, executor: str, timeout: int
+) -> tuple:
+    """Execute a test command directly via subprocess when atomic_operator skips it."""
+    import subprocess
+    from datetime import datetime as _dt
+
+    shell = "/bin/bash" if executor == "bash" else "/bin/sh"
+    start_ts = _dt.utcnow().isoformat() + "Z"
+    try:
+        proc = subprocess.run(
+            [shell, "-c", command],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        end_ts = _dt.utcnow().isoformat() + "Z"
+        rc = proc.returncode
+        output = proc.stdout[:4096] if proc.stdout else ""
+        err_out = proc.stderr[:2048] if proc.stderr else ""
+        response_data = {
+            "return_code": rc,
+            "start_timestamp": start_ts,
+            "end_timestamp": end_ts,
+            "command": command[:512],
+            "output": output,
+        }
+        if rc == 0:
+            logger.info("Direct execution passed (rc=0)")
+            return "passed", response_data, None
+        else:
+            logger.warning("Direct execution failed (rc=%d)", rc)
+            return "failed", response_data, err_out or None
+    except subprocess.TimeoutExpired:
+        logger.error("Direct execution timed out after %ds", timeout)
+        return "error", {"return_code": -1, "start_timestamp": start_ts}, f"Timed out after {timeout}s"
+    except Exception as exc:
+        logger.error("Direct execution error: %s", exc)
+        return "error", {"return_code": -1, "start_timestamp": start_ts}, str(exc)
+
+
 def execute_test(  # noqa: C901
     operator: AtomicOperator,
     repo_path: Path,
@@ -291,6 +332,8 @@ def execute_test(  # noqa: C901
     mode: str,
     timeout: int,
     dry_run: bool,
+    raw_command: Optional[str] = None,
+    raw_executor: Optional[str] = None,
 ) -> TestResult:
     guid = getattr(test_obj, "auto_generated_guid")
     result_kwargs = dict(
@@ -342,8 +385,15 @@ def execute_test(  # noqa: C901
                 error_message = response_data["error"]
                 logger.warning("Test %s reported error: %s", guid, error_message)
             elif return_code is None:
-                status = "skipped"
-                logger.debug("Test %s skipped", guid)
+                # atomic_operator skipped the test -- try direct execution
+                if raw_command and mode == "run":
+                    logger.info("Operator skipped test %s, falling back to direct execution", guid)
+                    status, response_data, error_message = _run_command_directly(
+                        raw_command, raw_executor or "sh", timeout
+                    )
+                else:
+                    status = "skipped"
+                    logger.debug("Test %s skipped", guid)
             elif return_code == 0:
                 status = "passed"
                 logger.info("Test %s passed", guid)
@@ -351,7 +401,8 @@ def execute_test(  # noqa: C901
                 status = "failed"
                 logger.warning("Test %s failed with code %s", guid, return_code)
 
-            response_data = payload
+            if not isinstance(response_data, dict):
+                response_data = payload if isinstance(payload, dict) else {}
 
     return TestResult(
         guid=guid,
@@ -384,34 +435,100 @@ def run_scenario(
         mode,
     )
 
+    # Load technique without platform filtering to preserve original test numbering
+    technique_yaml = repo_path / "atomics" / scenario.technique / f"{scenario.technique}.yaml"
+    if technique_yaml.exists():
+        with open(technique_yaml, "r", encoding="utf-8") as fh:
+            raw = yaml.safe_load(fh)
+        all_tests_raw = raw.get("atomic_tests", [])
+    else:
+        all_tests_raw = []
+
+    # Also load via operator for execution (may filter by platform)
     tech_data = operator.run(
         techniques=[scenario.technique],
         atomics_path=str(repo_path),
         return_atomics=True,
     )
-    if not tech_data:
+    technique = tech_data[0] if tech_data else None
+
+    if not all_tests_raw and not technique:
         logger.error("Technique %s not found in repository", scenario.technique)
         raise ValueError(f"Technique {scenario.technique} not found in repository")
-    technique = tech_data[0]
+
+    # Build a GUID lookup from operator-loaded tests for execution
+    guid_to_test = {}
+    if technique:
+        for t in technique.atomic_tests:
+            guid_to_test[getattr(t, "auto_generated_guid", None) or id(t)] = t
 
     tests_to_run: List[TestSpec]
     if scenario.tests:
         tests_to_run = scenario.tests
     else:
-        tests_to_run = [TestSpec(number=index + 1) for index in range(len(technique.atomic_tests))]
+        tests_to_run = [TestSpec(number=index + 1) for index in range(len(all_tests_raw))]
 
     results: List[TestResult] = []
     scenario_status = "passed"
     for spec in tests_to_run:
         try:
-            test_obj = technique.atomic_tests[spec.number - 1]
+            raw_test = all_tests_raw[spec.number - 1]
         except IndexError as exc:
             logger.error(
-                "Test number %d not found in technique %s",
+                "Test number %d not found in technique %s (total: %d tests)",
                 spec.number,
                 scenario.technique,
+                len(all_tests_raw),
             )
             raise IndexError(f"Technique {scenario.technique} has no test #{spec.number}") from exc
+
+        # Find the matching operator test object by GUID
+        raw_guid = raw_test.get("auto_generated_guid", "")
+        test_obj = guid_to_test.get(raw_guid)
+        if not test_obj and technique:
+            # Fallback: try matching by name
+            for t in technique.atomic_tests:
+                if getattr(t, "name", None) == raw_test.get("name"):
+                    test_obj = t
+                    break
+
+        if test_obj is None:
+            # Test not in operator's filtered list -- create a wrapper from raw YAML
+            plats = raw_test.get("supported_platforms", [])
+            current_platform = "linux"  # running in Linux container
+            if current_platform not in plats:
+                logger.info(
+                    "Test #%d (%s) not available on this platform (supports: %s), skipping",
+                    spec.number, raw_test.get("name", "unknown"), ", ".join(plats),
+                )
+                test_result = TestResult(
+                    guid=raw_guid,
+                    number=spec.number,
+                    name=raw_test.get("name", f"Test {spec.number}"),
+                    executor=raw_test.get("executor", {}).get("name", "unknown") if isinstance(raw_test.get("executor"), dict) else "unknown",
+                    supported_platforms=plats,
+                    status="skipped",
+                )
+                results.append(test_result)
+                continue
+            # Create a simple namespace wrapper so execute_test can use it
+            from types import SimpleNamespace
+            executor_raw = raw_test.get("executor", {})
+            exec_name = executor_raw.get("name", "unknown") if isinstance(executor_raw, dict) else "unknown"
+            exec_command = executor_raw.get("command", "") if isinstance(executor_raw, dict) else ""
+            test_obj = SimpleNamespace(
+                auto_generated_guid=raw_guid,
+                name=raw_test.get("name", f"Test {spec.number}"),
+                executor=SimpleNamespace(name=exec_name),
+                supported_platforms=plats,
+                _raw_command=exec_command,
+                _raw_executor=exec_name,
+            )
+
+        # Extract raw command from YAML for direct execution fallback
+        executor_raw = raw_test.get("executor", {})
+        _raw_cmd = executor_raw.get("command", "") if isinstance(executor_raw, dict) else ""
+        _raw_exec = executor_raw.get("name", "sh") if isinstance(executor_raw, dict) else "sh"
 
         test_result = execute_test(
             operator,
@@ -422,6 +539,8 @@ def run_scenario(
             mode,
             timeout,
             dry_run,
+            raw_command=_raw_cmd,
+            raw_executor=_raw_exec,
         )
         results.append(test_result)
         scenario_status = combine_status(scenario_status, test_result.status)
@@ -613,7 +732,7 @@ def main() -> None:
             scenario_results=results,
         )
 
-        logger.info("✓ Atomic Red Team execution completed successfully")
+        logger.info("Atomic Red Team execution completed successfully")
         print(f"Wrote Atomic Red Team results to {history_path}")
 
     except Exception as exc:

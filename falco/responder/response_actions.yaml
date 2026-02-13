@@ -1,0 +1,162 @@
+# Automated Response Actions Configuration
+# Maps Falco rule names to automated response actions
+#
+# Action types:
+#   - log: Log the event (always enabled)
+#   - kill_process: Kill the offending process (requires container access)
+#   - pause_container: Pause the container via Docker API
+#   - stop_container: Stop the container via Docker API
+#   - network_isolate: Disconnect container from all networks
+#   - alert: Send additional webhook/notification
+#   - exec_command: Execute a command in the container
+#
+# Each rule can have multiple actions executed in sequence.
+# Set 'enabled: false' to disable a specific rule response.
+
+defaults:
+  dry_run: false
+  log_all: true
+  cooldown_seconds: 60
+
+rules:
+  # --- Critical: Crypto mining ---
+  "Crypto Miner Binary Detected":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Crypto miner detected — stopping container"
+      - type: stop_container
+      - type: alert
+        message: "Container stopped due to crypto mining activity"
+
+  # --- Critical: Reverse shell ---
+  "Netcat or Reverse Shell Tool":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Reverse shell tool detected"
+      - type: kill_process
+      - type: network_isolate
+      - type: alert
+        message: "Container network isolated — reverse shell tool detected"
+
+  # --- Critical: Container escape risk ---
+  "Container Docker Socket Mount":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Docker socket mount detected — container escape risk"
+      - type: alert
+        message: "Container with Docker socket mount detected"
+
+  # --- Critical: Privileged container ---
+  "Container Privileged Mode":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Privileged container detected"
+      - type: alert
+        message: "Privileged container detected — review deployment"
+
+  # --- Critical: Credential access ---
+  "Read Sensitive Credentials":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Sensitive credential file read by unexpected process"
+      - type: kill_process
+      - type: alert
+        message: "Process killed — unauthorized credential file access"
+
+  # --- Critical: Process injection ---
+  "Ptrace Attached":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Ptrace injection detected"
+      - type: kill_process
+      - type: alert
+        message: "Ptrace-based process injection blocked"
+
+  # --- Critical: Log tampering ---
+  "Log File Deletion":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Log file deletion detected — possible evidence tampering"
+      - type: alert
+        message: "Log file tampering detected"
+
+  # --- Critical: Sensitive file modifications ---
+  "Sensitive File Modification — /etc/shadow":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "/etc/shadow modified by unexpected process"
+      - type: alert
+        message: "Critical: /etc/shadow modification detected"
+
+  "Sensitive File Modification — /etc/passwd":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "/etc/passwd modified by unexpected process"
+      - type: alert
+        message: "Critical: /etc/passwd modification detected"
+
+  "Sensitive File Modification — /etc/sudoers":
+    enabled: true
+    priority: critical
+    actions:
+      - type: log
+        message: "Sudoers modification detected"
+      - type: alert
+        message: "Critical: sudoers file modification detected"
+
+  # --- Warning: Container drift ---
+  "Container Package Manager Executed":
+    enabled: true
+    priority: warning
+    actions:
+      - type: log
+        message: "Package manager executed in running container — image drift"
+      - type: alert
+        message: "Container drift detected — package manager used in running container"
+
+  # --- Warning: Interactive shell ---
+  "Container Shell Spawned":
+    enabled: true
+    priority: warning
+    actions:
+      - type: log
+        message: "Interactive shell opened in container"
+
+  # --- Warning: SSH lateral movement ---
+  "SSH Lateral Movement":
+    enabled: true
+    priority: warning
+    actions:
+      - type: log
+        message: "SSH lateral movement from container"
+      - type: network_isolate
+      - type: alert
+        message: "Container isolated — SSH lateral movement detected"
+
+  # --- Warning: Kernel module ---
+  "Kernel Module Loaded":
+    enabled: true
+    priority: warning
+    actions:
+      - type: log
+        message: "Kernel module loaded"
+      - type: alert
+        message: "Kernel module loading detected"

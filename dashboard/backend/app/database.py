@@ -36,9 +36,36 @@ async_session_maker = async_sessionmaker(
 
 
 async def init_db() -> None:
-    """Initialize database tables."""
+    """Initialize database tables and seed default admin user."""
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Seed default admin user if no users exist
+    async with async_session_maker() as session:
+        from app.models import User
+
+        from sqlalchemy import func, select
+
+        count = (await session.execute(select(func.count(User.id)))).scalar() or 0
+        if count == 0:
+            import bcrypt
+
+            hashed = bcrypt.hashpw(b"admin123!", bcrypt.gensalt()).decode("utf-8")
+            admin = User(
+                username="admin",
+                email="admin@example.com",
+                hashed_password=hashed,
+                full_name="Administrator",
+                role="admin",
+                is_superuser=True,
+            )
+            session.add(admin)
+            await session.commit()
+            logger.info("Created default admin user (admin / admin123!)")
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

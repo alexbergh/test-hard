@@ -55,6 +55,19 @@ export const scansApi = {
   cancel: (id: number) => api.post(`/scans/${id}/cancel`),
 }
 
+export const dashboardApi = {
+  getStats: (params: { days?: number; hours?: number } = { days: 30 }) =>
+    api.get('/dashboard/stats', { params }),
+}
+
+export const usersApi = {
+  getAll: () => api.get('/users'),
+  create: (data: CreateUserData) => api.post('/users', data),
+  delete: (id: number) => api.delete(`/users/${id}`),
+  updateRole: (id: number, role: string) => api.patch(`/users/${id}/role`, { role }),
+  toggleActive: (id: number) => api.patch(`/users/${id}/toggle-active`),
+}
+
 export const schedulesApi = {
   getAll: (params?: ScheduleFilters) => api.get('/schedules', { params }),
   getById: (id: number) => api.get(`/schedules/${id}`),
@@ -121,6 +134,14 @@ export interface UpdateScheduleData {
   description?: string
   cron_expression?: string
   is_active?: boolean
+}
+
+export interface CreateUserData {
+  username: string
+  email: string
+  password: string
+  full_name?: string
+  role: 'admin' | 'user' | 'auditor'
 }
 
 export interface ScheduleFilters {

@@ -1,0 +1,97 @@
+# Falco Runtime Security Configuration
+# Part of test-hard security hardening platform
+
+# Rules files to load (order matters - later files override earlier)
+rules_files:
+  - /etc/falco/falco_rules.yaml
+  - /etc/falco/rules.d
+
+# Watch config file and rules for changes and reload
+watch_config_files: true
+
+# Time format for event output
+time_format_iso_8601: true
+
+# Priority threshold — only events of this priority or higher are loaded/sent
+priority: debug
+
+# Output settings
+json_output: true
+json_include_output_property: true
+json_include_tags_property: true
+
+# Buffered output — false = flush immediately (good for real-time alerting)
+buffered_outputs: false
+
+# Output channels
+stdout_output:
+  enabled: true
+
+syslog_output:
+  enabled: false
+
+file_output:
+  enabled: true
+  keep_alive: false
+  filename: /var/log/falco/events.json
+
+# HTTP output to Falcosidekick
+http_output:
+  enabled: true
+  url: http://falcosidekick:2801
+  user_agent: "falco/test-hard"
+
+# gRPC server for falco-exporter
+grpc:
+  enabled: true
+  bind_address: "unix:///run/falco/falco.sock"
+  threadiness: 0
+
+grpc_output:
+  enabled: true
+
+# Webserver for health checks
+webserver:
+  enabled: true
+  listen_port: 8765
+  k8s_healthz_endpoint: /healthz
+
+# Metrics
+metrics:
+  enabled: true
+  interval: 15s
+  output_rule: true
+  resource_utilization_enabled: true
+  rules_counters_enabled: true
+
+# Syscall event source
+syscall_event_drops:
+  threshold: 0.1
+  actions:
+    - log
+    - alert
+  rate: 0.03333
+  max_burst: 1
+
+# Logging
+log_stderr: true
+log_syslog: false
+log_level: info
+
+# Base syscalls — performance tuning
+base_syscalls:
+  repair: false
+  custom_set: []
+
+# Engine configuration — modern_ebpf for WSL2/Docker Desktop compatibility
+# Alternatives: kmod (default), ebpf, modern_ebpf, gvisor
+engine:
+  kind: modern_ebpf
+  modern_ebpf:
+    buf_size_preset: 4
+    cpus_for_each_buffer: 2
+    drop_failed_exit: false
+
+# Plugins
+plugins: []
+load_plugins: []

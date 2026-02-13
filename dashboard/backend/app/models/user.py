@@ -1,9 +1,10 @@
 """User model for authentication."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from app.models.base import Base, TimestampMixin
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
@@ -22,7 +23,9 @@ class User(Base, TimestampMixin):
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
-    role: Mapped[str] = mapped_column(String(50), default="viewer")  # viewer, operator, admin
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    role: Mapped[str] = mapped_column(String(50), default="viewer")  # admin, user, auditor
 
     # Relationships
     scans: Mapped[list["Scan"]] = relationship("Scan", back_populates="user")

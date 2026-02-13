@@ -59,7 +59,7 @@ async def get_scan(
 ) -> ScanResponse:
     """Get scan by ID with optional detailed results."""
     scan_service = ScanService(session)
-    scan = await scan_service.get_scan_by_id(scan_id, include_results=include_results)
+    scan = await scan_service.get_scan_by_id(scan_id, include_results=True)
 
     if not scan:
         raise HTTPException(
@@ -79,14 +79,16 @@ async def create_scan(
     """Create and start a new scan."""
     scan_service = ScanService(session)
 
-    # Create scan
+    # Create scan and commit so background task can see it
     scan = await scan_service.create_scan(scan_data, user_id=current_user.id)
+    await session.commit()
 
     # Start scan immediately
     await scan_service.start_scan(scan.id)
+    await session.commit()
 
-    # Refresh to get updated status
-    scan = await scan_service.get_scan_by_id(scan.id)
+    # Refresh to get updated status with results eagerly loaded
+    scan = await scan_service.get_scan_by_id(scan.id, include_results=True)
     return ScanResponse.model_validate(scan)
 
 
@@ -106,6 +108,7 @@ async def start_scan(
             detail="Scan not found or not in pending status",
         )
 
+    scan = await scan_service.get_scan_by_id(scan_id, include_results=True)
     return ScanResponse.model_validate(scan)
 
 
@@ -125,6 +128,7 @@ async def cancel_scan(
             detail="Scan not found or cannot be cancelled",
         )
 
+    scan = await scan_service.get_scan_by_id(scan_id, include_results=True)
     return ScanResponse.model_validate(scan)
 
 

@@ -9,6 +9,15 @@ resources:
   - prometheus.yaml
   - grafana.yaml
   - telegraf.yaml
+  - falco.yaml  # Runtime Security: Falco + Falcosidekick + Responder
+  - gatekeeper-policies.yaml  # OPA Gatekeeper: 14 CIS-compliant security policies
+  - service-mesh.yaml  # Istio/Linkerd: mTLS, AuthorizationPolicy, circuit breakers
+  - pod-security-admission.yaml  # Pod Security Standards: restricted/baseline/privileged
+  - capabilities-config.yaml  # Capabilities management: risk matrix, namespace rules
+  - image-verification.yaml  # Kyverno: Cosign verification, AlwaysPullImages, SA token control
+  - rbac-hardening.yaml  # RBAC: roles, service accounts, least privilege (CIS 5.1.x)
+  # encryption-config.yaml — applied to kube-apiserver: --encryption-provider-config=...
+  # kube-bench-config.yaml — used externally: kube-bench --config kube-bench-config.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: test-hard
@@ -21,3 +30,9 @@ images:
     newTag: 11.0.0
   - name: telegraf
     newTag: "1.30"
+  - name: falcosecurity/falco-no-driver
+    newTag: "0.38.1"
+  - name: falcosecurity/falcosidekick
+    newTag: "2.29.0"
+  - name: falcosecurity/falco-exporter
+    newTag: "0.9.0"

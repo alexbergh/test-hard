@@ -27,6 +27,10 @@ case "$COMMAND" in
   scan-all)
     exec /opt/test-hard/scripts/scanning/run_all_checks.sh
     ;;
+  scan-network)
+    shift
+    exec python3 /opt/test-hard/scripts/scanning/run_network_scan.py "$@"
+    ;;
   atomic)
     shift
     exec python3 /opt/test-hard/scripts/scanning/run_atomic_red_team_suite.py "$@"

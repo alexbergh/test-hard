@@ -53,6 +53,14 @@ class Settings(BaseSettings):
     otlp_endpoint: str = "http://localhost:4317"
     tracing_enabled: bool = True
 
+    # SMTP / Email notifications
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    notification_email: str = ""
+
     # Scanning
     reports_dir: str = "./reports"
     scan_timeout: int = 600  # 10 minutes

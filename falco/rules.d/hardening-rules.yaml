@@ -1,0 +1,379 @@
+# Custom Falco Rules for Security Hardening Detection
+# Part of test-hard security hardening platform
+#
+# These rules detect runtime violations relevant to system hardening,
+# complementing static analysis from Lynis and OpenSCAP.
+
+# =============================================================================
+# MACRO DEFINITIONS
+# =============================================================================
+
+- macro: container
+  condition: (container.id != host)
+
+- macro: spawned_process
+  condition: (evt.type in (execve, execveat) and evt.dir=<)
+
+- macro: open_write
+  condition: (evt.type in (open,openat,openat2) and evt.is_open_write=true and fd.typechar='f' and fd.num>=0)
+
+- macro: open_read
+  condition: (evt.type in (open,openat,openat2) and evt.is_open_read=true and fd.typechar='f' and fd.num>=0)
+
+- macro: sensitive_mount_paths
+  condition: >
+    (container.mount.dest[/proc] != "N/A" or
+     container.mount.dest[/etc] != "N/A" or
+     container.mount.dest[/root] != "N/A" or
+     container.mount.dest[/var/run/docker.sock] != "N/A")
+
+- macro: known_shell_binaries
+  condition: (proc.name in (bash, sh, dash, zsh, csh, tcsh, ksh, fish))
+
+- macro: known_ssh_binaries
+  condition: (proc.name in (ssh, sshd, sftp-server, ssh-agent))
+
+- macro: package_manager
+  condition: (proc.name in (apt, apt-get, dpkg, yum, dnf, rpm, zypper, pacman, apk, pip, pip3, npm, gem))
+
+- macro: known_cron_binaries
+  condition: (proc.name in (cron, crond, anacron, atd))
+
+# Exclude known scanner containers from some rules
+- macro: scanner_container
+  condition: (container.name in (openscap-scanner, lynis-scanner))
+
+# =============================================================================
+# 1. FILE INTEGRITY — Sensitive file modifications
+# =============================================================================
+
+- rule: Sensitive File Modification — /etc/shadow
+  desc: Detect write access to /etc/shadow (password file)
+  condition: >
+    open_write and fd.name = /etc/shadow
+    and not proc.name in (useradd, usermod, userdel, passwd, chpasswd, pwconv, vipw)
+  output: >
+    Sensitive file /etc/shadow modified by unexpected process
+    (user=%user.name proc=%proc.name file=%fd.name container=%container.name image=%container.image.repository)
+  priority: CRITICAL
+  tags: [hardening, file_integrity, credentials]
+
+- rule: Sensitive File Modification — /etc/passwd
+  desc: Detect write access to /etc/passwd
+  condition: >
+    open_write and fd.name = /etc/passwd
+    and not proc.name in (useradd, usermod, userdel, passwd, vipw, pwconv)
+  output: >
+    Sensitive file /etc/passwd modified by unexpected process
+    (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: CRITICAL
+  tags: [hardening, file_integrity, credentials]
+
+- rule: Sensitive File Modification — /etc/sudoers
+  desc: Detect write access to sudoers files
+  condition: >
+    open_write and (fd.name = /etc/sudoers or fd.name startswith /etc/sudoers.d/)
+    and not proc.name in (visudo, tee)
+  output: >
+    Sudoers file modified (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: CRITICAL
+  tags: [hardening, file_integrity, privilege_escalation]
+
+- rule: SSH Configuration Modified
+  desc: Detect modifications to SSH configuration files
+  condition: >
+    open_write and (fd.name = /etc/ssh/sshd_config or fd.name startswith /etc/ssh/sshd_config.d/)
+    and not proc.name in (sshd, vi, vim, nano, sed)
+  output: >
+    SSH config modified (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, file_integrity, ssh]
+
+- rule: Firewall Rules Modified
+  desc: Detect modification of firewall rules
+  condition: >
+    open_write and (fd.name startswith /etc/iptables/ or fd.name startswith /etc/nftables or
+    fd.name = /etc/firewalld/firewalld.conf or fd.name startswith /etc/ufw/)
+  output: >
+    Firewall rules modified (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, file_integrity, network]
+
+- rule: PAM Configuration Modified
+  desc: Detect modifications to PAM configuration
+  condition: >
+    open_write and fd.name startswith /etc/pam.d/
+    and not proc.name in (pam-auth-update, authconfig)
+  output: >
+    PAM configuration modified (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, file_integrity, authentication]
+
+- rule: Crontab Modified
+  desc: Detect modifications to cron configuration
+  condition: >
+    open_write and (fd.name startswith /etc/cron or fd.name startswith /var/spool/cron/)
+    and not known_cron_binaries and not proc.name in (crontab, vi, vim, nano)
+  output: >
+    Cron configuration modified (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, file_integrity, persistence]
+
+- rule: Sysctl Configuration Modified
+  desc: Detect modifications to kernel parameters
+  condition: >
+    open_write and (fd.name = /etc/sysctl.conf or fd.name startswith /etc/sysctl.d/)
+  output: >
+    Sysctl configuration modified — kernel hardening may be affected
+    (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, file_integrity, kernel]
+
+# =============================================================================
+# 2. PRIVILEGE ESCALATION DETECTION
+# =============================================================================
+
+- rule: Unexpected Setuid Execution
+  desc: Detect execution of setuid binaries outside expected set
+  condition: >
+    spawned_process and proc.is_exe_upper_layer=true
+    and user.uid != 0 and thread.cap_effective contains CAP_SETUID
+  output: >
+    Unexpected setuid binary executed (user=%user.name proc=%proc.name exe=%proc.exepath
+    parent=%proc.pname container=%container.name)
+  priority: CRITICAL
+  tags: [hardening, privilege_escalation]
+
+- rule: User Added to Privileged Group
+  desc: Detect when a user is added to sudo/wheel/docker group
+  condition: >
+    spawned_process and proc.name in (usermod, gpasswd)
+    and proc.args contains "-aG" and proc.args intersects ("sudo", "wheel", "docker", "root", "adm")
+  output: >
+    User added to privileged group (user=%user.name proc=%proc.name args=%proc.args container=%container.name)
+  priority: CRITICAL
+  tags: [hardening, privilege_escalation, user_management]
+
+- rule: Sudo Without TTY
+  desc: Detect sudo usage without a TTY (possible automated privilege escalation)
+  condition: >
+    spawned_process and proc.name = sudo and not proc.tty exists
+  output: >
+    Sudo invoked without TTY (user=%user.name parent=%proc.pname args=%proc.args container=%container.name)
+  priority: WARNING
+  tags: [hardening, privilege_escalation]
+
+# =============================================================================
+# 3. CONTAINER SECURITY
+# =============================================================================
+
+- rule: Container Running as Root
+  desc: Detect containers running processes as root
+  condition: >
+    container and spawned_process and user.uid = 0
+    and not scanner_container
+    and not proc.name in (init, systemd, entrypoint.sh, docker-entrypoint)
+  output: >
+    Process running as root in container (user=%user.name proc=%proc.name
+    container=%container.name image=%container.image.repository)
+  priority: NOTICE
+  tags: [hardening, container_security]
+
+- rule: Container Shell Spawned
+  desc: Detect interactive shell in a container
+  condition: >
+    container and spawned_process and known_shell_binaries
+    and proc.tty != 0
+    and not scanner_container
+  output: >
+    Interactive shell opened in container (user=%user.name proc=%proc.name
+    container=%container.name image=%container.image.repository parent=%proc.pname)
+  priority: WARNING
+  tags: [hardening, container_security, interactive_access]
+
+- rule: Container Package Manager Executed
+  desc: Detect package installation in running container (drift detection)
+  condition: >
+    container and spawned_process and package_manager
+    and not scanner_container
+  output: >
+    Package manager executed in container — possible image drift
+    (user=%user.name proc=%proc.name args=%proc.args
+    container=%container.name image=%container.image.repository)
+  priority: WARNING
+  tags: [hardening, container_security, drift]
+
+- rule: Container Privileged Mode
+  desc: Detect containers running in privileged mode
+  condition: >
+    container and spawned_process and container.privileged = true
+  output: >
+    Privileged container detected (container=%container.name image=%container.image.repository
+    user=%user.name proc=%proc.name)
+  priority: CRITICAL
+  tags: [hardening, container_security, privileged]
+
+- rule: Container Docker Socket Mount
+  desc: Detect containers with Docker socket mounted
+  condition: >
+    container and spawned_process
+    and container.mount.dest[/var/run/docker.sock] != "N/A"
+    and not container.name = docker-proxy
+  output: >
+    Container has Docker socket mounted — container escape risk
+    (container=%container.name image=%container.image.repository user=%user.name)
+  priority: CRITICAL
+  tags: [hardening, container_security, escape]
+
+- rule: Container Sensitive Mount
+  desc: Detect containers with sensitive host paths mounted
+  condition: >
+    container and spawned_process and sensitive_mount_paths
+    and not scanner_container
+    and not container.name in (promtail, telegraf, docker-proxy)
+  output: >
+    Container has sensitive host path mounted (container=%container.name
+    image=%container.image.repository user=%user.name)
+  priority: WARNING
+  tags: [hardening, container_security, mounts]
+
+# =============================================================================
+# 4. NETWORK SECURITY
+# =============================================================================
+
+- rule: Unexpected Outbound Connection
+  desc: Detect outbound connections from containers to external networks
+  condition: >
+    container and evt.type in (connect) and evt.dir=< and fd.typechar='4'
+    and fd.sip != "127.0.0.1"
+    and not fd.sport in (53, 80, 443, 8080, 9090, 9091, 9093, 3000, 3100, 2801, 5432, 6379)
+    and not scanner_container
+  output: >
+    Unexpected outbound connection from container
+    (container=%container.name proc=%proc.name connection=%fd.name
+    image=%container.image.repository user=%user.name)
+  priority: NOTICE
+  tags: [hardening, network_security]
+
+- rule: Netcat or Reverse Shell Tool
+  desc: Detect usage of netcat, ncat, socat or similar reverse shell tools
+  condition: >
+    spawned_process and proc.name in (nc, ncat, netcat, socat, nmap)
+  output: >
+    Reverse shell / network tool executed (user=%user.name proc=%proc.name
+    args=%proc.args container=%container.name parent=%proc.pname)
+  priority: CRITICAL
+  tags: [hardening, network_security, reverse_shell]
+
+- rule: SSH Lateral Movement
+  desc: Detect SSH connections initiated from containers
+  condition: >
+    container and spawned_process and known_ssh_binaries
+    and not proc.name = sshd
+    and not scanner_container
+  output: >
+    SSH initiated from container — possible lateral movement
+    (user=%user.name proc=%proc.name container=%container.name
+    image=%container.image.repository parent=%proc.pname)
+  priority: WARNING
+  tags: [hardening, network_security, lateral_movement]
+
+# =============================================================================
+# 5. CRYPTO / CREDENTIAL ACCESS
+# =============================================================================
+
+- rule: Crypto Miner Binary Detected
+  desc: Detect execution of known crypto mining binaries
+  condition: >
+    spawned_process and proc.name in (xmrig, minerd, cpuminer, ethminer, cgminer, bfgminer, ccminer, t-rex, nbminer, phoenixminer)
+  output: >
+    Crypto miner binary executed (user=%user.name proc=%proc.name
+    container=%container.name image=%container.image.repository)
+  priority: CRITICAL
+  tags: [hardening, cryptomining, malware]
+
+- rule: Read Sensitive Credentials
+  desc: Detect reading of sensitive credential files
+  condition: >
+    open_read and (fd.name in (/etc/shadow, /etc/gshadow, /etc/master.passwd)
+    or fd.name startswith /etc/ssl/private/)
+    and not proc.name in (sshd, login, su, sudo, passwd, chpasswd, useradd, groupadd, id, getent)
+    and not scanner_container
+  output: >
+    Sensitive credential file read (user=%user.name proc=%proc.name
+    file=%fd.name container=%container.name)
+  priority: CRITICAL
+  tags: [hardening, credential_access]
+
+- rule: Private Key Access
+  desc: Detect access to private key files
+  condition: >
+    open_read and (fd.name endswith .pem or fd.name endswith .key or fd.name endswith .p12)
+    and fd.name contains private
+    and not proc.name in (sshd, nginx, apache2, httpd, haproxy, envoy)
+  output: >
+    Private key file accessed (user=%user.name proc=%proc.name
+    file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, credential_access, keys]
+
+# =============================================================================
+# 6. KERNEL / SYSTEM INTEGRITY
+# =============================================================================
+
+- rule: Kernel Module Loaded
+  desc: Detect loading of kernel modules
+  condition: >
+    spawned_process and proc.name in (insmod, modprobe)
+  output: >
+    Kernel module loaded (user=%user.name proc=%proc.name args=%proc.args container=%container.name)
+  priority: WARNING
+  tags: [hardening, kernel, module]
+
+- rule: BPF Program Loaded
+  desc: Detect BPF program loading (potential rootkit)
+  condition: >
+    evt.type = bpf and evt.dir=<
+    and not proc.name in (falco, cilium-agent, bpftool, systemd)
+  output: >
+    BPF program loaded (user=%user.name proc=%proc.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, kernel, bpf]
+
+- rule: Ptrace Attached
+  desc: Detect ptrace usage — possible process injection
+  condition: >
+    evt.type = ptrace and evt.dir=< and evt.arg.request = PTRACE_ATTACH
+    and not proc.name in (strace, ltrace, gdb, lldb)
+  output: >
+    Ptrace attached to process — possible injection (user=%user.name proc=%proc.name
+    target_pid=%evt.arg.pid container=%container.name)
+  priority: CRITICAL
+  tags: [hardening, process_injection, kernel]
+
+# =============================================================================
+# 7. LOG TAMPERING
+# =============================================================================
+
+- rule: Log File Deletion
+  desc: Detect deletion of log files
+  condition: >
+    (evt.type in (unlink, unlinkat, rename, renameat) and evt.dir=<)
+    and (fd.name startswith /var/log/ or fd.name startswith /var/log/audit/)
+    and not proc.name in (logrotate, rsyslog, systemd-journald, journalctl)
+  output: >
+    Log file deleted or renamed — possible evidence tampering
+    (user=%user.name proc=%proc.name file=%fd.name container=%container.name)
+  priority: CRITICAL
+  tags: [hardening, log_tampering, defense_evasion]
+
+- rule: History File Tampered
+  desc: Detect tampering with shell history files
+  condition: >
+    (open_write or evt.type in (unlink, unlinkat, truncate, ftruncate))
+    and (fd.name endswith .bash_history or fd.name endswith .zsh_history or fd.name endswith .history)
+  output: >
+    Shell history file tampered (user=%user.name proc=%proc.name
+    file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [hardening, log_tampering, defense_evasion]

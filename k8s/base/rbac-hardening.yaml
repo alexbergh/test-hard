@@ -1,0 +1,221 @@
+# =============================================================================
+# RBAC Hardening for Kubernetes
+# Based on CIS Kubernetes Benchmark v1.12.0, section 5.1.x
+#
+# CIS 5.1.1 — Restrict cluster-admin role usage
+# CIS 5.1.3 — Minimize wildcard use in Roles and ClusterRoles
+# CIS 5.1.5 — Ensure default service accounts are not actively used
+# CIS 5.1.6 — Ensure SA tokens are only mounted where necessary
+# CIS 5.7.1 — Create administrative boundaries using namespaces
+#
+# Principle of separation of duties and least privilege
+# =============================================================================
+
+---
+# Role: monitoring-viewer (read-only access to monitoring namespace)
+# Principle of least privilege for developers
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: monitoring-viewer
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: test-hard
+    app.kubernetes.io/component: rbac
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+
+---
+# Role: monitoring-operator (manage monitoring stack)
+# For administrators of monitoring infrastructure
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: monitoring-operator
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: test-hard
+    app.kubernetes.io/component: rbac
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch"]
+
+---
+# Role: security-auditor (read security-related resources)
+# For security team review
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: security-auditor
+  labels:
+    app.kubernetes.io/part-of: test-hard
+    app.kubernetes.io/component: rbac
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "serviceaccounts", "nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["constraints.gatekeeper.sh"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["templates.gatekeeper.sh"]
+    resources: ["constrainttemplates"]
+    verbs: ["get", "list", "watch"]
+
+---
+# CIS 5.1.5: Ensure default service accounts are not actively used
+# Restrict default ServiceAccount in monitoring namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: restrict-default-sa
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: test-hard
+    app.kubernetes.io/component: rbac
+  annotations:
+    description: "CIS 5.1.5 — Default SA should have no permissions"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: monitoring-viewer
+subjects: []
+# Intentionally empty — default SA gets no bindings
+
+---
+# ServiceAccount for Prometheus (dedicated, not default)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+    app.kubernetes.io/part-of: test-hard
+automountServiceAccountToken: true  # Prometheus needs API access for service discovery
+
+---
+# ServiceAccount for Grafana (dedicated, minimal)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: test-hard
+automountServiceAccountToken: false  # Grafana does not need K8s API
+
+---
+# ServiceAccount for Telegraf (dedicated, minimal)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: telegraf
+  namespace: monitoring
+  labels:
+    app: telegraf
+    app.kubernetes.io/part-of: test-hard
+automountServiceAccountToken: false
+
+---
+# ServiceAccount for Promtail (needs log access)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail
+  namespace: monitoring
+  labels:
+    app: promtail
+    app.kubernetes.io/part-of: test-hard
+automountServiceAccountToken: true
+
+---
+# ClusterRole for Prometheus (service discovery)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-service-discovery
+  labels:
+    app: prometheus
+    app.kubernetes.io/part-of: test-hard
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/metrics", "services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-service-discovery
+  labels:
+    app: prometheus
+    app.kubernetes.io/part-of: test-hard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-service-discovery
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: monitoring
+
+---
+# ClusterRole for Promtail (read logs from all namespaces)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: promtail-log-reader
+  labels:
+    app: promtail
+    app.kubernetes.io/part-of: test-hard
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: promtail-log-reader
+  labels:
+    app: promtail
+    app.kubernetes.io/part-of: test-hard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: promtail-log-reader
+subjects:
+  - kind: ServiceAccount
+    name: promtail
+    namespace: monitoring

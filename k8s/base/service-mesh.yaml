@@ -1,0 +1,441 @@
+# =============================================================================
+# Service Mesh Integration for test-hard
+# Supports both Istio and Linkerd for network security monitoring
+#
+# Istio: PeerAuthentication, AuthorizationPolicy, DestinationRule
+# Linkerd: ServiceProfile, Server, ServerAuthorization
+# =============================================================================
+
+# ---- Istio: Strict mTLS for monitoring namespace ----
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-strict-mtls
+  namespace: monitoring
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# ---- Istio: AuthorizationPolicy — Grafana ----
+# Allow ingress traffic and queries from known sources
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-grafana
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  action: ALLOW
+  rules:
+    # Allow ingress-nginx
+    - from:
+        - namespaces:
+            exact: ingress-nginx
+      to:
+        - operation:
+            ports: ["3000"]
+    # Allow health checks
+    - to:
+        - operation:
+            ports: ["3000"]
+            paths: ["/api/health", "/healthz"]
+
+---
+# ---- Istio: AuthorizationPolicy — Prometheus ----
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-prometheus
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  action: ALLOW
+  rules:
+    # Grafana queries
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/grafana"]
+      to:
+        - operation:
+            ports: ["9090"]
+    # Health checks
+    - to:
+        - operation:
+            ports: ["9090"]
+            paths: ["/-/healthy", "/-/ready"]
+
+---
+# ---- Istio: AuthorizationPolicy — Alertmanager ----
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-alertmanager
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: alertmanager
+  action: ALLOW
+  rules:
+    # Prometheus sends alerts
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+      to:
+        - operation:
+            ports: ["9093"]
+    # Falcosidekick sends Falco alerts
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/falcosidekick"]
+      to:
+        - operation:
+            ports: ["9093"]
+
+---
+# ---- Istio: AuthorizationPolicy — Loki ----
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-loki
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: loki
+  action: ALLOW
+  rules:
+    # Promtail pushes logs
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/promtail"]
+      to:
+        - operation:
+            ports: ["3100"]
+            paths: ["/loki/api/v1/push"]
+    # Falcosidekick pushes Falco events
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/falcosidekick"]
+      to:
+        - operation:
+            ports: ["3100"]
+            paths: ["/loki/api/v1/push"]
+    # Grafana queries logs
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/grafana"]
+      to:
+        - operation:
+            ports: ["3100"]
+
+---
+# ---- Istio: AuthorizationPolicy — Falcosidekick ----
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-falcosidekick
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: falcosidekick
+  action: ALLOW
+  rules:
+    # Falco sends events
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/falco"]
+      to:
+        - operation:
+            ports: ["2801"]
+    # Prometheus scrapes metrics
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+      to:
+        - operation:
+            ports: ["2801"]
+            paths: ["/metrics"]
+
+---
+# ---- Istio: AuthorizationPolicy — Falco Responder ----
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-falco-responder
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: falco-responder
+  action: ALLOW
+  rules:
+    # Only Falcosidekick can send events
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/falcosidekick"]
+      to:
+        - operation:
+            ports: ["5080"]
+            methods: ["POST"]
+
+---
+# ---- Istio: AuthorizationPolicy — Trivy Server ----
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-trivy-server
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: trivy-server
+  action: ALLOW
+  rules:
+    # Allow scan requests from within namespace
+    - from:
+        - namespaces:
+            exact: monitoring
+      to:
+        - operation:
+            ports: ["4954"]
+
+---
+# ---- Istio: DestinationRule — circuit breaker for Prometheus ----
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: prometheus-circuit-breaker
+  namespace: monitoring
+spec:
+  host: prometheus.monitoring.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        h2UpgradePolicy: DEFAULT
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRetries: 3
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+
+---
+# ---- Istio: DestinationRule — circuit breaker for Loki ----
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: loki-circuit-breaker
+  namespace: monitoring
+spec:
+  host: loki.monitoring.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 30
+        http2MaxRequests: 50
+        maxRetries: 2
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 30
+
+---
+# ---- Istio: DestinationRule — circuit breaker for Alertmanager ----
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: alertmanager-circuit-breaker
+  namespace: monitoring
+spec:
+  host: alertmanager.monitoring.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 30
+      http:
+        http1MaxPendingRequests: 20
+        http2MaxRequests: 30
+        maxRetries: 3
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+
+---
+# =============================================================================
+# Linkerd integration (alternative to Istio)
+# Annotate namespace to enable Linkerd sidecar injection:
+#   kubectl annotate ns monitoring linkerd.io/inject=enabled
+# =============================================================================
+
+# ---- Linkerd: Server — Prometheus ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  podSelector:
+    matchLabels:
+      app: prometheus
+  port: 9090
+  proxyProtocol: HTTP/2
+
+---
+# ---- Linkerd: ServerAuthorization — Prometheus ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: prometheus-from-grafana
+  namespace: monitoring
+spec:
+  server:
+    name: prometheus
+  client:
+    meshTLS:
+      serviceAccounts:
+        - name: grafana
+
+---
+# ---- Linkerd: Server — Loki ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  name: loki
+  namespace: monitoring
+  labels:
+    app: loki
+spec:
+  podSelector:
+    matchLabels:
+      app: loki
+  port: 3100
+  proxyProtocol: HTTP/1
+
+---
+# ---- Linkerd: ServerAuthorization — Loki ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: loki-from-promtail
+  namespace: monitoring
+spec:
+  server:
+    name: loki
+  client:
+    meshTLS:
+      serviceAccounts:
+        - name: promtail
+        - name: falcosidekick
+        - name: grafana
+
+---
+# ---- Linkerd: Server — Alertmanager ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  podSelector:
+    matchLabels:
+      app: alertmanager
+  port: 9093
+  proxyProtocol: HTTP/1
+
+---
+# ---- Linkerd: ServerAuthorization — Alertmanager ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: alertmanager-from-prometheus
+  namespace: monitoring
+spec:
+  server:
+    name: alertmanager
+  client:
+    meshTLS:
+      serviceAccounts:
+        - name: prometheus
+        - name: falcosidekick
+
+---
+# ---- Linkerd: Server — Falcosidekick ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  name: falcosidekick
+  namespace: monitoring
+  labels:
+    app: falcosidekick
+spec:
+  podSelector:
+    matchLabels:
+      app: falcosidekick
+  port: 2801
+  proxyProtocol: HTTP/1
+
+---
+# ---- Linkerd: ServerAuthorization — Falcosidekick ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: falcosidekick-from-falco
+  namespace: monitoring
+spec:
+  server:
+    name: falcosidekick
+  client:
+    meshTLS:
+      serviceAccounts:
+        - name: falco
+        - name: prometheus
+
+---
+# ---- Linkerd: Server — Falco Responder ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  name: falco-responder
+  namespace: monitoring
+  labels:
+    app: falco-responder
+spec:
+  podSelector:
+    matchLabels:
+      app: falco-responder
+  port: 5080
+  proxyProtocol: HTTP/1
+
+---
+# ---- Linkerd: ServerAuthorization — Falco Responder ----
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: falco-responder-from-falcosidekick
+  namespace: monitoring
+spec:
+  server:
+    name: falco-responder
+  client:
+    meshTLS:
+      serviceAccounts:
+        - name: falcosidekick
