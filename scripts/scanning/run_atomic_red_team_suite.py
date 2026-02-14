@@ -282,9 +282,7 @@ def parse_response_payload(raw: Dict) -> Dict:
     return {}
 
 
-def _run_command_directly(
-    command: str, executor: str, timeout: int
-) -> tuple:
+def _run_command_directly(command: str, executor: str, timeout: int) -> tuple:
     """Execute a test command directly via subprocess when atomic_operator skips it."""
     import subprocess
     from datetime import datetime as _dt
@@ -499,13 +497,19 @@ def run_scenario(
             if current_platform not in plats:
                 logger.info(
                     "Test #%d (%s) not available on this platform (supports: %s), skipping",
-                    spec.number, raw_test.get("name", "unknown"), ", ".join(plats),
+                    spec.number,
+                    raw_test.get("name", "unknown"),
+                    ", ".join(plats),
                 )
                 test_result = TestResult(
                     guid=raw_guid,
                     number=spec.number,
                     name=raw_test.get("name", f"Test {spec.number}"),
-                    executor=raw_test.get("executor", {}).get("name", "unknown") if isinstance(raw_test.get("executor"), dict) else "unknown",
+                    executor=(
+                        raw_test.get("executor", {}).get("name", "unknown")
+                        if isinstance(raw_test.get("executor"), dict)
+                        else "unknown"
+                    ),
                     supported_platforms=plats,
                     status="skipped",
                 )
@@ -513,6 +517,7 @@ def run_scenario(
                 continue
             # Create a simple namespace wrapper so execute_test can use it
             from types import SimpleNamespace
+
             executor_raw = raw_test.get("executor", {})
             exec_name = executor_raw.get("name", "unknown") if isinstance(executor_raw, dict) else "unknown"
             exec_command = executor_raw.get("command", "") if isinstance(executor_raw, dict) else ""

@@ -35,15 +35,17 @@ async def get_dashboard_stats(
     # Host scores for compliance overview
     host_scores = []
     for h in hosts:
-        host_scores.append({
-            "id": h.id,
-            "name": h.display_name or h.name,
-            "status": h.status,
-            "os_family": h.os_family,
-            "host_type": h.host_type,
-            "score": h.last_scan_score,
-            "tags": h.tags or [],
-        })
+        host_scores.append(
+            {
+                "id": h.id,
+                "name": h.display_name or h.name,
+                "status": h.status,
+                "os_family": h.os_family,
+                "host_type": h.host_type,
+                "score": h.last_scan_score,
+                "tags": h.tags or [],
+            }
+        )
 
     # Score distribution buckets
     scores = [h.last_scan_score for h in hosts if h.last_scan_score is not None]
@@ -68,27 +70,20 @@ async def get_dashboard_stats(
     total_scans = scan_count_result.scalar() or 0
 
     # Scans by status
-    scan_status_query = (
-        select(Scan.status, func.count(Scan.id))
-        .where(Scan.created_at >= since)
-        .group_by(Scan.status)
-    )
+    scan_status_query = select(Scan.status, func.count(Scan.id)).where(Scan.created_at >= since).group_by(Scan.status)
     scan_status_result = await session.execute(scan_status_query)
     scans_by_status = dict(scan_status_result.all())
 
     # Scans by scanner
     scan_scanner_query = (
-        select(Scan.scanner, func.count(Scan.id))
-        .where(Scan.created_at >= since)
-        .group_by(Scan.scanner)
+        select(Scan.scanner, func.count(Scan.id)).where(Scan.created_at >= since).group_by(Scan.scanner)
     )
     scan_scanner_result = await session.execute(scan_scanner_query)
     scans_by_scanner = dict(scan_scanner_result.all())
 
     # Average scan duration
-    avg_duration_query = (
-        select(func.avg(Scan.duration_seconds))
-        .where(Scan.created_at >= since, Scan.duration_seconds.isnot(None))
+    avg_duration_query = select(func.avg(Scan.duration_seconds)).where(
+        Scan.created_at >= since, Scan.duration_seconds.isnot(None)
     )
     avg_duration_result = await session.execute(avg_duration_query)
     avg_duration = avg_duration_result.scalar()
@@ -201,12 +196,7 @@ async def get_dashboard_stats(
     ]
 
     # --- Recent scans ---
-    recent_scans_query = (
-        select(Scan)
-        .options(selectinload(Scan.host))
-        .order_by(Scan.created_at.desc())
-        .limit(10)
-    )
+    recent_scans_query = select(Scan).options(selectinload(Scan.host)).order_by(Scan.created_at.desc()).limit(10)
     recent_scans_result = await session.execute(recent_scans_query)
     recent_scans = [
         {
@@ -234,15 +224,17 @@ async def get_dashboard_stats(
     upcoming_scans = []
     for s in sorted(schedules, key=lambda x: x.next_run_at or datetime.max.replace(tzinfo=timezone.utc)):
         if s.is_active and s.next_run_at:
-            upcoming_scans.append({
-                "id": s.id,
-                "name": s.name,
-                "host_name": s.host.name if s.host else "Unknown",
-                "scanner": s.scanner,
-                "next_run_at": s.next_run_at.isoformat(),
-                "cron_expression": s.cron_expression,
-                "run_count": s.run_count,
-            })
+            upcoming_scans.append(
+                {
+                    "id": s.id,
+                    "name": s.name,
+                    "host_name": s.host.name if s.host else "Unknown",
+                    "scanner": s.scanner,
+                    "next_run_at": s.next_run_at.isoformat(),
+                    "cron_expression": s.cron_expression,
+                    "run_count": s.run_count,
+                }
+            )
     upcoming_scans = upcoming_scans[:5]
 
     # --- Scan activity heatmap (scans per day, last 30 days) ---
@@ -256,10 +248,7 @@ async def get_dashboard_stats(
         .order_by(func.date(Scan.created_at))
     )
     activity_result = await session.execute(activity_query)
-    scan_activity = [
-        {"date": str(row.date), "count": row.count}
-        for row in activity_result.all()
-    ]
+    scan_activity = [{"date": str(row.date), "count": row.count} for row in activity_result.all()]
 
     return {
         "hostname": socket.gethostname(),
