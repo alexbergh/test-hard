@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """Network scanner using nmap. Discovers hosts, open ports, services.
 
