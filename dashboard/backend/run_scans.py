@@ -136,7 +136,7 @@ def parse_lynis(output: str) -> dict:
 async def main():
     async with get_session_context() as session:
         result = await session.execute(
-            select(Host).where(Host.is_active == True)
+            select(Host).where(Host.is_active is True)
         )
         hosts = result.scalars().all()
 

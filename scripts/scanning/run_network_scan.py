@@ -14,7 +14,6 @@ import argparse
 import json
 import logging
 import os
-import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -244,7 +243,6 @@ def generate_prometheus_metrics(results: Dict, prom_path: str) -> None:
 
     # Summary metrics
     summary = results.get("summary", {})
-    ts = results.get("scan_time", datetime.now(timezone.utc).isoformat())
 
     lines.append("# HELP network_scan_hosts_total Total hosts discovered by network scan")
     lines.append("# TYPE network_scan_hosts_total gauge")

@@ -485,7 +485,6 @@ class ScanService:
 
             failed_count = critical + high
             passed_count = medium + low
-            total = total_vulns if total_vulns > 0 else 1
             score = max(0, 100 - (critical * 10 + high * 5 + medium * 2 + low * 1))
             score = max(0, min(100, score))
 

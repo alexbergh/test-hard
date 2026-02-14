@@ -5,7 +5,6 @@ Receives Falco events from Falcosidekick and executes response actions.
 Part of test-hard security hardening platform.
 """
 
-import json
 import logging
 import os
 import time

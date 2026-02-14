@@ -1,6 +1,6 @@
 """Notification settings and test endpoints."""
 
-from app.api.deps import CurrentUser, DbSession
+from app.api.deps import CurrentUser
 from app.config import get_settings
 from app.services.notifications import send_scan_notification
 from fastapi import APIRouter, HTTPException
