@@ -12,6 +12,7 @@ settings = get_settings()
 
 class NotificationSettings(BaseModel):
     """Current notification settings (read-only from env)."""
+
     smtp_host: str
     smtp_port: int
     smtp_user: str
@@ -22,6 +23,7 @@ class NotificationSettings(BaseModel):
 
 class NotificationEmailUpdate(BaseModel):
     """Update notification email at runtime."""
+
     email: str
 
 

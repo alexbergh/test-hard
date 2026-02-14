@@ -175,20 +175,14 @@ class SchedulerService:
 
         async with get_session_context() as session:
             # Find old scan IDs
-            result = await session.execute(
-                select(Scan.id).where(Scan.created_at < cutoff)
-            )
+            result = await session.execute(select(Scan.id).where(Scan.created_at < cutoff))
             old_ids = [row[0] for row in result.all()]
 
             if old_ids:
                 # Delete results first (cascade should handle it, but be explicit)
-                await session.execute(
-                    delete(ScanResult).where(ScanResult.scan_id.in_(old_ids))
-                )
+                await session.execute(delete(ScanResult).where(ScanResult.scan_id.in_(old_ids)))
                 # Delete scans
-                await session.execute(
-                    delete(Scan).where(Scan.id.in_(old_ids))
-                )
+                await session.execute(delete(Scan).where(Scan.id.in_(old_ids)))
                 await session.commit()
                 logger.info(f"Cleaned up {len(old_ids)} scans older than 30 days")
             else:
