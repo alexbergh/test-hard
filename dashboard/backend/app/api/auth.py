@@ -90,9 +90,7 @@ async def update_email(
         )
 
     # Check if email is already taken by another user
-    result = await session.execute(
-        select(User).where(User.email == new_email, User.id != current_user.id)
-    )
+    result = await session.execute(select(User).where(User.email == new_email, User.id != current_user.id))
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

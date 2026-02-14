@@ -185,11 +185,13 @@ def _parse_host(host_elem) -> Optional[Dict]:
 
     # Addresses
     for addr in host_elem.findall("address"):
-        host["addresses"].append({
-            "addr": addr.get("addr"),
-            "type": addr.get("addrtype"),
-            "vendor": addr.get("vendor", ""),
-        })
+        host["addresses"].append(
+            {
+                "addr": addr.get("addr"),
+                "type": addr.get("addrtype"),
+                "vendor": addr.get("vendor", ""),
+            }
+        )
 
     # IP address as primary identifier
     ip_addrs = [a["addr"] for a in host["addresses"] if a["type"] == "ipv4"]
@@ -203,10 +205,12 @@ def _parse_host(host_elem) -> Optional[Dict]:
 
     # Hostnames
     for hostname in host_elem.findall("hostnames/hostname"):
-        host["hostnames"].append({
-            "name": hostname.get("name"),
-            "type": hostname.get("type"),
-        })
+        host["hostnames"].append(
+            {
+                "name": hostname.get("name"),
+                "type": hostname.get("type"),
+            }
+        )
     host["hostname"] = host["hostnames"][0]["name"] if host["hostnames"] else ""
 
     # Ports
@@ -229,10 +233,12 @@ def _parse_host(host_elem) -> Optional[Dict]:
 
     # OS detection
     for osmatch in host_elem.findall("os/osmatch"):
-        host["os"].append({
-            "name": osmatch.get("name", ""),
-            "accuracy": int(osmatch.get("accuracy", 0)),
-        })
+        host["os"].append(
+            {
+                "name": osmatch.get("name", ""),
+                "accuracy": int(osmatch.get("accuracy", 0)),
+            }
+        )
 
     return host
 
@@ -344,6 +350,7 @@ def main() -> int:
         latest.symlink_to(json_path)
     except OSError:
         import shutil
+
         shutil.copy2(json_path, latest)
 
     # Generate Prometheus metrics
@@ -354,7 +361,10 @@ def main() -> int:
     s = results["summary"]
     logger.info(
         "Scan complete: %d hosts up, %d down, %d open ports, %d services",
-        s["hosts_up"], s["hosts_down"], s["open_ports"], s["services_found"],
+        s["hosts_up"],
+        s["hosts_down"],
+        s["open_ports"],
+        s["services_found"],
     )
 
     for host in results["hosts"]:

@@ -69,13 +69,15 @@ def parse_lynis(output: str) -> dict:
         if "[WARNING]" in line:
             title = re.sub(r"\[WARNING\]", "", line).strip().strip("-").strip()
             if title and len(title) > 5:
-                findings.append({
-                    "rule_id": f"LYNIS-W-{len(findings)+1:04d}",
-                    "title": title[:500],
-                    "severity": "high",
-                    "status": "fail",
-                    "category": "security",
-                })
+                findings.append(
+                    {
+                        "rule_id": f"LYNIS-W-{len(findings)+1:04d}",
+                        "title": title[:500],
+                        "severity": "high",
+                        "status": "fail",
+                        "category": "security",
+                    }
+                )
 
     # Parse "! text" warning lines in the Warnings section
     in_warnings = False
@@ -99,13 +101,15 @@ def parse_lynis(output: str) -> dict:
         if in_warnings and stripped.startswith("! "):
             title = stripped[2:].strip()
             if title and len(title) > 5:
-                findings.append({
-                    "rule_id": f"LYNIS-WARN-{len(findings)+1:04d}",
-                    "title": title[:500],
-                    "severity": "high",
-                    "status": "fail",
-                    "category": "hardening",
-                })
+                findings.append(
+                    {
+                        "rule_id": f"LYNIS-WARN-{len(findings)+1:04d}",
+                        "title": title[:500],
+                        "severity": "high",
+                        "status": "fail",
+                        "category": "hardening",
+                    }
+                )
 
         if in_suggestions and stripped.startswith("* "):
             title = stripped[2:].strip()
@@ -116,13 +120,15 @@ def parse_lynis(output: str) -> dict:
                     sev = "high"
                 elif any(w in tl for w in ["log", "banner", "update", "version", "ntp"]):
                     sev = "low"
-                findings.append({
-                    "rule_id": f"LYNIS-SUGG-{len(findings)+1:04d}",
-                    "title": title[:500],
-                    "severity": sev,
-                    "status": "fail",
-                    "category": "hardening",
-                })
+                findings.append(
+                    {
+                        "rule_id": f"LYNIS-SUGG-{len(findings)+1:04d}",
+                        "title": title[:500],
+                        "severity": sev,
+                        "status": "fail",
+                        "category": "hardening",
+                    }
+                )
 
     return {
         "score": score,
@@ -136,9 +142,7 @@ def parse_lynis(output: str) -> dict:
 
 async def main():
     async with get_session_context() as session:
-        result = await session.execute(
-            select(Host).where(Host.is_active is True)
-        )
+        result = await session.execute(select(Host).where(Host.is_active is True))
         hosts = result.scalars().all()
 
         for host in hosts:
@@ -191,7 +195,9 @@ async def main():
                 host.last_scan_score = parsed["score"]
 
                 await session.commit()
-                print(f"  Result: score={parsed['score']} warnings={parsed['warnings']} suggestions={parsed['suggestions']} findings={len(parsed['findings'])}")
+                print(
+                    f"  Result: score={parsed['score']} warnings={parsed['warnings']} suggestions={parsed['suggestions']} findings={len(parsed['findings'])}"
+                )
 
             except Exception as e:
                 scan.status = "failed"

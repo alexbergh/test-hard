@@ -188,8 +188,12 @@ class ScanService:
                     # Send success notification
                     await asyncio.to_thread(
                         send_scan_notification,
-                        host.name, scan.scanner, "completed",
-                        scan.score, scan.passed, scan.failed,
+                        host.name,
+                        scan.scanner,
+                        "completed",
+                        scan.score,
+                        scan.passed,
+                        scan.failed,
                     )
                 else:
                     scan.status = "failed"
@@ -198,7 +202,9 @@ class ScanService:
                     # Send failure notification
                     await asyncio.to_thread(
                         send_scan_notification,
-                        host.name, scan.scanner, "failed",
+                        host.name,
+                        scan.scanner,
+                        "failed",
                         error_message=scan.error_message,
                     )
 
@@ -304,7 +310,10 @@ class ScanService:
             check = container.exec_run(cmd=["sh", "-c", "command -v oscap"], demux=True)
             if check.exit_code != 0:
                 client.close()
-                return {"success": False, "error": f"oscap not installed in {host_name}. Install openscap-scanner package."}
+                return {
+                    "success": False,
+                    "error": f"oscap not installed in {host_name}. Install openscap-scanner package.",
+                }
 
             # Determine datastream
             datastreams = {
@@ -323,9 +332,13 @@ class ScanService:
             logger.info(f"Starting OpenSCAP scan on {host_name} with profile {oscap_profile}")
             exec_result = container.exec_run(
                 cmd=[
-                    "oscap", "xccdf", "eval",
-                    "--profile", oscap_profile,
-                    "--results", "/tmp/oscap-results.xml",
+                    "oscap",
+                    "xccdf",
+                    "eval",
+                    "--profile",
+                    oscap_profile,
+                    "--results",
+                    "/tmp/oscap-results.xml",
                     datastream,
                 ],
                 demux=True,
@@ -362,13 +375,15 @@ class ScanService:
                         elif status_text == "fail":
                             failed += 1
                             title = rule_id.replace("xccdf_org.ssgproject.content_rule_", "").replace("_", " ").title()
-                            findings.append({
-                                "rule_id": rule_id[:200],
-                                "title": title[:500],
-                                "severity": "high",
-                                "status": "fail",
-                                "category": "compliance",
-                            })
+                            findings.append(
+                                {
+                                    "rule_id": rule_id[:200],
+                                    "title": title[:500],
+                                    "severity": "high",
+                                    "status": "fail",
+                                    "category": "compliance",
+                                }
+                            )
                         elif status_text == "notapplicable":
                             not_applicable += 1
                 except ET.ParseError:
@@ -445,7 +460,9 @@ class ScanService:
                 detach=False,
             )
 
-            output = trivy_output.decode("utf-8", errors="replace") if isinstance(trivy_output, bytes) else str(trivy_output)
+            output = (
+                trivy_output.decode("utf-8", errors="replace") if isinstance(trivy_output, bytes) else str(trivy_output)
+            )
             report_path.write_text(output, encoding="utf-8")
 
             client.close()
@@ -476,13 +493,15 @@ class ScanService:
                             low += 1
 
                         if total_vulns <= 100:
-                            findings.append({
-                                "rule_id": vuln.get("VulnerabilityID", "CVE-UNKNOWN"),
-                                "title": f"{vuln.get('PkgName', '?')} {vuln.get('InstalledVersion', '')} - {vuln.get('Title', vuln.get('VulnerabilityID', ''))}",
-                                "severity": sev if sev in ("critical", "high", "medium", "low") else "info",
-                                "status": "fail",
-                                "category": "vulnerability",
-                            })
+                            findings.append(
+                                {
+                                    "rule_id": vuln.get("VulnerabilityID", "CVE-UNKNOWN"),
+                                    "title": f"{vuln.get('PkgName', '?')} {vuln.get('InstalledVersion', '')} - {vuln.get('Title', vuln.get('VulnerabilityID', ''))}",
+                                    "severity": sev if sev in ("critical", "high", "medium", "low") else "info",
+                                    "status": "fail",
+                                    "category": "vulnerability",
+                                }
+                            )
             except json.JSONDecodeError:
                 pass
 
@@ -491,7 +510,9 @@ class ScanService:
             score = max(0, 100 - (critical * 10 + high * 5 + medium * 2 + low * 1))
             score = max(0, min(100, score))
 
-            logger.info(f"Trivy scan on {host_name} completed: vulns={total_vulns} C={critical} H={high} M={medium} L={low}")
+            logger.info(
+                f"Trivy scan on {host_name} completed: vulns={total_vulns} C={critical} H={high} M={medium} L={low}"
+            )
 
             return {
                 "success": True,
@@ -524,84 +545,132 @@ class ScanService:
         # Security test definitions (MITRE ATT&CK inspired)
         tests = [
             {
-                "id": "T1003.008", "name": "Credential Access: /etc/shadow readable",
+                "id": "T1003.008",
+                "name": "Credential Access: /etc/shadow readable",
                 "cmd": "test -r /etc/shadow && echo FAIL || echo PASS",
-                "expect": "PASS", "severity": "critical", "category": "credential-access",
+                "expect": "PASS",
+                "severity": "critical",
+                "category": "credential-access",
             },
             {
-                "id": "T1053.003", "name": "Persistence: cron jobs present",
+                "id": "T1053.003",
+                "name": "Persistence: cron jobs present",
                 "cmd": "ls /etc/cron.d/ /var/spool/cron/ 2>/dev/null | head -5; echo CHECK",
-                "expect": None, "severity": "medium", "category": "persistence",
+                "expect": None,
+                "severity": "medium",
+                "category": "persistence",
             },
             {
-                "id": "T1548.001", "name": "Privilege Escalation: SUID binaries",
+                "id": "T1548.001",
+                "name": "Privilege Escalation: SUID binaries",
                 "cmd": "find / -perm -4000 -type f 2>/dev/null | head -20; echo DONE",
-                "expect": None, "severity": "high", "category": "privilege-escalation",
+                "expect": None,
+                "severity": "high",
+                "category": "privilege-escalation",
             },
             {
-                "id": "T1222.002", "name": "Defense Evasion: World-writable dirs",
+                "id": "T1222.002",
+                "name": "Defense Evasion: World-writable dirs",
                 "cmd": "find / -maxdepth 3 -type d -perm -0002 ! -path '/proc/*' ! -path '/sys/*' 2>/dev/null | head -10; echo DONE",
-                "expect": None, "severity": "medium", "category": "defense-evasion",
+                "expect": None,
+                "severity": "medium",
+                "category": "defense-evasion",
             },
             {
-                "id": "T1552.001", "name": "Credential Access: Credentials in files",
+                "id": "T1552.001",
+                "name": "Credential Access: Credentials in files",
                 "cmd": "grep -rl 'password\\|secret\\|api_key' /etc/ 2>/dev/null | head -5; echo DONE",
-                "expect": None, "severity": "high", "category": "credential-access",
+                "expect": None,
+                "severity": "high",
+                "category": "credential-access",
             },
             {
-                "id": "T1018", "name": "Discovery: Network configuration exposed",
+                "id": "T1018",
+                "name": "Discovery: Network configuration exposed",
                 "cmd": "cat /etc/hosts 2>/dev/null | wc -l; echo DONE",
-                "expect": None, "severity": "low", "category": "discovery",
+                "expect": None,
+                "severity": "low",
+                "category": "discovery",
             },
             {
-                "id": "T1057", "name": "Discovery: Process listing available",
+                "id": "T1057",
+                "name": "Discovery: Process listing available",
                 "cmd": "ls /proc/*/cmdline 2>/dev/null | wc -l; echo DONE",
-                "expect": None, "severity": "low", "category": "discovery",
+                "expect": None,
+                "severity": "low",
+                "category": "discovery",
             },
             {
-                "id": "T1070.003", "name": "Defense Evasion: Bash history exists",
+                "id": "T1070.003",
+                "name": "Defense Evasion: Bash history exists",
                 "cmd": "test -f /root/.bash_history && echo FAIL || echo PASS",
-                "expect": "PASS", "severity": "medium", "category": "defense-evasion",
+                "expect": "PASS",
+                "severity": "medium",
+                "category": "defense-evasion",
             },
             {
-                "id": "T1136.001", "name": "Persistence: Users with shells",
+                "id": "T1136.001",
+                "name": "Persistence: Users with shells",
                 "cmd": "grep -c '/bin/bash\\|/bin/sh' /etc/passwd; echo DONE",
-                "expect": None, "severity": "medium", "category": "persistence",
+                "expect": None,
+                "severity": "medium",
+                "category": "persistence",
             },
             {
-                "id": "T1082", "name": "Discovery: System info disclosure",
+                "id": "T1082",
+                "name": "Discovery: System info disclosure",
                 "cmd": "cat /etc/os-release 2>/dev/null | head -3; echo DONE",
-                "expect": None, "severity": "low", "category": "discovery",
+                "expect": None,
+                "severity": "low",
+                "category": "discovery",
             },
             {
-                "id": "T1049", "name": "Discovery: Network connections",
+                "id": "T1049",
+                "name": "Discovery: Network connections",
                 "cmd": "cat /proc/net/tcp 2>/dev/null | wc -l; echo DONE",
-                "expect": None, "severity": "medium", "category": "discovery",
+                "expect": None,
+                "severity": "medium",
+                "category": "discovery",
             },
             {
-                "id": "T1083", "name": "Discovery: Sensitive file access",
+                "id": "T1083",
+                "name": "Discovery: Sensitive file access",
                 "cmd": "test -r /etc/passwd && echo READABLE || echo PROTECTED",
-                "expect": None, "severity": "low", "category": "discovery",
+                "expect": None,
+                "severity": "low",
+                "category": "discovery",
             },
             {
-                "id": "T1543.002", "name": "Persistence: Systemd services",
+                "id": "T1543.002",
+                "name": "Persistence: Systemd services",
                 "cmd": "ls /etc/systemd/system/*.service 2>/dev/null | wc -l; echo DONE",
-                "expect": None, "severity": "medium", "category": "persistence",
+                "expect": None,
+                "severity": "medium",
+                "category": "persistence",
             },
             {
-                "id": "T1059.004", "name": "Execution: Shell available",
+                "id": "T1059.004",
+                "name": "Execution: Shell available",
                 "cmd": "test -x /bin/sh && echo AVAILABLE || echo MISSING; echo DONE",
-                "expect": None, "severity": "low", "category": "execution",
+                "expect": None,
+                "severity": "low",
+                "category": "execution",
             },
             {
-                "id": "T1574.006", "name": "Privilege Escalation: LD_PRELOAD hijack",
+                "id": "T1574.006",
+                "name": "Privilege Escalation: LD_PRELOAD hijack",
                 "cmd": "test -f /etc/ld.so.preload && echo FAIL || echo PASS",
-                "expect": "PASS", "severity": "critical", "category": "privilege-escalation",
+                "expect": "PASS",
+                "severity": "critical",
+                "category": "privilege-escalation",
             },
             {
-                "id": "T1027", "name": "Defense Evasion: Compiled binaries in /tmp",
+                "id": "T1027",
+                "name": "Defense Evasion: Compiled binaries in /tmp",
                 "cmd": "find /tmp -type f -executable 2>/dev/null | wc -l; echo DONE",
-                "expect": None, "severity": "high", "category": "defense-evasion",
+                "expect": None,
+                "severity": "high",
+                "category": "defense-evasion",
             },
         ]
 
@@ -655,24 +724,28 @@ class ScanService:
                     report_lines.append(f"  Output: {stdout[:200]}")
 
                     if not test_passed:
-                        findings.append({
-                            "rule_id": test["id"],
-                            "title": test["name"],
-                            "severity": test["severity"],
-                            "status": "fail",
-                            "category": test["category"],
-                        })
+                        findings.append(
+                            {
+                                "rule_id": test["id"],
+                                "title": test["name"],
+                                "severity": test["severity"],
+                                "status": "fail",
+                                "category": test["category"],
+                            }
+                        )
 
                 except Exception as e:
                     report_lines.append(f"\n[{test['id']}] {test['name']} - ERROR: {e}")
                     failed += 1
-                    findings.append({
-                        "rule_id": test["id"],
-                        "title": f"{test['name']} (error)",
-                        "severity": test["severity"],
-                        "status": "fail",
-                        "category": test["category"],
-                    })
+                    findings.append(
+                        {
+                            "rule_id": test["id"],
+                            "title": f"{test['name']} (error)",
+                            "severity": test["severity"],
+                            "status": "fail",
+                            "category": test["category"],
+                        }
+                    )
 
             client.close()
 
@@ -682,7 +755,9 @@ class ScanService:
             total = passed + failed
             score = int((passed / total) * 100) if total > 0 else 0
 
-            logger.info(f"Atomic Red Team tests on {host_name} completed: passed={passed} failed={failed} score={score}")
+            logger.info(
+                f"Atomic Red Team tests on {host_name} completed: passed={passed} failed={failed} score={score}"
+            )
 
             return {
                 "success": True,
@@ -724,16 +799,28 @@ class ScanService:
                 # Try to extract finding details
                 title = line.strip().lstrip("! ").strip()
                 if title:
-                    findings.append({
-                        "rule_id": f"LYNIS-WARN-{warnings:04d}",
-                        "title": title[:500],
-                        "severity": "high",
-                        "status": "fail",
-                        "category": "hardening",
-                    })
+                    findings.append(
+                        {
+                            "rule_id": f"LYNIS-WARN-{warnings:04d}",
+                            "title": title[:500],
+                            "severity": "high",
+                            "status": "fail",
+                            "category": "hardening",
+                        }
+                    )
 
             # Parse suggestions
-            elif line.strip().startswith("- ") and i > 0 and ("suggestion" in lines[max(0, i-5):i+1].__repr__().lower() or any(c in line for c in ["Consider", "Enable", "Disable", "Configure", "Install", "Set ", "Add ", "Remove"])):
+            elif (
+                line.strip().startswith("- ")
+                and i > 0
+                and (
+                    "suggestion" in lines[max(0, i - 5) : i + 1].__repr__().lower()
+                    or any(
+                        c in line
+                        for c in ["Consider", "Enable", "Disable", "Configure", "Install", "Set ", "Add ", "Remove"]
+                    )
+                )
+            ):
                 suggestions += 1
                 title = line.strip().lstrip("- ").strip()
                 if title and len(title) > 10:
@@ -745,26 +832,30 @@ class ScanService:
                     elif any(w in title_lower for w in ["log", "banner", "update", "version"]):
                         sev = "low"
 
-                    findings.append({
-                        "rule_id": f"LYNIS-SUGG-{suggestions:04d}",
-                        "title": title[:500],
-                        "severity": sev,
-                        "status": "fail",
-                        "category": "hardening",
-                    })
+                    findings.append(
+                        {
+                            "rule_id": f"LYNIS-SUGG-{suggestions:04d}",
+                            "title": title[:500],
+                            "severity": sev,
+                            "status": "fail",
+                            "category": "hardening",
+                        }
+                    )
 
             # Parse test results like [WARNING], [OK], [FOUND], etc.
             if "[WARNING]" in line:
                 warnings += 1
-                title = re.sub(r'\[WARNING\]', '', line).strip().strip("-").strip()
+                title = re.sub(r"\[WARNING\]", "", line).strip().strip("-").strip()
                 if title and len(title) > 5 and not any(f["title"] == title[:500] for f in findings):
-                    findings.append({
-                        "rule_id": f"LYNIS-W-{warnings:04d}",
-                        "title": title[:500],
-                        "severity": "high",
-                        "status": "fail",
-                        "category": "security",
-                    })
+                    findings.append(
+                        {
+                            "rule_id": f"LYNIS-W-{warnings:04d}",
+                            "title": title[:500],
+                            "severity": "high",
+                            "status": "fail",
+                            "category": "security",
+                        }
+                    )
 
             i += 1
 
@@ -775,7 +866,9 @@ class ScanService:
                 score = int(match.group(1))
             else:
                 # Try to find any number near "index" or "score"
-                match = re.search(r"(\d{1,3})\s*$", output[output.lower().rfind("harden"):] if "harden" in output.lower() else "")
+                match = re.search(
+                    r"(\d{1,3})\s*$", output[output.lower().rfind("harden") :] if "harden" in output.lower() else ""
+                )
                 if match:
                     score = int(match.group(1))
 

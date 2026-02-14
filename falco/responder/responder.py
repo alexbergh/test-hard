@@ -234,7 +234,11 @@ def process_event(event: dict) -> dict:
     if defaults.get("log_all", True):
         logger.info(
             "Event received: rule=%s priority=%s container=%s process=%s user=%s",
-            rule_name, fields["priority"], container_name, fields["process"], fields["user"],
+            rule_name,
+            fields["priority"],
+            container_name,
+            fields["process"],
+            fields["user"],
         )
 
     # Check if we have a response configured for this rule
@@ -280,6 +284,7 @@ def process_event(event: dict) -> dict:
 
 # ---- Flask Routes ----
 
+
 @app.route("/respond", methods=["POST"])
 def respond():
     """Handle incoming Falco events from Falcosidekick."""
@@ -295,12 +300,17 @@ def respond():
 @app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint."""
-    return jsonify({
-        "status": "healthy",
-        "service": "falco-responder",
-        "dry_run": DRY_RUN,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }), 200
+    return (
+        jsonify(
+            {
+                "status": "healthy",
+                "service": "falco-responder",
+                "dry_run": DRY_RUN,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/config", methods=["GET"])
