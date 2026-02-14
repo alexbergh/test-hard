@@ -10,7 +10,7 @@ from sqlalchemy import select
 router = APIRouter()
 
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("", response_model=list[UserResponse])
 async def list_users(session: DbSession, current_user: AdminUser) -> list[UserResponse]:
     """List all users (admin only)."""
     result = await session.execute(select(User).order_by(User.id))
@@ -18,7 +18,7 @@ async def list_users(session: DbSession, current_user: AdminUser) -> list[UserRe
     return [UserResponse.model_validate(u) for u in users]
 
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
     session: DbSession,

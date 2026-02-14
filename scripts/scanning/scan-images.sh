@@ -135,9 +135,9 @@ scan_image() {
         trivy_args+=(--server "$TRIVY_SERVER_URL")
     fi
 
-    # 1) Отчёт в консоль (table)
-    echo -e "${BLUE}[REPORT] Отчёт уязвимостей:${NC}"
-    trivy "${trivy_args[@]}" --format table "$image" || true
+    # 1) Отчёт в консоль (table or user-specified format)
+    echo -e "${BLUE}[REPORT] Отчёт уязвимостей (формат: ${OUTPUT_FORMAT}):${NC}"
+    trivy "${trivy_args[@]}" --format "${OUTPUT_FORMAT}" "$image" || true
 
     # 2) JSON-отчёт
     echo -e "${BLUE}[SAVE] Сохранение JSON-отчёта: ${report_file}.vuln.json${NC}"

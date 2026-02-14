@@ -52,12 +52,18 @@ class TestParseOpenSCAPReport:
 
     def test_latest_report_found(self, tmp_path):
         """Test finding the latest report in directory."""
+        import time
+
         results_dir = tmp_path / "openscap"
         results_dir.mkdir()
 
-        # Create multiple ARF files
-        (results_dir / "old.arf").touch()
-        (results_dir / "newer.arf").touch()
+        # Create multiple ARF files with different modification times
+        old_file = results_dir / "old.arf"
+        old_file.touch()
+        # Ensure newer.arf has a later mtime
+        time.sleep(0.01)
+        newer_file = results_dir / "newer.arf"
+        newer_file.touch()
 
         latest = _latest_report(results_dir)
         assert latest is not None

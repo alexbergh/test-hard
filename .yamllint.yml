@@ -60,3 +60,6 @@ ignore: |
   node_modules/
   venv/
   build/
+  k8s/base/kube-bench-config.yaml
+  k8s/base/pod-security-admission.yaml
+  k8s/base/image-verification.yaml
