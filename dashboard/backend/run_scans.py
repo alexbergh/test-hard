@@ -3,14 +3,15 @@
 import asyncio
 import re
 import time
+from datetime import datetime, timezone
 
-import docker as docker_lib
 from app.config import get_settings
 from app.database import get_session_context
 from app.models import Host, Scan
 from app.models.scan import ScanResult
-from datetime import datetime, timezone
 from sqlalchemy import select
+
+import docker as docker_lib
 
 settings = get_settings()
 

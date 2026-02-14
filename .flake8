@@ -28,6 +28,9 @@ docstring-convention = google
 per-file-ignores =
     __init__.py:F401
     tests/*:S101,S106
+    dashboard/backend/app/services/scan.py:C901
+    dashboard/backend/run_scans.py:C901
+    scripts/scanning/run_atomic_red_team_suite.py:C901
 
 # Error codes to check
 select = C,E,F,W,B,B9

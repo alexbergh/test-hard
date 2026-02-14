@@ -11,9 +11,10 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import docker
 import yaml
 from flask import Flask, jsonify, request
+
+import docker
 
 app = Flask(__name__)
 

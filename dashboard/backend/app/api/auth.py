@@ -79,8 +79,8 @@ async def update_email(
     current_user: CurrentUser,
 ) -> dict:
     """Update current user's email."""
-    from sqlalchemy import select
     from app.models import User
+    from sqlalchemy import select
 
     new_email = data.get("email", "").strip()
     if not new_email or "@" not in new_email:

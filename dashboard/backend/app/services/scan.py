@@ -9,8 +9,8 @@ from typing import Sequence
 from app.config import get_settings
 from app.models import Host, Scan
 from app.models.scan import ScanResult
-from app.services.notifications import send_scan_notification
 from app.schemas import ScanCreate
+from app.services.notifications import send_scan_notification
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -223,8 +223,9 @@ class ScanService:
     @staticmethod
     def _run_lynis_scan_sync(host_name: str, scan_id: int) -> dict:
         """Synchronous Lynis scan execution via Docker SDK (runs in thread)."""
-        import docker as docker_lib
         import logging
+
+        import docker as docker_lib
 
         logger = logging.getLogger(__name__)
         reports_dir = Path(settings.reports_dir) / "lynis"
@@ -281,9 +282,10 @@ class ScanService:
     @staticmethod
     def _run_openscap_scan_sync(host_name: str, os_family: str | None, scan_id: int, profile: str | None) -> dict:
         """Synchronous OpenSCAP scan via Docker SDK."""
-        import docker as docker_lib
         import re
         import xml.etree.ElementTree as ET
+
+        import docker as docker_lib
 
         reports_dir = Path(settings.reports_dir) / "openscap"
         reports_dir.mkdir(parents=True, exist_ok=True)
@@ -410,8 +412,9 @@ class ScanService:
     @staticmethod
     def _run_trivy_scan_sync(host_name: str, scan_id: int) -> dict:
         """Synchronous Trivy scan via Docker SDK - runs trivy container."""
-        import docker as docker_lib
         import json
+
+        import docker as docker_lib
 
         reports_dir = Path(settings.reports_dir) / "trivy"
         reports_dir.mkdir(parents=True, exist_ok=True)

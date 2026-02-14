@@ -47,7 +47,6 @@ async def init_db() -> None:
     # Seed default admin user if no users exist
     async with async_session_maker() as session:
         from app.models import User
-
         from sqlalchemy import func, select
 
         count = (await session.execute(select(func.count(User.id)))).scalar() or 0

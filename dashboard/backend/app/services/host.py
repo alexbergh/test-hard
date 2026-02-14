@@ -1,6 +1,7 @@
 """Host management service."""
 
 import asyncio
+import logging
 from typing import Sequence
 
 from app.config import get_settings
@@ -10,7 +11,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import docker
-import logging
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
