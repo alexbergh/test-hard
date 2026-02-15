@@ -117,27 +117,27 @@ server {
 
 Falco обеспечивает runtime-мониторинг системных вызовов во всех контейнерах:
 
-- **Falco** -- перехват syscall-событий через eBPF/kernel module
-- **Falcosidekick** -- маршрутизация событий в Prometheus, Loki, Alertmanager
-- **Falco Exporter** -- экспорт метрик `falco_events` в Prometheus
-- **Falco Responder** -- автоматические реакции (kill, stop, isolate)
+* **Falco** -- перехват syscall-событий через eBPF/kernel module
+* **Falcosidekick** -- маршрутизация событий в Prometheus, Loki, Alertmanager
+* **Falco Exporter** -- экспорт метрик `falco_events` в Prometheus
+* **Falco Responder** -- автоматические реакции (kill, stop, isolate)
 
 Кастомные правила (30+) находятся в `falco/rules.d/` и охватывают:
 
-- Запуск оболочки в контейнере
-- Изменение системных файлов (/etc/passwd, /etc/shadow)
-- Сетевые аномалии (неожиданные исходящие соединения)
-- Повышение привилегий
-- Криптомайнинг
+* Запуск оболочки в контейнере
+* Изменение системных файлов (/etc/passwd, /etc/shadow)
+* Сетевые аномалии (неожиданные исходящие соединения)
+* Повышение привилегий
+* Криптомайнинг
 
 ### 9. Container Image Scanning (Trivy)
 
 Trivy сканирует все контейнерные образы на известные уязвимости (CVE):
 
-- Работает в режиме client-server (контейнер `trivy-server`)
-- Сканирует 17 образов проекта (target, infra, scanner)
-- Генерирует `.prom` метрики для Telegraf/Prometheus
-- Классификация: CRITICAL, HIGH, MEDIUM, LOW
+* Работает в режиме client-server (контейнер `trivy-server`)
+* Сканирует 17 образов проекта (target, infra, scanner)
+* Генерирует `.prom` метрики для Telegraf/Prometheus
+* Классификация: CRITICAL, HIGH, MEDIUM, LOW
 
 Запуск сканирования:
 

@@ -193,11 +193,11 @@ URL: http://localhost:9093
 
 | Сервис | URL | Назначение |
 |--------|-----|------------|
-| Falcosidekick | http://localhost:2801 | Маршрутизация Falco-событий |
-| Trivy Server | http://localhost:4954 | Сканирование образов |
-| Falco Responder | http://localhost:5080 | Автоматические реакции |
-| Loki | http://localhost:3100 | Хранилище логов |
-| Telegraf | http://localhost:9091/metrics | Метрики агента |
+| Falcosidekick | <http://localhost:2801> | Маршрутизация Falco-событий |
+| Trivy Server | <http://localhost:4954> | Сканирование образов |
+| Falco Responder | <http://localhost:5080> | Автоматические реакции |
+| Loki | <http://localhost:3100> | Хранилище логов |
+| Telegraf | <http://localhost:9091/metrics> | Метрики агента |
 
 ---
 

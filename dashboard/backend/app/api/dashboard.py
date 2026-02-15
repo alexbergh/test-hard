@@ -230,82 +230,107 @@ async def _get_scan_activity(session, since):
     return [{"date": str(row.date), "count": row.count} for row in result.all()]
 
 
+async def _fetch_falco_priority_counts(client):
+    """Fetch event counts by priority from Prometheus."""
+    prom_url = "http://prometheus:9090/api/v1/query"
+    r = await client.get(prom_url, params={"query": "sum by (priority) (falco_events)"})
+    if r.status_code != 200:
+        return 0, {}
+    data_prom = r.json().get("data", {}).get("result", [])
+    total = 0
+    by_priority: dict[str, int] = {}
+    for item in data_prom:
+        p = item["metric"].get("priority", "unknown")
+        v = int(float(item["value"][1]))
+        if p == "Debug" and v <= 1:
+            continue
+        by_priority[p] = v
+        total += v
+    return total, by_priority
+
+
+async def _fetch_falco_top_rules(client):
+    """Fetch top Falco rules from Prometheus."""
+    prom_url = "http://prometheus:9090/api/v1/query"
+    r = await client.get(prom_url, params={"query": "topk(10, sum by (rule, priority) (falco_events))"})
+    if r.status_code != 200:
+        return []
+    data_rules = r.json().get("data", {}).get("result", [])
+    rules_list = []
+    for item in data_rules:
+        rule = item["metric"].get("rule", "unknown")
+        priority = item["metric"].get("priority", "unknown")
+        count = int(float(item["value"][1]))
+        if rule == "Test rule":
+            continue
+        rules_list.append({"rule": rule, "priority": priority, "count": count})
+    rules_list.sort(key=lambda x: x["count"], reverse=True)
+    return rules_list[:10]
+
+
+async def _fetch_falco_recent_events(client):
+    """Fetch recent Falco events from Loki."""
+    loki_url = "http://loki:3100/loki/api/v1/query_range"
+    r = await client.get(
+        loki_url,
+        params={
+            "query": '{source="syscall"} | json',
+            "limit": "20",
+            "start": str(int((datetime.now(timezone.utc) - timedelta(hours=6)).timestamp())),
+            "end": str(int(datetime.now(timezone.utc).timestamp())),
+        },
+    )
+    if r.status_code != 200:
+        return []
+    streams = r.json().get("data", {}).get("result", [])
+    recent_events = []
+    for stream in streams:
+        labels = stream.get("stream", {})
+        for ts, line in stream.get("values", []):
+            recent_events.append(
+                {
+                    "time": datetime.fromtimestamp(int(ts) / 1e9, tz=timezone.utc).isoformat(),
+                    "priority": labels.get("priority", "unknown"),
+                    "rule": labels.get("rule", "unknown"),
+                    "output": line[:300],
+                }
+            )
+    recent_events.sort(key=lambda x: x["time"], reverse=True)
+    return recent_events[:15]
+
+
+async def _populate_falco_data(client, falco_events):
+    """Populate falco_events dict using the given HTTP client."""
+    try:
+        hc = await client.get("http://falcosidekick:2801/healthz")
+        falco_events["sidekick_up"] = hc.status_code == 200
+    except Exception:
+        pass
+
+    try:
+        total, by_priority = await _fetch_falco_priority_counts(client)
+        falco_events["total"] = total
+        falco_events["by_priority"] = by_priority
+    except Exception as e:
+        logger.debug(f"Falco prometheus query failed: {e}")
+
+    try:
+        falco_events["by_rule"] = await _fetch_falco_top_rules(client)
+    except Exception as e:
+        logger.debug(f"Falco rules query failed: {e}")
+
+    try:
+        falco_events["recent"] = await _fetch_falco_recent_events(client)
+    except Exception as e:
+        logger.debug(f"Falco loki query failed: {e}")
+
+
 async def _get_falco_events():
     """Fetch Falco runtime events from Prometheus and Loki."""
     falco_events: dict = {"total": 0, "by_priority": {}, "by_rule": [], "recent": [], "sidekick_up": False}
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
-            try:
-                hc = await client.get("http://falcosidekick:2801/healthz")
-                falco_events["sidekick_up"] = hc.status_code == 200
-            except Exception:
-                pass
-
-            prom_url = "http://prometheus:9090/api/v1/query"
-            try:
-                r = await client.get(prom_url, params={"query": "sum by (priority) (falco_events)"})
-                if r.status_code == 200:
-                    data_prom = r.json().get("data", {}).get("result", [])
-                    total = 0
-                    by_priority: dict[str, int] = {}
-                    for item in data_prom:
-                        p = item["metric"].get("priority", "unknown")
-                        v = int(float(item["value"][1]))
-                        if p == "Debug" and v <= 1:
-                            continue
-                        by_priority[p] = v
-                        total += v
-                    falco_events["total"] = total
-                    falco_events["by_priority"] = by_priority
-            except Exception as e:
-                logger.debug(f"Falco prometheus query failed: {e}")
-
-            try:
-                r = await client.get(prom_url, params={"query": "topk(10, sum by (rule, priority) (falco_events))"})
-                if r.status_code == 200:
-                    data_rules = r.json().get("data", {}).get("result", [])
-                    rules_list = []
-                    for item in data_rules:
-                        rule = item["metric"].get("rule", "unknown")
-                        priority = item["metric"].get("priority", "unknown")
-                        count = int(float(item["value"][1]))
-                        if rule == "Test rule":
-                            continue
-                        rules_list.append({"rule": rule, "priority": priority, "count": count})
-                    rules_list.sort(key=lambda x: x["count"], reverse=True)
-                    falco_events["by_rule"] = rules_list[:10]
-            except Exception as e:
-                logger.debug(f"Falco rules query failed: {e}")
-
-            try:
-                loki_url = "http://loki:3100/loki/api/v1/query_range"
-                r = await client.get(
-                    loki_url,
-                    params={
-                        "query": '{source="syscall"} | json',
-                        "limit": "20",
-                        "start": str(int((datetime.now(timezone.utc) - timedelta(hours=6)).timestamp())),
-                        "end": str(int(datetime.now(timezone.utc).timestamp())),
-                    },
-                )
-                if r.status_code == 200:
-                    streams = r.json().get("data", {}).get("result", [])
-                    recent_events = []
-                    for stream in streams:
-                        labels = stream.get("stream", {})
-                        for ts, line in stream.get("values", []):
-                            recent_events.append(
-                                {
-                                    "time": datetime.fromtimestamp(int(ts) / 1e9, tz=timezone.utc).isoformat(),
-                                    "priority": labels.get("priority", "unknown"),
-                                    "rule": labels.get("rule", "unknown"),
-                                    "output": line[:300],
-                                }
-                            )
-                    recent_events.sort(key=lambda x: x["time"], reverse=True)
-                    falco_events["recent"] = recent_events[:15]
-            except Exception as e:
-                logger.debug(f"Falco loki query failed: {e}")
+            await _populate_falco_data(client, falco_events)
     except Exception as e:
         logger.debug(f"Falco events fetch failed: {e}")
     return falco_events
