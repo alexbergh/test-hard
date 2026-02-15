@@ -192,3 +192,7 @@ Unified image включает:
 - [DEPLOYMENT.md](DEPLOYMENT.md) — развертывание
 - [DOCKER_OPTIMIZATIONS.md](DOCKER_OPTIMIZATIONS.md) — оптимизация Docker
 - [FAQ.md](FAQ.md) — часто задаваемые вопросы
+
+---
+
+Последнее обновление: Февраль 2026

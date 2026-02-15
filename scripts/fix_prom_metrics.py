@@ -9,13 +9,11 @@ Telegraf with name_override="trivy" turns these into:
   trivy_trivy_vulnerabilities_critical{image="..."} N
 """
 
+import glob
 import json
 import os
-import glob
 
-REPORTS_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "reports", "trivy"
-)
+REPORTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "reports", "trivy")
 
 
 def main():

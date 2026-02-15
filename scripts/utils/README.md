@@ -1,7 +1,7 @@
 # Utility Scripts
 
-Вспомогательные утилиты.
+Вспомогательные утилиты для обслуживания проекта.
 
 ## Файлы
 
-- `bump-version.sh` - Обновление версии проекта
+- `bump-version.sh` -- обновление версии проекта (package.json, Makefile, ROADMAP.md)

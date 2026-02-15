@@ -699,4 +699,4 @@ openssl req -x509 -newkey rsa:4096 -keyout /etc/telegraf/key.pem -out /etc/teleg
 ---
 
 **Статус**: Production Ready  
-**Последнее обновление**: Ноябрь 2025
+**Последнее обновление**: Февраль 2026

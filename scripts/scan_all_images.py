@@ -6,7 +6,6 @@ Generates Prometheus metric files in reports/trivy/ that Telegraf picks up.
 import json
 import os
 import subprocess
-import sys
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "..", "reports", "trivy")
 
@@ -42,31 +41,49 @@ def scan_image(image: str) -> dict:
     try:
         result = subprocess.run(
             [
-                "docker", "exec", "trivy-server",
-                "trivy", "image",
-                "--server", "http://localhost:4954",
-                "--format", "json",
-                "--severity", "CRITICAL,HIGH,MEDIUM,LOW",
+                "docker",
+                "exec",
+                "trivy-server",
+                "trivy",
+                "image",
+                "--server",
+                "http://localhost:4954",
+                "--format",
+                "json",
+                "--severity",
+                "CRITICAL,HIGH,MEDIUM,LOW",
                 "--ignore-unfixed",
-                "--timeout", "5m",
+                "--timeout",
+                "5m",
                 image,
             ],
-            capture_output=True, text=True, timeout=360,
+            capture_output=True,
+            text=True,
+            timeout=360,
         )
         if result.returncode != 0 and not result.stdout:
             print(f"FAILED (exit {result.returncode})")
             # Try without --ignore-unfixed
             result = subprocess.run(
                 [
-                    "docker", "exec", "trivy-server",
-                    "trivy", "image",
-                    "--server", "http://localhost:4954",
-                    "--format", "json",
-                    "--severity", "CRITICAL,HIGH,MEDIUM,LOW",
-                    "--timeout", "5m",
+                    "docker",
+                    "exec",
+                    "trivy-server",
+                    "trivy",
+                    "image",
+                    "--server",
+                    "http://localhost:4954",
+                    "--format",
+                    "json",
+                    "--severity",
+                    "CRITICAL,HIGH,MEDIUM,LOW",
+                    "--timeout",
+                    "5m",
                     image,
                 ],
-                capture_output=True, text=True, timeout=360,
+                capture_output=True,
+                text=True,
+                timeout=360,
             )
         data = json.loads(result.stdout)
         return data
@@ -103,14 +120,16 @@ def generate_prom_metrics(image: str, data: dict) -> str:
     for sev, count in counts.items():
         lines.append(f'trivy_image_vulnerabilities{{image="{safe_image}",severity="{sev.lower()}"}} {count}')
 
-    lines.extend([
-        "# HELP trivy_image_vulnerability_total Total vulnerabilities",
-        "# TYPE trivy_image_vulnerability_total gauge",
-        f'trivy_image_vulnerability_total{{image="{safe_image}"}} {total_vulns}',
-        "# HELP trivy_image_packages_total Total packages",
-        "# TYPE trivy_image_packages_total gauge",
-        f'trivy_image_packages_total{{image="{safe_image}"}} {total_packages}',
-    ])
+    lines.extend(
+        [
+            "# HELP trivy_image_vulnerability_total Total vulnerabilities",
+            "# TYPE trivy_image_vulnerability_total gauge",
+            f'trivy_image_vulnerability_total{{image="{safe_image}"}} {total_vulns}',
+            "# HELP trivy_image_packages_total Total packages",
+            "# TYPE trivy_image_packages_total gauge",
+            f'trivy_image_packages_total{{image="{safe_image}"}} {total_packages}',
+        ]
+    )
 
     return "\n".join(lines) + "\n"
 
@@ -129,7 +148,7 @@ def main():
 
         counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
         for result in data.get("Results", []):
-            for v in (result.get("Vulnerabilities") or []):
+            for v in result.get("Vulnerabilities") or []:
                 sev = v.get("Severity", "UNKNOWN").upper()
                 if sev in counts:
                     counts[sev] += 1

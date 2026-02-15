@@ -65,7 +65,7 @@ def _ensure_tool_installed(container, tool: str, os_family: str | None) -> str |
             if ssg_out:
                 return None  # binary + content both present
             # binary exists but no SSG content, continue to install
-            logger.info(f"oscap binary found but SSG content missing, installing...")
+            logger.info("oscap binary found but SSG content missing, installing...")
         else:
             return None  # already installed
 
@@ -365,7 +365,6 @@ class ScanService:
     @staticmethod
     def _run_openscap_scan_sync(host_name: str, os_family: str | None, scan_id: int, profile: str | None) -> dict:
         """Synchronous OpenSCAP scan via Docker SDK."""
-        import re
         import xml.etree.ElementTree as ET
 
         import docker as docker_lib

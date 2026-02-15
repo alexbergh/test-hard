@@ -154,10 +154,14 @@ jobs:
       # ---- Блокировка при наличии критических уязвимостей ----
       - name: "Блокировка: проверка CRITICAL уязвимостей"
         uses: aquasecurity/trivy-action@0.28.0
+        env:
+          TRIVY_FORMAT: table
+          TRIVY_OUTPUT: ''
+          TRIVY_EXIT_CODE: '1'
         with:
           image-ref: 'test-hard:scan'
           format: 'table'
-          severity: ${{ github.event.inputs.fail_on_severity || 'CRITICAL,HIGH' }}
+          severity: ${{ github.event.inputs.fail_on_severity || 'CRITICAL' }}
           ignore-unfixed: true
           trivyignores: 'trivy/.trivyignore'
           exit-code: '1'

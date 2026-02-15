@@ -3,7 +3,7 @@
 **Версия:** 1.0.0  
 **Статус:** Production Ready (9.0/10)  
 **Test Coverage:** 80%+  
-**Последнее обновление:** Февраль 2026
+**Последнее обновление:** 15 февраля 2026
 
 ---
 
@@ -20,16 +20,16 @@
 | **GitOps Deployment** | Ready | ArgoCD интеграция |
 | **Container Registry** | Ready | GitHub Container Registry + Cosign |
 | **Multi-Environment** | Ready | dev/staging/prod через Docker Compose |
-| **CI/CD Pipeline** | Ready | GitHub Actions (8 workflows) |
+| **CI/CD Pipeline** | Ready | GitHub Actions (9 workflows) |
 | **Kubernetes Support** | Ready | Kustomize overlays (dev/staging/prod) |
 | **Multi-Distribution** | Ready | Debian, Ubuntu, Fedora, CentOS, ALT Linux |
 | **Metrics Collection** | Ready | Telegraf → Prometheus |
 | **Docker Security** | Ready | Docker Socket Proxy |
 | **Test Suite** | Ready | Unit + Integration + E2E + Shell |
-| **Documentation** | Ready | 13 документов в docs/ |
+| **Documentation** | Ready | 14 документов в docs/ |
 | **Runtime Security** | Ready | Falco + Falcosidekick + автоматические реакции |
 | **Container Image Scanning** | Ready | Trivy + SBOM + OPA/Gatekeeper |
-| **Grafana Dashboards** | Ready | 7 дашбордов (security, compliance, resources, Falco, images) |
+| **Grafana Dashboards** | Ready | 10 дашбордов (security, compliance, resources, Falco, images, network) |
 
 ---
 

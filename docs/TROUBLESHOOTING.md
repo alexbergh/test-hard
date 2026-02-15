@@ -11,6 +11,8 @@
 * [Проблемы со сканированием](#проблемы-со-сканированием)
 * [Проблемы с сетью](#проблемы-с-сетью)
 * [Проблемы с производительностью](#проблемы-с-производительностью)
+* [Проблемы с Falco / Falcosidekick](#проблемы-с-falco--falcosidekick)
+* [Проблемы с Trivy](#проблемы-с-trivy)
 * [Проблемы с безопасностью](#проблемы-с-безопасностью)
 
 ---
@@ -514,6 +516,109 @@ services:
 
 ---
 
+## Проблемы с Falco / Falcosidekick
+
+### Falco Runtime Security дашборд пуст
+
+**Симптомы:**
+
+* Панели показывают 0 или "No data"
+* При этом Prometheus содержит метрики `falco_events`
+
+**Диагностика:**
+
+```bash
+# Проверить здоровье Falcosidekick
+curl http://localhost:2801/healthz
+
+# Проверить метрики в Prometheus
+curl -s "http://localhost:9090/api/v1/query?query=falco_events"
+
+# Проверить логи Falcosidekick
+docker compose logs falcosidekick --tail 20
+```
+
+**Решения:**
+
+1. **Перезапустить Grafana с очисткой кэша:**
+
+   ```bash
+   docker compose restart grafana
+   ```
+
+2. **Отправить тестовые события:**
+
+   ```bash
+   python3 scripts/send_falco_events.py
+   ```
+
+3. **Пересоздать volume Grafana (крайняя мера):**
+
+   ```bash
+   docker compose down grafana
+   docker volume rm test-hard_grafana-data
+   docker compose up -d grafana
+   ```
+
+---
+
+### Falcosidekick не пересылает события
+
+**Симптомы:**
+
+* `falcosidekick_outputs` метрика не растет
+* Логи Loki не содержат Falco-событий
+
+**Решение:**
+
+```bash
+# Проверить конфигурацию outputs
+docker exec falcosidekick cat /etc/falcosidekick/config.yaml
+
+# Проверить доступность Loki из контейнера
+docker exec falcosidekick wget -qO- http://loki:3100/ready
+```
+
+---
+
+## Проблемы с Trivy
+
+### Trivy метрики не появляются в Prometheus
+
+**Симптомы:**
+
+* `trivy_trivy_vulnerabilities_total` отсутствует в Prometheus
+* Container Image Security дашборд пуст
+
+**Диагностика:**
+
+```bash
+# Проверить наличие .prom файлов
+ls reports/trivy/*_metrics.prom
+
+# Проверить логи Telegraf на ошибки парсинга
+docker logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
+```
+
+**Решения:**
+
+1. **Проблема с CRLF:** Файлы `.prom`, созданные на Windows, могут иметь `\r\n` переносы. Telegraf ожидает Unix LF (`\n`). Ошибка в логах: `unknown metric type "gauge\r"`.
+
+   ```bash
+   # Исправить переносы строк
+   python3 scripts/fix_prom_metrics.py
+   ```
+
+2. **Пересканировать образы:**
+
+   ```bash
+   python3 scripts/scan_all_images.py
+   ```
+
+3. **Проверить формат метрик:** Файлы должны использовать отдельные метрики по серьезности (`trivy_vulnerabilities_critical`, `trivy_vulnerabilities_high`, и т.д.), а не labels `severity="critical"`.
+
+---
+
 ## Проблемы с производительностью
 
 ### Медленное сканирование
@@ -712,4 +817,4 @@ make scan
 
 ---
 
-**Обновлено:** 24.11.2025
+**Обновлено:** 15.02.2026

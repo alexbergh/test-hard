@@ -22,7 +22,7 @@
 * **GitOps Deployment** — автоматический deployment с ArgoCD
 * **Container Registry** — автоматическая публикация образов в GitHub Container Registry
 * **Multi-Environment** — поддержка dev/staging/prod через Docker Compose
-* **CI/CD Ready** — GitHub Actions (9 workflows) для тестирования, сканирования и блокировки
+* **CI/CD Pipeline** — GitHub Actions (9 workflows) для тестирования, сканирования и блокировки
 * **Multi-Distribution** — сканирование Debian, Ubuntu, Fedora, CentOS Stream, ALT Linux
 * **Metrics Collection** — Telegraf для сбора и экспорта метрик в Prometheus
 * **Docker Security** — изолированный доступ к Docker API через security proxy
@@ -198,6 +198,7 @@ pip install atomic-operator attrs click pyyaml
 | **Falco Runtime Security** | Runtime-события Falco, правила, доставка через Falcosidekick |
 | **Container Image Security** | Уязвимости образов Trivy, тренды, таблицы |
 | **Network Security Monitoring** | Bandwidth, packets, errors/drops, TCP states, Falco network events |
+| **Network Discovery** | Обнаруженные хосты, открытые порты, сервисы в Docker-сети |
 | **Security Monitoring** | Метрики сканеров в динамике |
 
 ### Диагностика 401 при обращении к Grafana API
@@ -252,7 +253,7 @@ test-hard/
 │   ├── trivy.yaml             # Конфигурация Trivy
 │   └── .trivyignore           # Игнорируемые CVE
 ├── grafana/
-│   ├── dashboards/            # 8 преднастроенных дашбордов
+│   ├── dashboards/            # 10 преднастроенных дашбордов
 │   └── provisioning/          # Datasources (Prometheus, Loki, Tempo)
 ├── prometheus/
 │   ├── alert.rules.yml        # Правила алертинга (вкл. Falco)
@@ -283,26 +284,6 @@ make down        # docker compose down
 make logs        # docker compose logs -f --tail=200
 make restart     # перезапуск стека
 ```
-
-## Документация
-
-**Полная документация доступна в каталоге [`docs/`](docs/)**:
-
-### Начало работы
-
-* **[Быстрый старт (QUICKSTART.md)](docs/QUICKSTART.md)** — развертывание за 5-10 минут
-* **[Полное руководство (DEPLOYMENT.md)](docs/DEPLOYMENT.md)** — детальная инструкция с troubleshooting
-* **[Установка без Docker (NATIVE-INSTALLATION.md)](docs/NATIVE-INSTALLATION.md)** — установка на Linux/BSD без контейнеров
-
-### Безопасность
-
-* **[Создание пользователей (USER-SETUP.md)](docs/USER-SETUP.md)** — безопасная настройка пользователей
-* **[Политика безопасности (SECURITY.md)](docs/SECURITY.md)** — общая политика безопасности
-* **[Сканирование реальных хостов (REAL-HOSTS-SCANNING.md)](docs/REAL-HOSTS-SCANNING.md)** — сканирование production систем
-
-### Расширенные возможности
-
-* **[Centralized Logging (LOGGING.md)](docs/LOGGING.md)** — настройка логирования с Loki
 
 ## Тестирование
 

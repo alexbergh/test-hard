@@ -4,7 +4,7 @@
 
 ### Что такое test-hard?
 
-test-hard - это автоматизированная платформа для security hardening и мониторинга контейнеров. Она включает security сканирование (OpenSCAP, Lynis), мониторинг (Prometheus, Grafana), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
+test-hard -- автоматизированная платформа для security hardening, runtime-безопасности и мониторинга контейнеров. Включает security-сканирование (OpenSCAP, Lynis), runtime-защиту (Falco + Falcosidekick), сканирование образов (Trivy), сетевое сканирование (nmap), мониторинг (Prometheus, Grafana, 10 дашбордов), централизованное логирование (Loki + Promtail), атомарные тесты (Atomic Red Team) и сбор метрик безопасности через Telegraf.
 
 ### Для кого предназначен проект?
 
@@ -476,11 +476,18 @@ docker compose up -d
 
 ### Есть ли готовые дашборды?
 
-Да, в `grafana/dashboards/`:
+Да, в `grafana/dashboards/` находятся 10 преднастроенных дашбордов:
 
-* Security Scanners Dashboard
-* System Metrics Dashboard
-* Logs Analysis Dashboard (Loki)
+* Security Overview -- общий обзор безопасности
+* Security Monitoring -- метрики сканеров в динамике
+* Security Issues Details -- таблицы проблем Lynis/OpenSCAP
+* Host Compliance -- соответствие по хостам
+* Falco Runtime Security -- runtime-события Falco
+* Container Image Security -- уязвимости образов Trivy
+* Network Security Monitoring -- трафик, пакеты, ошибки, TCP
+* Network Discovery -- хосты, порты, сервисы
+* System Resources -- CPU, память, диск, сеть
+* Logs Analysis -- анализ логов через Loki
 
 ### Поддерживается ли Windows/macOS?
 
@@ -501,3 +508,5 @@ docker compose up -d
 ---
 
 **Не нашли ответ?** Создайте [новый issue](https://github.com/alexbergh/test-hard/issues/new).
+
+Последнее обновление: Февраль 2026

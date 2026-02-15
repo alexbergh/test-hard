@@ -17,41 +17,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/stats")
-async def get_dashboard_stats(
-    session: DbSession,
-    current_user: CurrentUser,
-    days: float = 30,
-    hours: int | None = None,
-) -> dict:
-    """Get aggregated dashboard statistics."""
-
-    # --- Host stats ---
-    host_query = select(Host).where(Host.is_active == True)  # noqa: E712
-    host_result = await session.execute(host_query)
-    hosts = host_result.scalars().all()
-
-    total_hosts = len(hosts)
-    online_hosts = sum(1 for h in hosts if h.status == "online")
-    offline_hosts = sum(1 for h in hosts if h.status == "offline")
-    scanning_hosts = sum(1 for h in hosts if h.status == "scanning")
-
-    # Host scores for compliance overview
-    host_scores = []
-    for h in hosts:
-        host_scores.append(
-            {
-                "id": h.id,
-                "name": h.display_name or h.name,
-                "status": h.status,
-                "os_family": h.os_family,
-                "host_type": h.host_type,
-                "score": h.last_scan_score,
-                "tags": h.tags or [],
-            }
-        )
-
-    # Score distribution buckets
+def _get_host_stats(hosts):
+    """Compute host-level statistics."""
+    host_scores = [
+        {
+            "id": h.id,
+            "name": h.display_name or h.name,
+            "status": h.status,
+            "os_family": h.os_family,
+            "host_type": h.host_type,
+            "score": h.last_scan_score,
+            "tags": h.tags or [],
+        }
+        for h in hosts
+    ]
     scores = [h.last_scan_score for h in hosts if h.last_scan_score is not None]
     score_distribution = {
         "critical": sum(1 for s in scores if s < 40),
@@ -60,66 +39,60 @@ async def get_dashboard_stats(
         "good": sum(1 for s in scores if 80 <= s < 95),
         "excellent": sum(1 for s in scores if s >= 95),
     }
-
     avg_score = round(sum(scores) / len(scores)) if scores else 0
+    return host_scores, score_distribution, avg_score
 
-    # --- Scan stats ---
-    if hours is not None:
-        since = datetime.now(timezone.utc) - timedelta(hours=hours)
-    else:
-        since = datetime.now(timezone.utc) - timedelta(days=days)
 
-    scan_count_query = select(func.count(Scan.id)).where(Scan.created_at >= since)
-    scan_count_result = await session.execute(scan_count_query)
+async def _get_scan_stats(session, since):
+    """Fetch scan counts, status breakdown, scanner breakdown, avg duration."""
+    scan_count_result = await session.execute(select(func.count(Scan.id)).where(Scan.created_at >= since))
     total_scans = scan_count_result.scalar() or 0
 
-    # Scans by status
-    scan_status_query = select(Scan.status, func.count(Scan.id)).where(Scan.created_at >= since).group_by(Scan.status)
-    scan_status_result = await session.execute(scan_status_query)
+    scan_status_result = await session.execute(
+        select(Scan.status, func.count(Scan.id)).where(Scan.created_at >= since).group_by(Scan.status)
+    )
     scans_by_status = dict(scan_status_result.all())
 
-    # Scans by scanner
-    scan_scanner_query = (
+    scan_scanner_result = await session.execute(
         select(Scan.scanner, func.count(Scan.id)).where(Scan.created_at >= since).group_by(Scan.scanner)
     )
-    scan_scanner_result = await session.execute(scan_scanner_query)
     scans_by_scanner = dict(scan_scanner_result.all())
 
-    # Average scan duration
-    avg_duration_query = select(func.avg(Scan.duration_seconds)).where(
-        Scan.created_at >= since, Scan.duration_seconds.isnot(None)
+    avg_duration_result = await session.execute(
+        select(func.avg(Scan.duration_seconds)).where(Scan.created_at >= since, Scan.duration_seconds.isnot(None))
     )
-    avg_duration_result = await session.execute(avg_duration_query)
     avg_duration = avg_duration_result.scalar()
     avg_duration = round(avg_duration) if avg_duration else 0
 
-    # --- Score trend (daily average over period) ---
-    score_trend_query = (
+    return total_scans, scans_by_status, scans_by_scanner, avg_duration
+
+
+async def _get_score_trend(session, since):
+    """Fetch daily average score trend."""
+    query = (
         select(
             func.date(Scan.completed_at).label("date"),
             func.avg(Scan.score).label("avg_score"),
             func.count(Scan.id).label("scan_count"),
         )
-        .where(
-            Scan.completed_at >= since,
-            Scan.score.isnot(None),
-            Scan.status == "completed",
-        )
+        .where(Scan.completed_at >= since, Scan.score.isnot(None), Scan.status == "completed")
         .group_by(func.date(Scan.completed_at))
         .order_by(func.date(Scan.completed_at))
     )
-    score_trend_result = await session.execute(score_trend_query)
-    score_trend = [
+    result = await session.execute(query)
+    return [
         {
             "date": str(row.date),
             "avg_score": round(row.avg_score) if row.avg_score else 0,
             "scan_count": row.scan_count,
         }
-        for row in score_trend_result.all()
+        for row in result.all()
     ]
 
-    # --- Scanner comparison (avg score per scanner) ---
-    scanner_comparison_query = (
+
+async def _get_scanner_comparison(session, since):
+    """Fetch average score per scanner."""
+    query = (
         select(
             Scan.scanner,
             func.avg(Scan.score).label("avg_score"),
@@ -131,8 +104,8 @@ async def get_dashboard_stats(
         .where(Scan.created_at >= since, Scan.status == "completed")
         .group_by(Scan.scanner)
     )
-    scanner_comparison_result = await session.execute(scanner_comparison_query)
-    scanner_comparison = [
+    result = await session.execute(query)
+    return [
         {
             "scanner": row.scanner,
             "avg_score": round(row.avg_score) if row.avg_score else 0,
@@ -141,21 +114,23 @@ async def get_dashboard_stats(
             "total_warnings": row.total_warnings or 0,
             "total_scans": row.total_scans,
         }
-        for row in scanner_comparison_result.all()
+        for row in result.all()
     ]
 
-    # --- Severity breakdown from ScanResults ---
-    severity_query = (
+
+async def _get_severity_breakdown(session, since):
+    """Fetch severity and status breakdown from ScanResults."""
+    query = (
         select(ScanResult.severity, ScanResult.status, func.count(ScanResult.id))
         .join(Scan, ScanResult.scan_id == Scan.id)
         .where(Scan.created_at >= since, Scan.status == "completed")
         .group_by(ScanResult.severity, ScanResult.status)
     )
-    severity_result = await session.execute(severity_query)
+    result = await session.execute(query)
 
     findings_by_severity = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
     findings_by_status = {"pass": 0, "fail": 0, "error": 0, "notapplicable": 0}
-    for sev, st, cnt in severity_result.all():
+    for sev, st, cnt in result.all():
         sev_lower = (sev or "info").lower()
         st_lower = (st or "error").lower()
         if sev_lower in findings_by_severity:
@@ -163,11 +138,12 @@ async def get_dashboard_stats(
         if st_lower in findings_by_status:
             findings_by_status[st_lower] += cnt
 
-    total_findings = sum(findings_by_status.values())
-    failed_findings = findings_by_status.get("fail", 0)
+    return findings_by_severity, findings_by_status
 
-    # --- Top failing rules ---
-    top_rules_query = (
+
+async def _get_top_failing_rules(session, since):
+    """Fetch top 20 failing rules."""
+    query = (
         select(
             ScanResult.rule_id,
             ScanResult.title,
@@ -177,17 +153,13 @@ async def get_dashboard_stats(
             func.count(ScanResult.id).label("occurrence_count"),
         )
         .join(Scan, ScanResult.scan_id == Scan.id)
-        .where(
-            Scan.created_at >= since,
-            Scan.status == "completed",
-            ScanResult.status == "fail",
-        )
+        .where(Scan.created_at >= since, Scan.status == "completed", ScanResult.status == "fail")
         .group_by(ScanResult.rule_id, ScanResult.title, ScanResult.severity, ScanResult.category, Scan.scanner)
         .order_by(func.count(ScanResult.id).desc())
         .limit(20)
     )
-    top_rules_result = await session.execute(top_rules_query)
-    top_failing_rules = [
+    result = await session.execute(query)
+    return [
         {
             "rule_id": row.rule_id,
             "title": row.title,
@@ -196,13 +168,15 @@ async def get_dashboard_stats(
             "scanner": row.scanner,
             "count": row.occurrence_count,
         }
-        for row in top_rules_result.all()
+        for row in result.all()
     ]
 
-    # --- Recent scans ---
-    recent_scans_query = select(Scan).options(selectinload(Scan.host)).order_by(Scan.created_at.desc()).limit(10)
-    recent_scans_result = await session.execute(recent_scans_query)
-    recent_scans = [
+
+async def _get_recent_scans(session):
+    """Fetch 10 most recent scans."""
+    query = select(Scan).options(selectinload(Scan.host)).order_by(Scan.created_at.desc()).limit(10)
+    result = await session.execute(query)
+    return [
         {
             "id": s.id,
             "host_name": s.host.name if s.host else "Unknown",
@@ -216,13 +190,15 @@ async def get_dashboard_stats(
             "failed": s.failed,
             "warnings": s.warnings,
         }
-        for s in recent_scans_result.scalars().all()
+        for s in result.scalars().all()
     ]
 
-    # --- Schedules overview ---
-    schedule_query = select(ScanSchedule).options(selectinload(ScanSchedule.host))
-    schedule_result = await session.execute(schedule_query)
-    schedules = schedule_result.scalars().all()
+
+async def _get_schedules(session):
+    """Fetch schedule overview and upcoming scans."""
+    query = select(ScanSchedule).options(selectinload(ScanSchedule.host))
+    result = await session.execute(query)
+    schedules = result.scalars().all()
 
     active_schedules = sum(1 for s in schedules if s.is_active)
     upcoming_scans = []
@@ -239,33 +215,32 @@ async def get_dashboard_stats(
                     "run_count": s.run_count,
                 }
             )
-    upcoming_scans = upcoming_scans[:5]
+    return active_schedules, upcoming_scans[:5]
 
-    # --- Scan activity heatmap (scans per day, last 30 days) ---
-    activity_query = (
-        select(
-            func.date(Scan.created_at).label("date"),
-            func.count(Scan.id).label("count"),
-        )
+
+async def _get_scan_activity(session, since):
+    """Fetch scan activity heatmap data."""
+    query = (
+        select(func.date(Scan.created_at).label("date"), func.count(Scan.id).label("count"))
         .where(Scan.created_at >= since)
         .group_by(func.date(Scan.created_at))
         .order_by(func.date(Scan.created_at))
     )
-    activity_result = await session.execute(activity_query)
-    scan_activity = [{"date": str(row.date), "count": row.count} for row in activity_result.all()]
+    result = await session.execute(query)
+    return [{"date": str(row.date), "count": row.count} for row in result.all()]
 
-    # --- Falco runtime events (from Prometheus/Loki via falcosidekick) ---
+
+async def _get_falco_events():
+    """Fetch Falco runtime events from Prometheus and Loki."""
     falco_events: dict = {"total": 0, "by_priority": {}, "by_rule": [], "recent": [], "sidekick_up": False}
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
-            # Check sidekick health
             try:
                 hc = await client.get("http://falcosidekick:2801/healthz")
                 falco_events["sidekick_up"] = hc.status_code == 200
             except Exception:
                 pass
 
-            # Fetch event counts by priority from Prometheus
             prom_url = "http://prometheus:9090/api/v1/query"
             try:
                 r = await client.get(prom_url, params={"query": "sum by (priority) (falco_events)"})
@@ -285,7 +260,6 @@ async def get_dashboard_stats(
             except Exception as e:
                 logger.debug(f"Falco prometheus query failed: {e}")
 
-            # Fetch top rules from Prometheus
             try:
                 r = await client.get(prom_url, params={"query": "topk(10, sum by (rule, priority) (falco_events))"})
                 if r.status_code == 200:
@@ -303,7 +277,6 @@ async def get_dashboard_stats(
             except Exception as e:
                 logger.debug(f"Falco rules query failed: {e}")
 
-            # Fetch recent events from Loki
             try:
                 loki_url = "http://loki:3100/loki/api/v1/query_range"
                 r = await client.get(
@@ -321,18 +294,59 @@ async def get_dashboard_stats(
                     for stream in streams:
                         labels = stream.get("stream", {})
                         for ts, line in stream.get("values", []):
-                            recent_events.append({
-                                "time": datetime.fromtimestamp(int(ts) / 1e9, tz=timezone.utc).isoformat(),
-                                "priority": labels.get("priority", "unknown"),
-                                "rule": labels.get("rule", "unknown"),
-                                "output": line[:300],
-                            })
+                            recent_events.append(
+                                {
+                                    "time": datetime.fromtimestamp(int(ts) / 1e9, tz=timezone.utc).isoformat(),
+                                    "priority": labels.get("priority", "unknown"),
+                                    "rule": labels.get("rule", "unknown"),
+                                    "output": line[:300],
+                                }
+                            )
                     recent_events.sort(key=lambda x: x["time"], reverse=True)
                     falco_events["recent"] = recent_events[:15]
             except Exception as e:
                 logger.debug(f"Falco loki query failed: {e}")
     except Exception as e:
         logger.debug(f"Falco events fetch failed: {e}")
+    return falco_events
+
+
+@router.get("/stats")
+async def get_dashboard_stats(
+    session: DbSession,
+    current_user: CurrentUser,
+    days: float = 30,
+    hours: int | None = None,
+) -> dict:
+    """Get aggregated dashboard statistics."""
+
+    # --- Host stats ---
+    host_query = select(Host).where(Host.is_active == True)  # noqa: E712
+    host_result = await session.execute(host_query)
+    hosts = host_result.scalars().all()
+
+    total_hosts = len(hosts)
+    online_hosts = sum(1 for h in hosts if h.status == "online")
+    offline_hosts = sum(1 for h in hosts if h.status == "offline")
+    scanning_hosts = sum(1 for h in hosts if h.status == "scanning")
+    host_scores, score_distribution, avg_score = _get_host_stats(hosts)
+
+    if hours is not None:
+        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    else:
+        since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    total_scans, scans_by_status, scans_by_scanner, avg_duration = await _get_scan_stats(session, since)
+    score_trend = await _get_score_trend(session, since)
+    scanner_comparison = await _get_scanner_comparison(session, since)
+    findings_by_severity, findings_by_status = await _get_severity_breakdown(session, since)
+    total_findings = sum(findings_by_status.values())
+    failed_findings = findings_by_status.get("fail", 0)
+    top_failing_rules = await _get_top_failing_rules(session, since)
+    recent_scans = await _get_recent_scans(session)
+    active_schedules, upcoming_scans = await _get_schedules(session)
+    scan_activity = await _get_scan_activity(session, since)
+    falco_events = await _get_falco_events()
 
     return {
         "hostname": socket.gethostname(),

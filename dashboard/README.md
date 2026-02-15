@@ -92,8 +92,23 @@ Environment variables:
 - **operator** — Can start scans and manage hosts
 - **admin** — Full access including user management
 
+## Data Integration
+
+The backend aggregates data from multiple sources:
+
+- **Prometheus** — Lynis, OpenSCAP, Trivy, Falco, network scan metrics
+- **Loki** — Falco runtime events (via Falcosidekick)
+- **Falcosidekick API** — real-time Falco event counts and statistics
+- **SQLite** — host inventory, scan history, schedules
+
+The `/api/v1/dashboard/stats` endpoint returns a consolidated view of all security data for the frontend.
+
 ## Ports
 
 - **8000** — Backend API
 - **3001** — Frontend (production)
 - **5173** — Frontend (development)
+
+---
+
+Последнее обновление: Февраль 2026

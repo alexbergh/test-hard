@@ -4,5 +4,5 @@
 
 ## Файлы
 
-- `health_check.sh` - Проверка здоровья всех сервисов
-- `measure_docker_improvements.sh` - Измерение улучшений Docker сборки
+- `health_check.sh` -- проверка здоровья всех сервисов (Prometheus, Grafana, Telegraf, Alertmanager)
+- `measure_docker_improvements.sh` -- измерение улучшений Docker-сборки (размеры образов, время)

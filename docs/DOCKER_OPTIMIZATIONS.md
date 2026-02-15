@@ -332,7 +332,7 @@ BUILDKIT_PROGRESS=plain docker build -f docker/ubuntu/Dockerfile .
 
 ## Changelog
 
-### 2024-11-21
+### 2025-11-21
 
 * Добавлены специфичные .dockerignore файлы для всех Dockerfile
 * Добавлен HEALTHCHECK в telegraf/Dockerfile

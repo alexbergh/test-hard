@@ -124,6 +124,27 @@ topk(10, sum by (container) (count_over_time({compose_project="test-hard"}[1h]))
 {container=~"openscap.*"} |= "fail"
 ```
 
+### Запросы Falco-событий
+
+Falcosidekick пересылает Falco-события в Loki. Для поиска используйте:
+
+```logql
+# Все Falco-события
+{source="syscall"}
+
+# События с приоритетом Critical/Emergency
+{source="syscall"} |~ "(?i)critical|emergency"
+
+# События для конкретного контейнера
+{source="syscall"} |= "target-ubuntu"
+
+# Подсчет Falco-событий за последний час
+sum(count_over_time({source="syscall"}[1h]))
+
+# События по правилу (shell в контейнере)
+{source="syscall"} |= "Terminal shell"
+```
+
 ## Дашборды
 
 ### Дашборд анализа логов
@@ -136,6 +157,7 @@ topk(10, sum by (container) (count_over_time({compose_project="test-hard"}[1h]))
 * Prometheus Logs
 * Grafana Logs
 * Security Scanner Logs
+* Falco Runtime Events (via Falcosidekick -> Loki)
 
 ### Создание custom дашборда
 
@@ -376,6 +398,12 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
 
 # Только критические
 {job="security_scanners"} |~ "CRITICAL|HIGH"
+
+# Falco runtime-события
+{source="syscall"}
+
+# Falco критические события
+{source="syscall"} |~ "(?i)critical|emergency"
 ```
 
 ### Анализ производительности
@@ -387,3 +415,7 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
 # Rate логов (индикатор нагрузки)
 rate({compose_project="test-hard"}[5m])
 ```
+
+---
+
+Последнее обновление: Февраль 2026

@@ -479,3 +479,7 @@ sudo dnf install -y lynis
 * [Ansible Documentation](https://docs.ansible.com/)
 * [Lynis Documentation](https://cisofy.com/documentation/lynis/)
 * [Docker API](https://docs.docker.com/engine/api/)
+
+---
+
+Последнее обновление: Февраль 2026

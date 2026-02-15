@@ -113,6 +113,38 @@ server {
 }
 ```
 
+### 8. Runtime Security (Falco)
+
+Falco обеспечивает runtime-мониторинг системных вызовов во всех контейнерах:
+
+- **Falco** -- перехват syscall-событий через eBPF/kernel module
+- **Falcosidekick** -- маршрутизация событий в Prometheus, Loki, Alertmanager
+- **Falco Exporter** -- экспорт метрик `falco_events` в Prometheus
+- **Falco Responder** -- автоматические реакции (kill, stop, isolate)
+
+Кастомные правила (30+) находятся в `falco/rules.d/` и охватывают:
+
+- Запуск оболочки в контейнере
+- Изменение системных файлов (/etc/passwd, /etc/shadow)
+- Сетевые аномалии (неожиданные исходящие соединения)
+- Повышение привилегий
+- Криптомайнинг
+
+### 9. Container Image Scanning (Trivy)
+
+Trivy сканирует все контейнерные образы на известные уязвимости (CVE):
+
+- Работает в режиме client-server (контейнер `trivy-server`)
+- Сканирует 17 образов проекта (target, infra, scanner)
+- Генерирует `.prom` метрики для Telegraf/Prometheus
+- Классификация: CRITICAL, HIGH, MEDIUM, LOW
+
+Запуск сканирования:
+
+```bash
+python3 scripts/scan_all_images.py
+```
+
 ## Сканирование безопасности
 
 ### Профили OpenSCAP
@@ -157,6 +189,10 @@ ATOMIC_DRY_RUN=false docker compose up
 | Много OpenSCAP ошибок | >50 | Warning |
 | Критические OpenSCAP ошибки | >100 | Critical |
 | Ошибка Atomic теста | Любая | Warning |
+| Falco Critical событие | Любое | Critical |
+| Falco Warning событие | >10 за 5м | Warning |
+| Trivy Critical CVE | Любое | Critical |
+| Trivy High CVE | >20 на образ | Warning |
 
 ### Системные оповещения
 
@@ -241,3 +277,9 @@ docker compose up -d
 * [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks/)
 * [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
 * [Безопасность Prometheus](https://prometheus.io/docs/operating/security/)
+* [Falco Documentation](https://falco.org/docs/)
+* [Trivy Documentation](https://aquasecurity.github.io/trivy/)
+
+---
+
+Последнее обновление: Февраль 2026

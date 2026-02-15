@@ -327,3 +327,7 @@ spec:
 - [Kustomize Documentation](https://kustomize.io/)
 - [Kubernetes Best Practices](https://kubernetes.io/docs/concepts/configuration/overview/)
 - [Prometheus Operator](https://prometheus-operator.dev/)
+
+---
+
+Последнее обновление: Февраль 2026

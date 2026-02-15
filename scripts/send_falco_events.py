@@ -5,7 +5,6 @@ This script sends realistic events via the falcosidekick HTTP input API,
 which then forwards them to Loki, Alertmanager, and Prometheus.
 """
 
-import json
 import random
 import sys
 import time
@@ -296,15 +295,8 @@ def get_rules_for_container(container: dict) -> list:
         return RULES[:5] + INFRA_RULES
 
 
-def main():
-    print(f"Sending Falco events to falcosidekick at {SIDEKICK_URL}")
-    print(f"Containers: {len(CONTAINERS)} (target: {sum(1 for c in CONTAINERS if c['group']=='target')}, "
-          f"infra: {sum(1 for c in CONTAINERS if c['group']=='infra')}, "
-          f"scanner: {sum(1 for c in CONTAINERS if c['group']=='scanner')})")
-    print(f"Rules: {len(RULES)} base + {len(INFRA_RULES)} infra + {len(SCANNER_RULES)} scanner")
-    print()
-
-    # Check health
+def _check_health():
+    """Verify falcosidekick is reachable and healthy."""
     try:
         r = requests.get(f"{SIDEKICK_URL}/healthz", timeout=5)
         if r.status_code != 200:
@@ -314,55 +306,39 @@ def main():
         print(f"Cannot reach falcosidekick: {e}")
         sys.exit(1)
 
-    total_sent = 0
-    total_failed = 0
 
-    for container in CONTAINERS:
+def _send_wave(containers, min_events, max_events, delay, verbose=True):
+    """Send a wave of events to all containers. Returns (sent, failed) counts."""
+    sent = 0
+    failed = 0
+    for container in containers:
         rules_pool = get_rules_for_container(container)
-        num_events = random.randint(4, min(8, len(rules_pool)))
+        num_events = random.randint(min_events, min(max_events, len(rules_pool)))
         selected_rules = random.sample(rules_pool, num_events)
 
         group_tag = container.get("group", "?")
-        print(f"[{container['name']}] ({group_tag}) Sending {num_events} events...")
+        if verbose:
+            print(f"[{container['name']}] ({group_tag}) Sending {num_events} events...")
+        else:
+            print(f"[{container['name']}] Sending {num_events} events...")
 
         for rule_def in selected_rules:
             ok = send_event(container, rule_def)
             if ok:
-                total_sent += 1
+                sent += 1
                 print(f"  [{rule_def['priority']:8s}] {rule_def['rule']}")
             else:
-                total_failed += 1
-                print(f"  FAILED: {rule_def['rule']}")
-            time.sleep(0.2)
+                failed += 1
+                if verbose:
+                    print(f"  FAILED: {rule_def['rule']}")
+            time.sleep(delay)
 
         print()
+    return sent, failed
 
-    # Send a second wave with slight delay for time-series visibility
-    print("--- Second wave (2s delay for time-series spread) ---")
-    time.sleep(2)
 
-    for container in CONTAINERS:
-        rules_pool = get_rules_for_container(container)
-        num_events = random.randint(2, 5)
-        selected_rules = random.sample(rules_pool, num_events)
-
-        print(f"[{container['name']}] Sending {num_events} events...")
-
-        for rule_def in selected_rules:
-            ok = send_event(container, rule_def)
-            if ok:
-                total_sent += 1
-                print(f"  [{rule_def['priority']:8s}] {rule_def['rule']}")
-            else:
-                total_failed += 1
-            time.sleep(0.15)
-
-        print()
-
-    print(f"Done. Sent: {total_sent}, Failed: {total_failed}")
-    print()
-
-    # Check metrics
+def _print_metrics():
+    """Print falcosidekick input metrics."""
     try:
         r = requests.get(f"{SIDEKICK_URL}/metrics", timeout=5)
         for line in r.text.splitlines():
@@ -370,6 +346,34 @@ def main():
                 print(f"  {line}")
     except Exception:
         pass
+
+
+def main():
+    print(f"Sending Falco events to falcosidekick at {SIDEKICK_URL}")
+    print(
+        f"Containers: {len(CONTAINERS)} (target: {sum(1 for c in CONTAINERS if c['group']=='target')}, "
+        f"infra: {sum(1 for c in CONTAINERS if c['group']=='infra')}, "
+        f"scanner: {sum(1 for c in CONTAINERS if c['group']=='scanner')})"
+    )
+    print(f"Rules: {len(RULES)} base + {len(INFRA_RULES)} infra + {len(SCANNER_RULES)} scanner")
+    print()
+
+    _check_health()
+
+    sent1, failed1 = _send_wave(CONTAINERS, 4, 8, 0.2, verbose=True)
+
+    # Send a second wave with slight delay for time-series visibility
+    print("--- Second wave (2s delay for time-series spread) ---")
+    time.sleep(2)
+
+    sent2, failed2 = _send_wave(CONTAINERS, 2, 5, 0.15, verbose=False)
+
+    total_sent = sent1 + sent2
+    total_failed = failed1 + failed2
+    print(f"Done. Sent: {total_sent}, Failed: {total_failed}")
+    print()
+
+    _print_metrics()
 
 
 if __name__ == "__main__":

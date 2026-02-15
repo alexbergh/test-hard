@@ -4,11 +4,11 @@
 
 ### Системные требования
 
-* **OS**: Linux/macOS
-* **Docker**: 20.10+
-* **Docker Compose**: 2.0+
-* **RAM**: минимум 4GB
-* **Disk**: минимум 10GB свободного места
+- **OS**: Linux / macOS / Windows (WSL2)
+- **Docker**: 20.10+
+- **Docker Compose**: 2.0+
+- **RAM**: минимум 4 GB (рекомендуется 8 GB)
+- **Disk**: минимум 10 GB свободного места
 
 ### Проверка требований
 
@@ -34,20 +34,27 @@ cd test-hard
 ls -la
 # Должны быть:
 # - docker-compose.yml
-# - scanners/
-# - telegraf/
-# - prometheus/
-# - grafana/
-# - scripts/
+# - Dockerfile
+# - docker/               (Dockerfiles для целевых ОС)
+# - falco/                (конфигурация Falco)
+# - trivy/                (конфигурация Trivy)
+# - grafana/              (дашборды и provisioning)
+# - prometheus/           (конфигурация Prometheus)
+# - telegraf/             (конфигурация Telegraf)
+# - loki/                 (конфигурация Loki)
+# - dashboard/            (веб-интерфейс: backend + frontend)
+# - scripts/              (скрипты сканирования, парсинга, мониторинга)
+# - k8s/                  (Kubernetes manifests)
 ```
 
-### Шаг 3: Создание директорий для отчетов
+### Шаг 3: Настройка переменных окружения
 
 ```bash
-# Директории уже должны существовать в репозитории
-ls -la reports/
-# reports/lynis/
-# reports/openscap/
+# Скопировать шаблон
+cp .env.example .env
+
+# Отредактировать (как минимум пароль Grafana)
+nano .env
 ```
 
 ### Шаг 4: Сборка образов
@@ -56,8 +63,8 @@ ls -la reports/
 # Полная сборка всех сервисов
 docker compose build --no-cache
 
-# Или сборка отдельных сканеров
-docker compose build --no-cache lynis-scanner openscap-scanner
+# Или параллельная сборка (быстрее)
+docker compose build --parallel
 ```
 
 ### Шаг 5: Запуск инфраструктуры
@@ -73,14 +80,29 @@ docker compose ps
 ### Шаг 6: Проверка сервисов
 
 ```bash
-# Проверка Prometheus
+# Prometheus
 curl http://localhost:9090/-/healthy
 
-# Проверка Telegraf
-curl http://localhost:9091/metrics
+# Telegraf
+curl http://localhost:9091/metrics | head -5
 
-# Проверка Grafana
+# Grafana
 curl http://localhost:3000/api/health
+
+# Alertmanager
+curl http://localhost:9093/-/healthy
+
+# Falcosidekick
+curl http://localhost:2801/healthz
+
+# Trivy Server
+curl http://localhost:4954/healthz
+
+# Loki
+curl http://localhost:3100/ready
+
+# Web Dashboard (backend)
+curl http://localhost:8000/health
 ```
 
 ---
@@ -90,19 +112,34 @@ curl http://localhost:3000/api/health
 ### Полное сканирование всех хостов
 
 ```bash
-./scripts/run_hardening_suite.sh
+# Lynis + OpenSCAP + Atomic Red Team
+./scripts/scanning/run_hardening_suite.sh
+
+# Trivy: сканирование всех контейнерных образов
+python3 scripts/scan_all_images.py
+
+# Falco: генерация событий для всех контейнеров
+python3 scripts/send_falco_events.py
+
+# Network: сканирование Docker-сети
+docker exec telegraf python3 /opt/test-hard/scripts/scanning/run_network_scan.py \
+  --targets 172.19.0.0/24 --scan-type quick --output /var/lib/network-scan
 ```
 
 ### Проверка результатов
 
 ```bash
-# Проверка сгенерированных отчетов
+# Отчеты Lynis и OpenSCAP
 ls -lh reports/lynis/
 ls -lh reports/openscap/
 
-# Проверка метрик в файлах
-cat reports/lynis/target-fedora_metrics.prom
-cat reports/openscap/target-fedora_metrics.prom
+# Метрики Trivy
+ls -lh reports/trivy/*_metrics.prom
+
+# Метрики в Prometheus
+curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_score" | python3 -m json.tool
+curl -s "http://localhost:9090/api/v1/query?query=trivy_trivy_vulnerabilities_total" | python3 -m json.tool
+curl -s "http://localhost:9090/api/v1/query?query=falco_events" | python3 -m json.tool
 ```
 
 ---
@@ -114,18 +151,31 @@ cat reports/openscap/target-fedora_metrics.prom
 ```
 URL: http://localhost:3000
 Login: admin
-Password: admin
+Password: admin (или значение из .env)
 ```
 
-### Дашборды
+### Дашборды Grafana (10 штук)
 
-1. **Security Monitoring Dashboard**
-   * URL: <http://localhost:3000/d/security-monitoring/security-monitoring-dashboard>
-   * Показывает: общие score, warnings, failures
+| Дашборд | Описание |
+|---------|----------|
+| **Security Overview** | Общий обзор безопасности: Lynis, OpenSCAP, Atomic Red Team |
+| **Security Monitoring** | Метрики сканеров в динамике |
+| **Security Issues Details** | Таблицы Lynis/OpenSCAP проблем |
+| **Host Compliance** | Подробности соответствия по каждому хосту |
+| **Falco Runtime Security** | Runtime-события Falco, правила, доставка через Falcosidekick |
+| **Container Image Security** | Уязвимости образов Trivy, тренды, таблицы |
+| **Network Security Monitoring** | Bandwidth, packets, errors/drops, TCP states |
+| **Network Discovery** | Обнаруженные хосты, открытые порты, сервисы |
+| **System Resources** | CPU, память, диск, сеть, процессы |
+| **Logs Analysis** | Анализ логов через Loki |
 
-2. **Security Issues Details Dashboard**
-   * URL: <http://localhost:3000/d/security-issues-details/security-issues-details>
-   * Показывает: детальные таблицы проблем
+### Веб-дашборд
+
+```
+URL: http://localhost:3001
+```
+
+Локальный веб-интерфейс (React + FastAPI) для управления сканированиями, просмотра хостов и результатов.
 
 ### Prometheus
 
@@ -133,11 +183,21 @@ Password: admin
 URL: http://localhost:9090
 ```
 
-### Telegraf Metrics
+### Alertmanager
 
 ```
-URL: http://localhost:9091/metrics
+URL: http://localhost:9093
 ```
+
+### Другие сервисы
+
+| Сервис | URL | Назначение |
+|--------|-----|------------|
+| Falcosidekick | http://localhost:2801 | Маршрутизация Falco-событий |
+| Trivy Server | http://localhost:4954 | Сканирование образов |
+| Falco Responder | http://localhost:5080 | Автоматические реакции |
+| Loki | http://localhost:3100 | Хранилище логов |
+| Telegraf | http://localhost:9091/metrics | Метрики агента |
 
 ---
 
@@ -152,14 +212,20 @@ curl -s http://localhost:9091/metrics | grep security_scanners | head -20
 ### 2. Проверка в Prometheus
 
 ```bash
-# Lynis метрики
-curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_score" | jq '.data.result'
+# Lynis
+curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_score"
 
-# OpenSCAP метрики
-curl -s "http://localhost:9090/api/v1/query?query=security_scanners_openscap_score" | jq '.data.result'
+# OpenSCAP
+curl -s "http://localhost:9090/api/v1/query?query=security_scanners_openscap_score"
 
-# Детальные метрики
-curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_test_result" | jq '.data.result | length'
+# Trivy
+curl -s "http://localhost:9090/api/v1/query?query=count(trivy_trivy_vulnerabilities_total)"
+
+# Falco
+curl -s "http://localhost:9090/api/v1/query?query=sum(increase(falco_events[24h]))"
+
+# Network
+curl -s "http://localhost:9090/api/v1/query?query=network_scan_hosts_total"
 ```
 
 ---
@@ -171,7 +237,7 @@ curl -s "http://localhost:9090/api/v1/query?query=security_scanners_lynis_test_r
 **Решение 1: Проверить метрики в Prometheus**
 
 ```bash
-curl http://localhost:9090/api/v1/label/__name__/values | jq '.data[]' | grep security_scanners
+curl http://localhost:9090/api/v1/label/__name__/values | grep -E "security|trivy|falco|network"
 ```
 
 **Решение 2: Перезапустить Telegraf**
@@ -184,29 +250,24 @@ curl http://localhost:9091/metrics | grep security_scanners
 
 **Решение 3: Проверить datasource в Grafana**
 
-* Открыть: <http://localhost:3000/connections/datasources>
-* Проверить что Prometheus datasource активен
-* Test & Save
+- Открыть: <http://localhost:3000/connections/datasources>
+- Проверить что Prometheus и Loki datasources активны
+- Test & Save
 
 ### Проблема: Сканеры не генерируют метрики
 
-**Решение: Проверить логи**
-
 ```bash
-# Логи Lynis
+# Логи сканеров
 docker logs lynis-scanner
-
-# Логи OpenSCAP
 docker logs openscap-scanner
 
 # Проверить файлы метрик
 ls -lh reports/lynis/
 ls -lh reports/openscap/
+ls -lh reports/trivy/
 ```
 
 ### Проблема: Контейнеры не запускаются
-
-**Решение: Полная очистка и перезапуск**
 
 ```bash
 # Остановить все
@@ -222,11 +283,18 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
+### Проблема: Trivy метрики не появляются в Prometheus
+
+Telegraf читает `.prom` файлы из `/reports/trivy/`. Файлы должны иметь Unix-формат переносов строк (LF, не CRLF). Если файлы генерировались на Windows, исправьте:
+
+```bash
+# Внутри контейнера telegraf проверить логи на ошибки парсинга
+docker logs telegraf --tail 20 | grep -i "trivy\|error"
+```
+
 ---
 
 ## Обновление системы
-
-### Обновление из репозитория
 
 ```bash
 # Получить последние изменения
@@ -240,87 +308,61 @@ docker compose down
 docker compose up -d
 ```
 
-### Обновление только сканеров
-
-```bash
-docker compose build --no-cache lynis-scanner openscap-scanner
-docker compose up -d lynis-scanner openscap-scanner
-```
-
----
-
-## Мониторинг
-
-### Проверка ресурсов
-
-```bash
-# Использование ресурсов контейнерами
-docker stats
-
-# Размер volumes
-docker system df -v
-```
-
-### Логи сервисов
-
-```bash
-# Все логи
-docker compose logs -f
-
-# Конкретный сервис
-docker compose logs -f telegraf
-docker compose logs -f prometheus
-docker compose logs -f grafana
-```
-
----
-
-## Очистка
-
-### Остановка всех сервисов
-
-```bash
-docker compose down
-```
-
-### Полная очистка (включая volumes)
-
-```bash
-docker compose down -v
-rm -rf reports/lynis/*
-rm -rf reports/openscap/*
-```
-
 ---
 
 ## Структура проекта
 
 ```
 test-hard/
-├── docker-compose.yml           # Основная конфигурация
-├── scanners/
-│   ├── lynis/
-│   │   ├── Dockerfile
-│   │   └── entrypoint.sh        # Генерирует метрики
-│   └── openscap/
-│       ├── Dockerfile
-│       └── entrypoint-new.sh    # Генерирует метрики
-├── telegraf/
-│   └── telegraf.conf            # Конфигурация Telegraf
-├── prometheus/
-│   └── prometheus.yml           # Конфигурация Prometheus
+├── docker-compose.yml           # Все сервисы: мониторинг, сканеры, Falco, Trivy
+├── Dockerfile                   # Единый multi-stage образ (Lynis, OpenSCAP, Telegraf)
+├── .env.example                 # Шаблон переменных окружения
+├── Makefile                     # Упрощенные команды
+├── docker/                      # Dockerfiles для целевых ОС
+│   ├── ubuntu/
+│   ├── debian/
+│   ├── fedora/
+│   ├── centos/
+│   └── altlinux/
+├── falco/
+│   ├── falco.yaml               # Конфигурация Falco
+│   ├── falcosidekick.yaml       # Маршрутизация событий
+│   ├── rules.d/                 # Кастомные правила (30+)
+│   └── responder/               # Автоматические реакции
+├── trivy/
+│   ├── trivy.yaml               # Конфигурация Trivy
+│   └── .trivyignore             # Игнорируемые CVE
 ├── grafana/
-│   ├── provisioning/
-│   │   ├── datasources/         # Datasource конфигурация
-│   │   └── dashboards/          # Dashboard provisioning
-│   └── dashboards/
-│       ├── security-monitoring.json
-│       └── security-issues-details.json
-├── reports/
-│   ├── lynis/                   # Lynis отчеты и метрики
-│   └── openscap/                # OpenSCAP отчеты и метрики
-└── scripts/
-    └── run_hardening_suite.sh   # Скрипт запуска сканирования
+│   ├── dashboards/              # 10 преднастроенных дашбордов
+│   └── provisioning/            # Datasources (Prometheus, Loki)
+├── prometheus/
+│   ├── prometheus.yml           # Конфиг скрейпинга
+│   ├── alert.rules.yml          # Правила алертинга
+│   └── alertmanager.yml         # Маршрутизация алертов
+├── loki/
+│   ├── loki-config.yml          # Конфигурация Loki
+│   └── promtail-config.yml      # Конфигурация Promtail
+├── telegraf/
+│   └── telegraf.conf            # Сбор метрик (system, Lynis, OpenSCAP, Trivy, network)
+├── dashboard/
+│   ├── backend/                 # FastAPI backend (JWT, RBAC, SQLAlchemy)
+│   └── frontend/                # React + TailwindCSS frontend
+├── scripts/
+│   ├── scanning/                # Lynis, OpenSCAP, ART, Trivy, network scan
+│   ├── parsing/                 # Парсеры отчетов
+│   ├── monitoring/              # Health checks
+│   ├── setup/                   # Скрипты настройки
+│   ├── testing/                 # Тестирование
+│   ├── backup/                  # Backup
+│   └── utils/                   # Утилиты
+├── k8s/
+│   ├── base/                    # Kustomize base
+│   └── overlays/                # dev / staging / prod
+├── argocd/                      # GitOps deployment
+└── reports/                     # Результаты сканирований
+    ├── lynis/
+    ├── openscap/
+    └── trivy/
 ```
 
 ---
@@ -329,19 +371,25 @@ test-hard/
 
 ### Агрегированные метрики
 
-* `security_scanners_lynis_score` - Lynis hardening score (0-100)
-* `security_scanners_lynis_warnings` - Количество warnings
-* `security_scanners_lynis_suggestions` - Количество suggestions
-* `security_scanners_openscap_score` - OpenSCAP compliance score (0-100)
-* `security_scanners_openscap_pass_count` - Количество passed rules
-* `security_scanners_openscap_fail_count` - Количество failed rules
+| Метрика | Описание |
+|---------|----------|
+| `security_scanners_lynis_score` | Lynis hardening score (0-100) |
+| `security_scanners_lynis_warnings` | Количество warnings |
+| `security_scanners_lynis_suggestions` | Количество suggestions |
+| `security_scanners_openscap_score` | OpenSCAP compliance score (0-100) |
+| `security_scanners_openscap_pass_count` | Количество passed rules |
+| `security_scanners_openscap_fail_count` | Количество failed rules |
+| `trivy_trivy_vulnerabilities_critical` | Critical уязвимости по образам |
+| `trivy_trivy_vulnerabilities_high` | High уязвимости по образам |
+| `trivy_trivy_vulnerabilities_total` | Всего уязвимостей по образам |
+| `falco_events` | Falco runtime-события (по priority и rule) |
+| `network_scan_hosts_total` | Обнаруженные хосты в сети |
+| `network_scan_open_ports_total` | Открытые порты |
 
 ### Детальные метрики
 
-* `security_scanners_lynis_test_result` - Детали Lynis тестов
-  * Labels: host, test_id, type, description
-* `security_scanners_openscap_rule_result` - Детали OpenSCAP правил
-  * Labels: host, rule_id, severity, title
+- `security_scanners_lynis_test_result` -- детали Lynis тестов (labels: host, test_id, type, description)
+- `security_scanners_openscap_rule_result` -- детали OpenSCAP правил (labels: host, rule_id, severity, title)
 
 ---
 
@@ -353,7 +401,8 @@ test-hard/
 # Через CLI
 docker exec grafana grafana-cli admin reset-admin-password <new_password>
 
-# Или через UI после первого входа
+# Или через .env перед первым запуском
+GF_ADMIN_PASSWORD=your_secure_password
 ```
 
 ### Настройка firewall (опционально)
@@ -366,29 +415,22 @@ sudo ufw allow from 127.0.0.1 to any port 9090
 
 ---
 
-## Поддержка
-
-* **Репозиторий**: <https://github.com/alexbergh/test-hard>
-* **Issues**: <https://github.com/alexbergh/test-hard/issues>
-
----
-
 ## Чеклист развертывания
 
-* [ ] Docker и Docker Compose установлены
-* [ ] Репозиторий склонирован
-* [ ] Образы собраны (`docker compose build --no-cache`)
-* [ ] Сервисы запущены (`docker compose up -d`)
-* [ ] Все контейнеры работают (`docker compose ps`)
-* [ ] Сканирование выполнено (`./scripts/run_hardening_suite.sh`)
-* [ ] Метрики видны в Telegraf (`curl http://localhost:9091/metrics`)
-* [ ] Метрики видны в Prometheus (`curl http://localhost:9090`)
-* [ ] Grafana доступна (`http://localhost:3000`)
-* [ ] Дашборды отображают данные
-* [ ] Пароль Grafana изменен (опционально)
+- [ ] Docker и Docker Compose установлены
+- [ ] Репозиторий склонирован
+- [ ] `.env` файл создан и пароли изменены
+- [ ] Образы собраны (`docker compose build`)
+- [ ] Сервисы запущены (`docker compose up -d`)
+- [ ] Все контейнеры работают (`docker compose ps`)
+- [ ] Сканирование выполнено (`./scripts/scanning/run_hardening_suite.sh`)
+- [ ] Trivy сканирование выполнено (`python3 scripts/scan_all_images.py`)
+- [ ] Метрики видны в Telegraf (`curl http://localhost:9091/metrics`)
+- [ ] Метрики видны в Prometheus (`curl http://localhost:9090`)
+- [ ] Grafana доступна (`http://localhost:3000`)
+- [ ] Все 10 дашбордов отображают данные
+- [ ] Пароль Grafana изменен
 
 ---
 
-## Готово
-
-После выполнения всех шагов система полностью функциональна и готова к использованию.
+Последнее обновление: Февраль 2026

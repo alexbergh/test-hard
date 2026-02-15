@@ -304,3 +304,7 @@ alias dcl='docker compose logs -f'
 alias dps='docker compose ps'
 alias dclean='docker builder prune -a'
 ```
+
+---
+
+Последнее обновление: Февраль 2026

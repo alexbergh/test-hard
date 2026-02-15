@@ -1,8 +1,8 @@
 # Setup Scripts
 
-Скрипты для установки и первоначальной настройки системы.
+Скрипты для установки зависимостей и первоначальной настройки системы.
 
 ## Файлы
 
-- `install-deps.sh` - Установка Python зависимостей и pre-commit hooks
-- `setup-secure-user.sh` - Создание безопасных пользователей для сканирования
+- `install-deps.sh` -- установка Python-зависимостей и pre-commit hooks
+- `setup-secure-user.sh` -- создание безопасных пользователей для сканирования (admin, scanner, service, readonly)

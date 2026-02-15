@@ -4,6 +4,6 @@
 
 ## Файлы
 
-- `test-core-functionality.sh` - Тест основной функциональности
-- `run_shell_tests.sh` - Запуск bats тестов
-- `verify_fixes.sh` - Проверка примененных исправлений
+- `test-core-functionality.sh` -- тест основной функциональности (контейнеры, метрики, дашборды)
+- `run_shell_tests.sh` -- запуск bats-тестов для shell-скриптов
+- `verify_fixes.sh` -- проверка примененных исправлений после обновлений
