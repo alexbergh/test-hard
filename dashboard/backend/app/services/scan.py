@@ -18,6 +18,77 @@ from sqlalchemy.orm import selectinload
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+# Install commands per OS family for each tool
+_INSTALL_CMDS = {
+    "lynis": {
+        "debian": "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq lynis >/dev/null 2>&1",
+        "ubuntu": "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq lynis >/dev/null 2>&1",
+        "fedora": "dnf install -y -q lynis >/dev/null 2>&1",
+        "centos": "dnf install -y -q epel-release >/dev/null 2>&1 && dnf install -y -q lynis >/dev/null 2>&1",
+        "alt": "apt-get update -qq && apt-get install -y -qq lynis >/dev/null 2>&1",
+    },
+    "oscap": {
+        "debian": (
+            "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq"
+            " libopenscap25 openscap-utils ssg-base ssg-debian ssg-debderived >/dev/null 2>&1"
+        ),
+        "ubuntu": (
+            "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq"
+            " libopenscap8 bzip2 wget >/dev/null 2>&1"
+            " && mkdir -p /usr/share/xml/scap/ssg/content"
+            " && wget -q https://github.com/ComplianceAsCode/content/releases/download/v0.1.72/scap-security-guide-0.1.72.zip"
+            " -O /tmp/ssg.zip"
+            " && apt-get install -y -qq unzip >/dev/null 2>&1"
+            " && unzip -o -q /tmp/ssg.zip -d /tmp/ssg"
+            " && cp /tmp/ssg/scap-security-guide-0.1.72/ssg-ubuntu*-ds.xml /usr/share/xml/scap/ssg/content/ 2>/dev/null"
+            " && cp /tmp/ssg/scap-security-guide-0.1.72/ssg-debian*-ds.xml /usr/share/xml/scap/ssg/content/ 2>/dev/null"
+            " && rm -rf /tmp/ssg /tmp/ssg.zip"
+        ),
+        "fedora": "dnf install -y -q openscap-utils scap-security-guide >/dev/null 2>&1",
+        "centos": "dnf install -y -q openscap-utils scap-security-guide >/dev/null 2>&1",
+    },
+}
+
+
+def _ensure_tool_installed(container, tool: str, os_family: str | None) -> str | None:
+    """Install a tool in a container if missing. Returns error string or None on success."""
+    check_cmd = "command -v lynis" if tool == "lynis" else "command -v oscap"
+    check = container.exec_run(cmd=["sh", "-c", check_cmd], demux=True)
+    if check.exit_code == 0:
+        # For oscap, also verify SSG content exists
+        if tool == "oscap":
+            ssg_check = container.exec_run(
+                cmd=["sh", "-c", "ls /usr/share/xml/scap/ssg/content/*.xml 2>/dev/null | head -1"],
+                demux=True,
+            )
+            ssg_out = (ssg_check.output[0] or b"").decode().strip()
+            if ssg_out:
+                return None  # binary + content both present
+            # binary exists but no SSG content, continue to install
+            logger.info(f"oscap binary found but SSG content missing, installing...")
+        else:
+            return None  # already installed
+
+    family = (os_family or "").lower()
+    install_cmd = _INSTALL_CMDS.get(tool, {}).get(family)
+    if not install_cmd:
+        return f"Cannot install {tool}: unsupported OS family '{family}'"
+
+    logger.info(f"Installing {tool} in container (os_family={family})...")
+    result = container.exec_run(cmd=["sh", "-c", install_cmd], demux=True)
+    if result.exit_code != 0:
+        stderr = (result.output[1] or b"").decode("utf-8", errors="replace")[:500]
+        return f"Failed to install {tool}: {stderr}"
+
+    # Verify installation
+    verify = container.exec_run(cmd=["sh", "-c", check_cmd], demux=True)
+    if verify.exit_code != 0:
+        return f"{tool} still not found after install attempt"
+
+    logger.info(f"{tool} installed successfully in container")
+    return None
+
+
 # Store background task references to prevent garbage collection
 _background_tasks: set[asyncio.Task] = set()
 
@@ -224,10 +295,10 @@ class ScanService:
             return {"success": False, "error": "Only container scans are supported"}
 
         # Run the blocking Docker SDK call in a thread
-        return await asyncio.to_thread(self._run_lynis_scan_sync, host.name, scan.id)
+        return await asyncio.to_thread(self._run_lynis_scan_sync, host.name, host.os_family, scan.id)
 
     @staticmethod
-    def _run_lynis_scan_sync(host_name: str, scan_id: int) -> dict:
+    def _run_lynis_scan_sync(host_name: str, os_family: str | None, scan_id: int) -> dict:
         """Synchronous Lynis scan execution via Docker SDK (runs in thread)."""
         import logging
 
@@ -247,6 +318,12 @@ class ScanService:
                 client = docker_lib.from_env()
 
             container = client.containers.get(host_name)
+
+            # Ensure lynis is installed in the target container
+            install_err = _ensure_tool_installed(container, "lynis", os_family)
+            if install_err:
+                client.close()
+                return {"success": False, "error": install_err}
 
             logger.info(f"Starting Lynis scan on {host_name}")
             exec_result = container.exec_run(
@@ -306,28 +383,52 @@ class ScanService:
 
             container = client.containers.get(host_name)
 
-            # Check if oscap is available
-            check = container.exec_run(cmd=["sh", "-c", "command -v oscap"], demux=True)
-            if check.exit_code != 0:
+            # Ensure oscap is installed in the target container
+            install_err = _ensure_tool_installed(container, "oscap", os_family)
+            if install_err:
                 client.close()
-                return {
-                    "success": False,
-                    "error": f"oscap not installed in {host_name}. Install openscap-scanner package.",
-                }
+                return {"success": False, "error": install_err}
 
-            # Determine datastream
-            datastreams = {
-                "fedora": "/usr/share/xml/scap/ssg/content/ssg-fedora-ds.xml",
-                "debian": "/usr/share/xml/scap/ssg/content/ssg-debian12-ds.xml",
-                "centos": "/usr/share/xml/scap/ssg/content/ssg-cs9-ds.xml",
-                "ubuntu": "/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml",
+            # Determine datastream (ordered by preference, first existing wins)
+            datastream_candidates = {
+                "fedora": [
+                    "/usr/share/xml/scap/ssg/content/ssg-fedora-ds.xml",
+                ],
+                "debian": [
+                    "/usr/share/xml/scap/ssg/content/ssg-debian12-ds.xml",
+                    "/usr/share/xml/scap/ssg/content/ssg-debian11-ds.xml",
+                    "/usr/share/xml/scap/ssg/content/ssg-debian10-ds.xml",
+                ],
+                "centos": [
+                    "/usr/share/xml/scap/ssg/content/ssg-cs9-ds.xml",
+                    "/usr/share/xml/scap/ssg/content/ssg-centos8-ds.xml",
+                ],
+                "ubuntu": [
+                    "/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml",
+                    "/usr/share/xml/scap/ssg/content/ssg-ubuntu2004-ds.xml",
+                ],
             }
-            datastream = datastreams.get(os_family or "")
+            candidates = datastream_candidates.get(os_family or "", [])
+            datastream = None
+            for candidate in candidates:
+                check_ds = container.exec_run(cmd=["test", "-f", candidate], demux=True)
+                if check_ds.exit_code == 0:
+                    datastream = candidate
+                    break
             if not datastream:
                 client.close()
-                return {"success": False, "error": f"No SCAP datastream for OS: {os_family}"}
+                return {"success": False, "error": f"No SCAP datastream found for OS: {os_family}"}
 
-            oscap_profile = profile or "xccdf_org.ssgproject.content_profile_standard"
+            # OS-specific default profiles (standard may not select rules on all distros)
+            default_profiles = {
+                "debian": "xccdf_org.ssgproject.content_profile_anssi_np_nt28_minimal",
+                "ubuntu": "xccdf_org.ssgproject.content_profile_standard",
+                "fedora": "xccdf_org.ssgproject.content_profile_standard",
+                "centos": "xccdf_org.ssgproject.content_profile_standard",
+            }
+            oscap_profile = profile or default_profiles.get(
+                os_family or "", "xccdf_org.ssgproject.content_profile_standard"
+            )
 
             logger.info(f"Starting OpenSCAP scan on {host_name} with profile {oscap_profile}")
             exec_result = container.exec_run(
@@ -360,6 +461,8 @@ class ScanService:
             failed = 0
             findings: list[dict] = []
             not_applicable = 0
+            not_selected = 0
+            other_count = 0
 
             if xml_data.strip():
                 try:
@@ -369,6 +472,7 @@ class ScanService:
                         result_el = rule_result.find("xccdf:result", ns)
                         status_text = result_el.text if result_el is not None else "error"
                         rule_id = rule_result.get("idref", "unknown")
+                        severity = rule_result.get("severity", "medium")
 
                         if status_text == "pass":
                             passed += 1
@@ -379,31 +483,39 @@ class ScanService:
                                 {
                                     "rule_id": rule_id[:200],
                                     "title": title[:500],
-                                    "severity": "high",
+                                    "severity": severity,
                                     "status": "fail",
                                     "category": "compliance",
                                 }
                             )
                         elif status_text == "notapplicable":
                             not_applicable += 1
+                        elif status_text == "notselected":
+                            not_selected += 1
+                        else:
+                            other_count += 1
                 except ET.ParseError:
-                    pass
+                    logger.warning(f"Failed to parse OpenSCAP XML for {host_name}")
 
-            # Also parse stdout for pass/fail counts
-            if passed == 0 and failed == 0:
+            # Also parse stdout for pass/fail counts as fallback
+            if passed == 0 and failed == 0 and not_applicable == 0:
                 for line in stdout_data.splitlines():
-                    m = re.match(r"Title\s+(.+)", line.strip())
-                    if m:
-                        pass  # title lines
                     if "Result" in line and "pass" in line.lower():
                         passed += 1
                     elif "Result" in line and "fail" in line.lower():
                         failed += 1
+                    elif "Result" in line and "notapplicable" in line.lower():
+                        not_applicable += 1
 
-            total = passed + failed
-            score = int((passed / total) * 100) if total > 0 else 0
+            # Score: based on evaluated rules (pass + fail); notapplicable counted separately
+            evaluated = passed + failed
+            score = int((passed / evaluated) * 100) if evaluated > 0 else (100 if not_applicable > 0 else 0)
 
-            logger.info(f"OpenSCAP scan on {host_name} completed: score={score} passed={passed} failed={failed}")
+            logger.info(
+                f"OpenSCAP scan on {host_name} completed: score={score} "
+                f"passed={passed} failed={failed} notapplicable={not_applicable} "
+                f"notselected={not_selected}"
+            )
 
             return {
                 "success": True,

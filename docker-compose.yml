@@ -355,17 +355,22 @@ services:
           memory: 1G
 
   # ---- Runtime Security: Falco ----
+  # NOTE: Falco requires native Linux kernel with eBPF/kmod support
+  # On WSL2/Docker Desktop, use profile 'linux-native' to enable
+  # For development without Falco, sidekick and responder still work for testing
   falco:
-    image: falcosecurity/falco-no-driver:0.38.1
+    image: falcosecurity/falco:0.38.1
     container_name: falco
     privileged: true
+    profiles:
+      - linux-native
+    environment:
+      - HOST_ROOT=/host
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock:ro
+      - /sys/kernel/tracing:/sys/kernel/tracing:ro
       - /dev:/host/dev:ro
       - /proc:/host/proc:ro
-      - /boot:/host/boot:ro
-      - /lib/modules:/host/lib/modules:ro
-      - /usr:/host/usr:ro
       - /etc:/host/etc:ro
       - ./falco/falco.yaml:/etc/falco/falco.yaml:ro
       - ./falco/rules.d:/etc/falco/rules.d:ro
@@ -420,9 +425,12 @@ services:
           memory: 128M
 
   # Falco Exporter — exports Falco metrics to Prometheus via gRPC
+  # Requires Falco to be running (linux-native profile)
   falco-exporter:
     image: falcosecurity/falco-exporter:0.8.7
     container_name: falco-exporter
+    profiles:
+      - linux-native
     command:
       - "--falco-grpc-unix-socket=/run/falco/falco.sock"
       - "--listen-address=0.0.0.0:9376"

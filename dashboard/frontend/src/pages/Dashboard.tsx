@@ -11,6 +11,7 @@ import {
   Calendar,
   Bug,
   RefreshCw,
+  Shield,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -97,6 +98,13 @@ interface DashboardStats {
     run_count: number
   }>
   scan_activity: Array<{ date: string; count: number }>
+  falco_events?: {
+    total: number
+    by_priority: Record<string, number>
+    by_rule: Array<{ rule: string; priority: string; count: number }>
+    recent: Array<{ time: string; priority: string; rule: string; output: string }>
+    sidekick_up: boolean
+  }
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -129,6 +137,39 @@ const SCORE_DIST_LABELS: Record<string, string> = {
   medium: '60–79',
   good: '80–94',
   excellent: '95–100',
+}
+
+const FALCO_PRIORITY_BAR: Record<string, string> = {
+  critical: 'bg-red-500',
+  emergency: 'bg-red-700',
+  alert: 'bg-red-600',
+  error: 'bg-orange-500',
+  warning: 'bg-yellow-500',
+  notice: 'bg-blue-500',
+  informational: 'bg-green-500',
+  debug: 'bg-gray-400',
+}
+
+const FALCO_PRIORITY_TEXT: Record<string, string> = {
+  critical: 'text-red-400',
+  emergency: 'text-red-500',
+  alert: 'text-red-400',
+  error: 'text-orange-400',
+  warning: 'text-yellow-400',
+  notice: 'text-blue-400',
+  informational: 'text-green-400',
+  debug: 'text-gray-500',
+}
+
+const FALCO_PRIORITY_DOT: Record<string, string> = {
+  critical: 'bg-red-500',
+  emergency: 'bg-red-700',
+  alert: 'bg-red-600',
+  error: 'bg-orange-500',
+  warning: 'bg-yellow-500',
+  notice: 'bg-blue-500',
+  informational: 'bg-green-500',
+  debug: 'bg-gray-400',
 }
 
 const PERIOD_KEYS = ['1h', '12h', '24h', '7d', '14d', '30d', '90d'] as const
@@ -612,7 +653,91 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Row 6: Scan Activity Heatmap (bar chart) */}
+      {/* Row 6: Falco Runtime Events */}
+      {data.falco_events && data.falco_events.total > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-purple-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Falco Runtime Events</h3>
+              <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                data.falco_events.sidekick_up ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}>
+                {data.falco_events.sidekick_up ? 'Sidekick UP' : 'Sidekick DOWN'}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-gray-500">
+              {data.falco_events.total} events
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Priority breakdown */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 mb-3">Events by Priority</h4>
+              <div className="space-y-2">
+                {Object.entries(data.falco_events.by_priority)
+                  .sort(([,a], [,b]) => b - a)
+                  .map(([priority, count]) => (
+                    <div key={priority} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FalcoPriorityDot priority={priority} />
+                        <span className="text-sm text-gray-700">{priority}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-32 bg-gray-100 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${FALCO_PRIORITY_BAR[priority.toLowerCase()] || 'bg-gray-400'}`}
+                            style={{ width: `${Math.min(100, (count / data.falco_events!.total) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900 w-8 text-right">{count}</span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Top rules */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 mb-3">Top Triggered Rules</h4>
+              <div className="space-y-2 max-h-48 overflow-auto">
+                {data.falco_events.by_rule.map((r, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FalcoPriorityDot priority={r.priority} />
+                      <span className="text-gray-800 truncate" title={r.rule}>{r.rule}</span>
+                    </div>
+                    <span className="font-semibold text-gray-700 ml-2 shrink-0">{r.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Recent events log */}
+          {data.falco_events.recent.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-600 mb-2">Recent Events</h4>
+              <div className="bg-gray-900 rounded-lg p-3 max-h-48 overflow-auto font-mono text-xs">
+                {data.falco_events.recent.slice(0, 10).map((evt, idx) => (
+                  <div key={idx} className="flex gap-2 py-0.5">
+                    <span className="text-gray-500 shrink-0">
+                      {new Date(evt.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                    <span className={`shrink-0 ${FALCO_PRIORITY_TEXT[evt.priority.toLowerCase()] || 'text-gray-400'}`}>
+                      [{evt.priority}]
+                    </span>
+                    <span className="text-gray-300 truncate" title={evt.output}>{evt.rule}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Row 7: Scan Activity Heatmap (bar chart) */}
       {data.scan_activity.length > 0 && (
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.scan_activity')}</h3>
@@ -737,6 +862,12 @@ function SeverityBadge({ severity }: { severity: string }) {
     <span className={`badge ${cls[severity.toLowerCase()] || cls.info}`}>
       {severity}
     </span>
+  )
+}
+
+function FalcoPriorityDot({ priority }: { priority: string }) {
+  return (
+    <div className={`h-2 w-2 rounded-full shrink-0 ${FALCO_PRIORITY_DOT[priority.toLowerCase()] || 'bg-gray-400'}`} />
   )
 }
 
