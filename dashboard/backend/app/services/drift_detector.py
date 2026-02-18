@@ -2,9 +2,9 @@
 
 import logging
 
-import docker
-
 from app.services.k8s_connector import K8sConnector
+
+import docker
 
 logger = logging.getLogger(__name__)
 
