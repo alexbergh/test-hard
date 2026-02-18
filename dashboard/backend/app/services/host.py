@@ -100,6 +100,8 @@ class HostService:
                 status = await self._check_container_status(host.name)
             elif host.host_type == "ssh":
                 status = await self._check_ssh_status(host)
+            elif host.host_type in ("k8s_node", "k8s_pod"):
+                status = await self._check_k8s_status(host)
             else:
                 status = "unknown"
 
@@ -141,6 +143,54 @@ class HostService:
             return "online"
         except (asyncio.TimeoutError, OSError):
             return "offline"
+
+    async def _check_k8s_status(self, host: Host) -> str:
+        """Check Kubernetes node/pod status via cluster connection."""
+        if not host.cluster_id:
+            return "unknown"
+
+        try:
+            from app.models import Cluster
+            from app.services.k8s_connector import K8sConnector
+
+            cluster = await self.session.get(Cluster, host.cluster_id)
+            if not cluster:
+                return "unknown"
+
+            def _check(cluster_obj, host_obj):
+                connector = K8sConnector(
+                    api_url=cluster_obj.k8s_api_url,
+                    token=cluster_obj.k8s_token,
+                    ca_cert=cluster_obj.k8s_ca_cert,
+                    client_cert=cluster_obj.k8s_client_cert,
+                    client_key=cluster_obj.k8s_client_key,
+                    kubeconfig_path=cluster_obj.kubeconfig_path,
+                    kubeconfig_context=cluster_obj.kubeconfig_context,
+                )
+                try:
+                    from kubernetes import client as k8s_client
+
+                    v1 = k8s_client.CoreV1Api(connector.connect())
+                    if host_obj.host_type == "k8s_node":
+                        node = v1.read_node(host_obj.k8s_node_name)
+                        for c in (node.status.conditions or []):
+                            if c.type == "Ready":
+                                return "online" if c.status == "True" else "offline"
+                        return "unknown"
+                    elif host_obj.host_type == "k8s_pod":
+                        pod = v1.read_namespaced_pod(
+                            host_obj.k8s_pod_name, host_obj.k8s_namespace
+                        )
+                        return "online" if pod.status.phase == "Running" else "offline"
+                    return "unknown"
+                except Exception:
+                    return "offline"
+                finally:
+                    connector.close()
+
+            return await asyncio.to_thread(_check, cluster, host)
+        except Exception:
+            return "unknown"
 
     async def sync_docker_containers(self) -> list[Host]:
         """Sync hosts from running Docker containers."""

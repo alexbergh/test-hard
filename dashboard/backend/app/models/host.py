@@ -3,13 +3,14 @@
 from typing import TYPE_CHECKING, Literal
 
 from app.models.base import Base, TimestampMixin
-from sqlalchemy import JSON, Boolean, String, Text
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
+    from app.models.cluster import Cluster
     from app.models.scan import Scan, ScanSchedule
 
-HostType = Literal["container", "ssh", "local"]
+HostType = Literal["container", "ssh", "local", "k8s_node", "k8s_pod"]
 HostStatus = Literal["online", "offline", "unknown", "scanning"]
 
 
@@ -47,10 +48,31 @@ class Host(Base, TimestampMixin):
     last_scan_id: Mapped[int | None] = mapped_column(nullable=True)
     last_scan_score: Mapped[int | None] = mapped_column(nullable=True)
 
+    # Cluster association (optional -- None for standalone Docker hosts)
+    cluster_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("clusters.id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Kubernetes metadata (populated for k8s_node / k8s_pod)
+    k8s_namespace: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    k8s_pod_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    k8s_node_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    k8s_labels: Mapped[dict] = mapped_column(JSON, default=dict)
+    k8s_annotations: Mapped[dict] = mapped_column(JSON, default=dict)
+    container_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    container_image: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    container_runtime: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # docker, containerd, cri-o
+
+    # Security context (extracted from K8s pod spec or Docker inspect)
+    security_context: Mapped[dict] = mapped_column(JSON, default=dict)
+
     # Tags for filtering
     tags: Mapped[list] = mapped_column(JSON, default=list)
 
     # Relationships
+    cluster: Mapped["Cluster | None"] = relationship("Cluster", back_populates="hosts")
     scans: Mapped[list["Scan"]] = relationship("Scan", back_populates="host")
     schedules: Mapped[list["ScanSchedule"]] = relationship("ScanSchedule", back_populates="host")
 

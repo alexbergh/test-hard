@@ -218,6 +218,8 @@ class ScanService:
                     result = await self._run_trivy_scan(host, scan)
                 elif scan.scanner == "atomic":
                     result = await self._run_atomic_scan(host, scan)
+                elif scan.scanner == "k8s_hardening":
+                    result = await self._run_k8s_hardening_scan(host, scan, session)
                 else:
                     result = {"success": False, "error": f"Unknown scanner: {scan.scanner}"}
 
@@ -881,6 +883,48 @@ class ScanService:
             }
         except Exception as e:
             logger.error(f"Atomic Red Team scan failed on {host_name}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def _run_k8s_hardening_scan(self, host: Host, scan: Scan, session) -> dict:
+        """Run Kubernetes hardening checks for a pod or node host."""
+        if not host.cluster_id:
+            return {"success": False, "error": "Host has no cluster_id -- cannot run K8s hardening scan"}
+
+        from app.models import Cluster
+
+        cluster = await session.get(Cluster, host.cluster_id)
+        if not cluster:
+            return {"success": False, "error": f"Cluster {host.cluster_id} not found"}
+
+        return await asyncio.to_thread(
+            self._run_k8s_hardening_scan_sync, cluster, host
+        )
+
+    @staticmethod
+    def _run_k8s_hardening_scan_sync(cluster, host) -> dict:
+        """Synchronous K8s hardening scan (runs in thread)."""
+        from app.services.k8s_connector import K8sConnector
+        from app.services.k8s_hardening import K8sHardeningScanner
+
+        connector = K8sConnector(
+            api_url=cluster.k8s_api_url,
+            token=cluster.k8s_token,
+            ca_cert=cluster.k8s_ca_cert,
+            client_cert=cluster.k8s_client_cert,
+            client_key=cluster.k8s_client_key,
+            kubeconfig_path=cluster.kubeconfig_path,
+            kubeconfig_context=cluster.kubeconfig_context,
+        )
+        try:
+            scanner = K8sHardeningScanner(connector)
+            # Scope to the pod's namespace if available
+            namespace = host.k8s_namespace
+            result = scanner.run_all_checks(namespace=namespace)
+            connector.close()
+            return result
+        except Exception as e:
+            connector.close()
+            logger.error("K8s hardening scan failed for host %s: %s", host.name, e)
             return {"success": False, "error": str(e)}
 
     @staticmethod
