@@ -1,7 +1,6 @@
 """Kubernetes hardening scanner -- checks pod security, RBAC, NetworkPolicies."""
 
 import logging
-from typing import Any
 
 from app.services.k8s_connector import K8sConnector
 
@@ -193,7 +192,14 @@ class K8sHardeningScanner:
         """Run container-level hardening checks."""
         sc = container.get("security_context", {})
         resources = container.get("resources", {})
+        self._check_container_privileges(sc, c_ref)
+        self._check_container_capabilities(sc, c_ref)
+        self._check_container_resources(resources, c_ref)
+        self._check_container_image(container.get("image", ""), c_ref)
+        self._check_container_user(sc, c_ref)
 
+    def _check_container_privileges(self, sc: dict, c_ref: str) -> None:
+        """Check privilege-related container settings."""
         # CIS 5.2.1: Privileged containers
         if sc.get("privileged"):
             self._add_finding(
@@ -260,6 +266,8 @@ class K8sHardeningScanner:
                 target=c_ref,
             )
 
+    def _check_container_capabilities(self, sc: dict, c_ref: str) -> None:
+        """Check capability-related container settings."""
         # Capabilities: should drop ALL
         caps_drop = sc.get("capabilities_drop", [])
         if "ALL" not in caps_drop:
@@ -308,6 +316,8 @@ class K8sHardeningScanner:
                 target=c_ref,
             )
 
+    def _check_container_resources(self, resources: dict, c_ref: str) -> None:
+        """Check resource limit/request settings."""
         # Resource limits
         if not resources.get("limits"):
             self._add_finding(
@@ -352,8 +362,8 @@ class K8sHardeningScanner:
                 target=c_ref,
             )
 
-        # Image tag: should not use :latest
-        image = container.get("image", "")
+    def _check_container_image(self, image: str, c_ref: str) -> None:
+        """Check image tag policy."""
         if image and (":latest" in image or ":" not in image.split("/")[-1]):
             self._add_finding(
                 rule_id="K8S-CTR-008",
@@ -375,7 +385,8 @@ class K8sHardeningScanner:
                 target=c_ref,
             )
 
-        # runAsUser: should not be 0 (root)
+    def _check_container_user(self, sc: dict, c_ref: str) -> None:
+        """Check runAsUser is not root."""
         run_as_user = sc.get("run_as_user")
         if run_as_user == 0:
             self._add_finding(
@@ -571,7 +582,10 @@ class K8sHardeningScanner:
                             status="fail",
                             category="rbac",
                             target=f"sa/{subject.get('namespace', 'cluster')}/{subject['name']}",
-                            detail=f"ClusterRoleBinding '{binding['name']}' grants {role_name} to SA '{subject['name']}'.",
+                            detail=(
+                                f"ClusterRoleBinding '{binding['name']}' grants "
+                                f"{role_name} to SA '{subject['name']}'."
+                            ),
                             remediation="Use a more restrictive ClusterRole.",
                         )
                     elif subject["kind"] == "Group" and subject["name"] == "system:authenticated":
@@ -582,7 +596,10 @@ class K8sHardeningScanner:
                             status="fail",
                             category="rbac",
                             target=f"group/{subject['name']}",
-                            detail=f"ClusterRoleBinding '{binding['name']}' grants {role_name} to all authenticated users.",
+                            detail=(
+                                f"ClusterRoleBinding '{binding['name']}' grants "
+                                f"{role_name} to all authenticated users."
+                            ),
                             remediation="Remove this binding. Use specific user/group bindings.",
                         )
 

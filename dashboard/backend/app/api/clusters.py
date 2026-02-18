@@ -339,8 +339,6 @@ def _run_k8s_drift(cluster: Cluster, namespace: str | None) -> dict:
         # Try to get docker client on same node for runtime inspect
         docker_client = None
         if cluster.docker_host:
-            import docker
-
             docker_client = DiscoveryService._get_docker_client(cluster)
 
         detector = DriftDetector(connector=connector, docker_client=docker_client)

@@ -1,11 +1,10 @@
 """Drift detection -- compares K8s spec vs container runtime state."""
 
 import logging
-from typing import Any
-
-from app.services.k8s_connector import K8sConnector
 
 import docker
+
+from app.services.k8s_connector import K8sConnector
 
 logger = logging.getLogger(__name__)
 

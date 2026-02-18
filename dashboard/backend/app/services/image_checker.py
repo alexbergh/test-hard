@@ -2,7 +2,6 @@
 
 import logging
 import re
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +237,7 @@ class ImageChecker:
                 status="pass",
                 category="image-base",
                 target=ref,
-                detail=f"Image uses minimal base (alpine/busybox/scratch).",
+                detail="Image uses minimal base (alpine/busybox/scratch).",
             )
         else:
             # Full OS image -- larger attack surface

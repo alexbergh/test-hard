@@ -168,7 +168,7 @@ class DiscoveryService:
         try:
             client = DiscoveryService._get_docker_client(cluster)
 
-            info = client.info()
+            client.info()  # verify connection is alive
             containers = client.containers.list()
             version = client.version()
             client.close()

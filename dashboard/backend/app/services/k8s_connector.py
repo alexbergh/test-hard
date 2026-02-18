@@ -262,29 +262,8 @@ class K8sConnector:
         """Extract security context fields from K8s SecurityContext object."""
         if sc is None:
             return {}
-        result = {}
-        if sc.run_as_user is not None:
-            result["run_as_user"] = sc.run_as_user
-        if sc.run_as_group is not None:
-            result["run_as_group"] = sc.run_as_group
-        if sc.run_as_non_root is not None:
-            result["run_as_non_root"] = sc.run_as_non_root
-        if hasattr(sc, "privileged") and sc.privileged is not None:
-            result["privileged"] = sc.privileged
-        if hasattr(sc, "read_only_root_filesystem") and sc.read_only_root_filesystem is not None:
-            result["read_only_root_filesystem"] = sc.read_only_root_filesystem
-        if hasattr(sc, "allow_privilege_escalation") and sc.allow_privilege_escalation is not None:
-            result["allow_privilege_escalation"] = sc.allow_privilege_escalation
-        if hasattr(sc, "capabilities") and sc.capabilities:
-            caps = sc.capabilities
-            if caps.add:
-                result["capabilities_add"] = list(caps.add)
-            if caps.drop:
-                result["capabilities_drop"] = list(caps.drop)
-        if sc.fs_group is not None:
-            result["fs_group"] = sc.fs_group
-        if hasattr(sc, "seccomp_profile") and sc.seccomp_profile:
-            result["seccomp_profile"] = sc.seccomp_profile.type
+        result = _extract_sc_user_fields(sc)
+        result.update(_extract_sc_container_fields(sc))
         return result
 
     @staticmethod
@@ -380,3 +359,42 @@ class K8sConnector:
                 }
             )
         return result
+
+
+# ------------------------------------------------------------------
+# Module-level helpers (used by K8sConnector._extract_security_context)
+# ------------------------------------------------------------------
+
+
+def _extract_sc_user_fields(sc) -> dict:
+    """Extract user/group fields from a K8s SecurityContext object."""
+    result = {}
+    if sc.run_as_user is not None:
+        result["run_as_user"] = sc.run_as_user
+    if sc.run_as_group is not None:
+        result["run_as_group"] = sc.run_as_group
+    if sc.run_as_non_root is not None:
+        result["run_as_non_root"] = sc.run_as_non_root
+    if hasattr(sc, "fs_group") and sc.fs_group is not None:
+        result["fs_group"] = sc.fs_group
+    return result
+
+
+def _extract_sc_container_fields(sc) -> dict:
+    """Extract container-specific fields from a K8s SecurityContext object."""
+    result = {}
+    if hasattr(sc, "privileged") and sc.privileged is not None:
+        result["privileged"] = sc.privileged
+    if hasattr(sc, "read_only_root_filesystem") and sc.read_only_root_filesystem is not None:
+        result["read_only_root_filesystem"] = sc.read_only_root_filesystem
+    if hasattr(sc, "allow_privilege_escalation") and sc.allow_privilege_escalation is not None:
+        result["allow_privilege_escalation"] = sc.allow_privilege_escalation
+    if hasattr(sc, "capabilities") and sc.capabilities:
+        caps = sc.capabilities
+        if caps.add:
+            result["capabilities_add"] = list(caps.add)
+        if caps.drop:
+            result["capabilities_drop"] = list(caps.drop)
+    if hasattr(sc, "seccomp_profile") and sc.seccomp_profile:
+        result["seccomp_profile"] = sc.seccomp_profile.type
+    return result

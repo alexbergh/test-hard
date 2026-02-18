@@ -1,7 +1,6 @@
 """Risk scoring engine -- weighted scoring for remediation prioritization."""
 
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 

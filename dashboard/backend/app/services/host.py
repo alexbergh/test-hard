@@ -148,45 +148,13 @@ class HostService:
         """Check Kubernetes node/pod status via cluster connection."""
         if not host.cluster_id:
             return "unknown"
-
         try:
             from app.models import Cluster
-            from app.services.k8s_connector import K8sConnector
 
             cluster = await self.session.get(Cluster, host.cluster_id)
             if not cluster:
                 return "unknown"
-
-            def _check(cluster_obj, host_obj):
-                connector = K8sConnector(
-                    api_url=cluster_obj.k8s_api_url,
-                    token=cluster_obj.k8s_token,
-                    ca_cert=cluster_obj.k8s_ca_cert,
-                    client_cert=cluster_obj.k8s_client_cert,
-                    client_key=cluster_obj.k8s_client_key,
-                    kubeconfig_path=cluster_obj.kubeconfig_path,
-                    kubeconfig_context=cluster_obj.kubeconfig_context,
-                )
-                try:
-                    from kubernetes import client as k8s_client
-
-                    v1 = k8s_client.CoreV1Api(connector.connect())
-                    if host_obj.host_type == "k8s_node":
-                        node = v1.read_node(host_obj.k8s_node_name)
-                        for c in node.status.conditions or []:
-                            if c.type == "Ready":
-                                return "online" if c.status == "True" else "offline"
-                        return "unknown"
-                    elif host_obj.host_type == "k8s_pod":
-                        pod = v1.read_namespaced_pod(host_obj.k8s_pod_name, host_obj.k8s_namespace)
-                        return "online" if pod.status.phase == "Running" else "offline"
-                    return "unknown"
-                except Exception:
-                    return "offline"
-                finally:
-                    connector.close()
-
-            return await asyncio.to_thread(_check, cluster, host)
+            return await asyncio.to_thread(_check_k8s_status_sync, cluster, host)
         except Exception:
             return "unknown"
 
@@ -238,3 +206,40 @@ class HostService:
         if "alt" in image_lower:
             return "alt"
         return "unknown"
+
+
+def _check_k8s_status_sync(cluster_obj, host_obj) -> str:
+    """Synchronous K8s node/pod status check (runs in thread)."""
+    from app.services.k8s_connector import K8sConnector
+    from kubernetes import client as k8s_client
+
+    connector = K8sConnector(
+        api_url=cluster_obj.k8s_api_url,
+        token=cluster_obj.k8s_token,
+        ca_cert=cluster_obj.k8s_ca_cert,
+        client_cert=cluster_obj.k8s_client_cert,
+        client_key=cluster_obj.k8s_client_key,
+        kubeconfig_path=cluster_obj.kubeconfig_path,
+        kubeconfig_context=cluster_obj.kubeconfig_context,
+    )
+    try:
+        v1 = k8s_client.CoreV1Api(connector.connect())
+        if host_obj.host_type == "k8s_node":
+            return _check_node_status(v1, host_obj.k8s_node_name)
+        if host_obj.host_type == "k8s_pod":
+            pod = v1.read_namespaced_pod(host_obj.k8s_pod_name, host_obj.k8s_namespace)
+            return "online" if pod.status.phase == "Running" else "offline"
+        return "unknown"
+    except Exception:
+        return "offline"
+    finally:
+        connector.close()
+
+
+def _check_node_status(v1, node_name: str) -> str:
+    """Check K8s node Ready condition."""
+    node = v1.read_node(node_name)
+    for condition in node.status.conditions or []:
+        if condition.type == "Ready":
+            return "online" if condition.status == "True" else "offline"
+    return "unknown"
