@@ -24,23 +24,38 @@ DISTROLESS_PATTERNS = (
 
 # Images known to run as root by default
 ROOT_DEFAULT_IMAGES = (
-    "nginx", "httpd", "apache", "mysql", "mariadb", "postgres",
-    "redis", "mongo", "memcached", "elasticsearch", "kibana",
-    "grafana/grafana", "prom/prometheus", "jenkins",
+    "nginx",
+    "httpd",
+    "apache",
+    "mysql",
+    "mariadb",
+    "postgres",
+    "redis",
+    "mongo",
+    "memcached",
+    "elasticsearch",
+    "kibana",
+    "grafana/grafana",
+    "prom/prometheus",
+    "jenkins",
 )
 
 # Scratch / minimal base indicators
 MINIMAL_BASES = (
-    "scratch", "busybox", "alpine", "distroless", "static",
-    "chainguard", "wolfi",
+    "scratch",
+    "busybox",
+    "alpine",
+    "distroless",
+    "static",
+    "chainguard",
+    "wolfi",
 )
 
 
 class ImageFinding:
     """Single image check finding."""
 
-    __slots__ = ("rule_id", "severity", "status", "category",
-                 "target", "detail", "remediation")
+    __slots__ = ("rule_id", "severity", "status", "category", "target", "detail", "remediation")
 
     def __init__(self, **kwargs):
         for slot in self.__slots__:
@@ -107,12 +122,14 @@ class ImageChecker:
         images = []
         for h in hosts:
             sc = h.get("security_context", {})
-            images.append({
-                "image": h.get("container_image", ""),
-                "user": sc.get("user", ""),
-                "target": h.get("name", ""),
-                "labels": h.get("k8s_labels", {}),
-            })
+            images.append(
+                {
+                    "image": h.get("container_image", ""),
+                    "user": sc.get("user", ""),
+                    "target": h.get("name", ""),
+                    "labels": h.get("k8s_labels", {}),
+                }
+            )
         return self.check_images(images)
 
     # ------------------------------------------------------------------
@@ -162,8 +179,7 @@ class ImageChecker:
                 status="fail",
                 category="image-pinning",
                 target=ref,
-                detail=f"Image '{image}' is not pinned by digest. "
-                "Tags are mutable and can be overwritten.",
+                detail=f"Image '{image}' is not pinned by digest. " "Tags are mutable and can be overwritten.",
                 remediation="Use digest pinning: image@sha256:<digest>",
             )
 

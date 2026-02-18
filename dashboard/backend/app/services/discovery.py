@@ -4,11 +4,12 @@ import asyncio
 import logging
 from typing import Sequence
 
-import docker
 from app.models import Cluster, Host
 from app.services.k8s_connector import K8sConnector
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+import docker
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +89,7 @@ class DiscoveryService:
         if not cluster:
             return False
         # Disassociate hosts
-        hosts = await self.session.execute(
-            select(Host).where(Host.cluster_id == cluster_id)
-        )
+        hosts = await self.session.execute(select(Host).where(Host.cluster_id == cluster_id))
         for host in hosts.scalars().all():
             host.cluster_id = None
         await self.session.delete(cluster)
@@ -290,7 +289,10 @@ class DiscoveryService:
         total = created + updated
         logger.info(
             "K8s discovery for %s: created=%d updated=%d total=%d",
-            cluster.name, created, updated, total,
+            cluster.name,
+            created,
+            updated,
+            total,
         )
 
         return {
@@ -348,7 +350,10 @@ class DiscoveryService:
         total = created + updated
         logger.info(
             "Docker discovery for %s: created=%d updated=%d total=%d",
-            cluster.name, created, updated, total,
+            cluster.name,
+            created,
+            updated,
+            total,
         )
         return {
             "cluster_id": cluster.id,
@@ -395,26 +400,28 @@ class DiscoveryService:
                 if host_config.get("Memory"):
                     resources["memory_limit"] = host_config["Memory"]
 
-                containers.append({
-                    "name": c.name,
-                    "id": c.short_id,
-                    "image": config.get("Image", ""),
-                    "status": c.status,
-                    "labels": config.get("Labels", {}),
-                    "security_context": security_context,
-                    "resources": resources,
-                    "networks": list(network_settings.get("Networks", {}).keys()),
-                    "ports": network_settings.get("Ports", {}),
-                    "mounts": [
-                        {
-                            "source": m.get("Source", ""),
-                            "destination": m.get("Destination", ""),
-                            "mode": m.get("Mode", ""),
-                            "rw": m.get("RW", True),
-                        }
-                        for m in inspect.get("Mounts", [])
-                    ],
-                })
+                containers.append(
+                    {
+                        "name": c.name,
+                        "id": c.short_id,
+                        "image": config.get("Image", ""),
+                        "status": c.status,
+                        "labels": config.get("Labels", {}),
+                        "security_context": security_context,
+                        "resources": resources,
+                        "networks": list(network_settings.get("Networks", {}).keys()),
+                        "ports": network_settings.get("Ports", {}),
+                        "mounts": [
+                            {
+                                "source": m.get("Source", ""),
+                                "destination": m.get("Destination", ""),
+                                "mode": m.get("Mode", ""),
+                                "rw": m.get("RW", True),
+                            }
+                            for m in inspect.get("Mounts", [])
+                        ],
+                    }
+                )
 
             client.close()
             return {

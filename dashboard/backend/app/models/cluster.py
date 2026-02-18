@@ -34,9 +34,7 @@ class Cluster(Base, TimestampMixin):
     k8s_client_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     kubeconfig_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     kubeconfig_context: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    k8s_namespace: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )  # None = all namespaces
+    k8s_namespace: Mapped[str | None] = mapped_column(String(255), nullable=True)  # None = all namespaces
 
     # Docker connection settings
     docker_host: Mapped[str | None] = mapped_column(
@@ -46,9 +44,7 @@ class Cluster(Base, TimestampMixin):
     docker_cert_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # containerd connection settings
-    containerd_socket: Mapped[str | None] = mapped_column(
-        String(500), nullable=True
-    )  # /run/containerd/containerd.sock
+    containerd_socket: Mapped[str | None] = mapped_column(String(500), nullable=True)  # /run/containerd/containerd.sock
 
     # Status
     status: Mapped[str] = mapped_column(String(20), default="unknown")
@@ -57,9 +53,7 @@ class Cluster(Base, TimestampMixin):
 
     # Discovery settings
     auto_discover: Mapped[bool] = mapped_column(Boolean, default=True)
-    discover_filter: Mapped[dict] = mapped_column(
-        JSON, default=dict
-    )  # label selectors, namespace filters
+    discover_filter: Mapped[dict] = mapped_column(JSON, default=dict)  # label selectors, namespace filters
 
     # Cluster info (populated after connection)
     cluster_version: Mapped[str | None] = mapped_column(String(100), nullable=True)

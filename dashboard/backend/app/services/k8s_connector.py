@@ -124,25 +124,25 @@ class K8sConnector:
         result = []
         for node in nodes.items:
             addresses = {a.type: a.address for a in (node.status.addresses or [])}
-            conditions = {
-                c.type: c.status for c in (node.status.conditions or [])
-            }
+            conditions = {c.type: c.status for c in (node.status.conditions or [])}
             info = node.status.node_info
-            result.append({
-                "name": node.metadata.name,
-                "labels": dict(node.metadata.labels or {}),
-                "annotations": dict(node.metadata.annotations or {}),
-                "addresses": addresses,
-                "conditions": conditions,
-                "os_image": info.os_image if info else None,
-                "kernel_version": info.kernel_version if info else None,
-                "container_runtime": info.container_runtime_version if info else None,
-                "architecture": info.architecture if info else None,
-                "kubelet_version": info.kubelet_version if info else None,
-                "allocatable_cpu": node.status.allocatable.get("cpu") if node.status.allocatable else None,
-                "allocatable_memory": node.status.allocatable.get("memory") if node.status.allocatable else None,
-                "is_ready": conditions.get("Ready") == "True",
-            })
+            result.append(
+                {
+                    "name": node.metadata.name,
+                    "labels": dict(node.metadata.labels or {}),
+                    "annotations": dict(node.metadata.annotations or {}),
+                    "addresses": addresses,
+                    "conditions": conditions,
+                    "os_image": info.os_image if info else None,
+                    "kernel_version": info.kernel_version if info else None,
+                    "container_runtime": info.container_runtime_version if info else None,
+                    "architecture": info.architecture if info else None,
+                    "kubelet_version": info.kubelet_version if info else None,
+                    "allocatable_cpu": node.status.allocatable.get("cpu") if node.status.allocatable else None,
+                    "allocatable_memory": node.status.allocatable.get("memory") if node.status.allocatable else None,
+                    "is_ready": conditions.get("Ready") == "True",
+                }
+            )
         return result
 
     # ------------------------------------------------------------------
@@ -183,38 +183,42 @@ class K8sConnector:
 
         # Container-level info
         containers = []
-        for c in (spec.containers or []):
+        for c in spec.containers or []:
             c_sc = self._extract_security_context(c.security_context) if c.security_context else {}
-            containers.append({
-                "name": c.name,
-                "image": c.image,
-                "ports": [{"container_port": p.container_port, "protocol": p.protocol} for p in (c.ports or [])],
-                "resources": self._extract_resources(c.resources),
-                "security_context": c_sc,
-                "volume_mounts": [
-                    {"name": vm.name, "mount_path": vm.mount_path, "read_only": vm.read_only}
-                    for vm in (c.volume_mounts or [])
-                ],
-                "command": c.command,
-                "args": c.args,
-            })
+            containers.append(
+                {
+                    "name": c.name,
+                    "image": c.image,
+                    "ports": [{"container_port": p.container_port, "protocol": p.protocol} for p in (c.ports or [])],
+                    "resources": self._extract_resources(c.resources),
+                    "security_context": c_sc,
+                    "volume_mounts": [
+                        {"name": vm.name, "mount_path": vm.mount_path, "read_only": vm.read_only}
+                        for vm in (c.volume_mounts or [])
+                    ],
+                    "command": c.command,
+                    "args": c.args,
+                }
+            )
 
         # Container statuses (runtime info)
         container_statuses = []
-        for cs in (status.container_statuses or []):
-            container_statuses.append({
-                "name": cs.name,
-                "container_id": cs.container_id,
-                "image": cs.image,
-                "image_id": cs.image_id,
-                "ready": cs.ready,
-                "restart_count": cs.restart_count,
-                "started": cs.started,
-            })
+        for cs in status.container_statuses or []:
+            container_statuses.append(
+                {
+                    "name": cs.name,
+                    "container_id": cs.container_id,
+                    "image": cs.image,
+                    "image_id": cs.image_id,
+                    "ready": cs.ready,
+                    "restart_count": cs.restart_count,
+                    "started": cs.started,
+                }
+            )
 
         # Volumes -- check for sensitive mounts
         volumes = []
-        for v in (spec.volumes or []):
+        for v in spec.volumes or []:
             vol_info = {"name": v.name}
             if v.host_path:
                 vol_info["type"] = "hostPath"
@@ -309,13 +313,15 @@ class K8sConnector:
 
         result = []
         for d in deps.items:
-            result.append({
-                "name": d.metadata.name,
-                "namespace": d.metadata.namespace,
-                "replicas": d.spec.replicas,
-                "ready_replicas": d.status.ready_replicas or 0,
-                "labels": dict(d.metadata.labels or {}),
-            })
+            result.append(
+                {
+                    "name": d.metadata.name,
+                    "namespace": d.metadata.namespace,
+                    "replicas": d.spec.replicas,
+                    "ready_replicas": d.status.ready_replicas or 0,
+                    "labels": dict(d.metadata.labels or {}),
+                }
+            )
         return result
 
     # ------------------------------------------------------------------
@@ -329,20 +335,24 @@ class K8sConnector:
         result = []
         for b in bindings.items:
             subjects = []
-            for s in (b.subjects or []):
-                subjects.append({
-                    "kind": s.kind,
-                    "name": s.name,
-                    "namespace": s.namespace,
-                })
-            result.append({
-                "name": b.metadata.name,
-                "role_ref": {
-                    "kind": b.role_ref.kind,
-                    "name": b.role_ref.name,
-                },
-                "subjects": subjects,
-            })
+            for s in b.subjects or []:
+                subjects.append(
+                    {
+                        "kind": s.kind,
+                        "name": s.name,
+                        "namespace": s.namespace,
+                    }
+                )
+            result.append(
+                {
+                    "name": b.metadata.name,
+                    "role_ref": {
+                        "kind": b.role_ref.kind,
+                        "name": b.role_ref.name,
+                    },
+                    "subjects": subjects,
+                }
+            )
         return result
 
     # ------------------------------------------------------------------
@@ -359,12 +369,14 @@ class K8sConnector:
 
         result = []
         for p in policies.items:
-            result.append({
-                "name": p.metadata.name,
-                "namespace": p.metadata.namespace,
-                "pod_selector": dict(p.spec.pod_selector.match_labels or {}) if p.spec.pod_selector else {},
-                "policy_types": p.spec.policy_types or [],
-                "ingress_rules_count": len(p.spec.ingress or []),
-                "egress_rules_count": len(p.spec.egress or []),
-            })
+            result.append(
+                {
+                    "name": p.metadata.name,
+                    "namespace": p.metadata.namespace,
+                    "pod_selector": dict(p.spec.pod_selector.match_labels or {}) if p.spec.pod_selector else {},
+                    "policy_types": p.spec.policy_types or [],
+                    "ingress_rules_count": len(p.spec.ingress or []),
+                    "egress_rules_count": len(p.spec.egress or []),
+                }
+            )
         return result

@@ -3,9 +3,9 @@
 import logging
 from typing import Any
 
-import docker
-
 from app.services.k8s_connector import K8sConnector
+
+import docker
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,7 @@ LOW = "low"
 class DriftFinding:
     """A single drift finding."""
 
-    __slots__ = ("rule_id", "severity", "category", "target", "field",
-                 "expected", "actual", "detail", "remediation")
+    __slots__ = ("rule_id", "severity", "category", "target", "field", "expected", "actual", "detail", "remediation")
 
     def __init__(self, **kwargs):
         for slot in self.__slots__:
@@ -202,8 +201,7 @@ class DriftDetector:
                 actual="true",
                 detail="Container is running privileged but spec declares privileged=false. "
                 "Possible privilege escalation via mutating webhook or runtime override.",
-                remediation="Investigate admission controllers and runtime config. "
-                "Enforce PodSecurity admission.",
+                remediation="Investigate admission controllers and runtime config. " "Enforce PodSecurity admission.",
             )
 
     def _compare_capabilities(self, ref: str, spec: dict, runtime: dict) -> None:
@@ -217,8 +215,16 @@ class DriftDetector:
         # Caps added at runtime that were not in spec
         extra_caps = runtime_add - spec_add
         if extra_caps:
-            dangerous = {"SYS_ADMIN", "NET_ADMIN", "SYS_PTRACE", "NET_RAW", "SYS_MODULE",
-                         "DAC_OVERRIDE", "SETUID", "SETGID"}
+            dangerous = {
+                "SYS_ADMIN",
+                "NET_ADMIN",
+                "SYS_PTRACE",
+                "NET_RAW",
+                "SYS_MODULE",
+                "DAC_OVERRIDE",
+                "SETUID",
+                "SETGID",
+            }
             severity = CRITICAL if extra_caps & dangerous else HIGH
             self._add(
                 rule_id="DRIFT-002",
@@ -245,8 +251,7 @@ class DriftDetector:
                 expected=sorted(spec_drop),
                 actual=sorted(runtime_drop),
                 detail=f"Spec drops {sorted(spec_drop)} but runtime only drops {sorted(runtime_drop)}",
-                remediation="Container runtime is not enforcing capability drop. "
-                "Check CRI configuration.",
+                remediation="Container runtime is not enforcing capability drop. " "Check CRI configuration.",
             )
 
     def _compare_user(self, ref: str, spec: dict, runtime: dict) -> None:
@@ -299,8 +304,16 @@ class DriftDetector:
 
         # Collect actual mounts from runtime
         runtime_mounts = set()
-        sensitive_paths = {"/", "/etc", "/var/run/docker.sock", "/proc", "/sys",
-                          "/var/lib/kubelet", "/etc/kubernetes", "/root"}
+        sensitive_paths = {
+            "/",
+            "/etc",
+            "/var/run/docker.sock",
+            "/proc",
+            "/sys",
+            "/var/lib/kubelet",
+            "/etc/kubernetes",
+            "/root",
+        }
         for m in runtime.get("mounts", []):
             src = m.get("source", "")
             if src.startswith("/") and src not in ("/dev/termination-log",):
@@ -343,8 +356,7 @@ class DriftDetector:
                     actual=runtime_image,
                     detail="Container is running a different image than declared in spec. "
                     "Possible supply chain attack.",
-                    remediation="Investigate image pull policy and registry. "
-                    "Use image digest pinning.",
+                    remediation="Investigate image pull policy and registry. " "Use image digest pinning.",
                 )
 
     # ------------------------------------------------------------------

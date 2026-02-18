@@ -61,9 +61,7 @@ class Host(Base, TimestampMixin):
     k8s_annotations: Mapped[dict] = mapped_column(JSON, default=dict)
     container_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     container_image: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    container_runtime: Mapped[str | None] = mapped_column(
-        String(50), nullable=True
-    )  # docker, containerd, cri-o
+    container_runtime: Mapped[str | None] = mapped_column(String(50), nullable=True)  # docker, containerd, cri-o
 
     # Security context (extracted from K8s pod spec or Docker inspect)
     security_context: Mapped[dict] = mapped_column(JSON, default=dict)

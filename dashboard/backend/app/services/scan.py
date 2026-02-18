@@ -896,9 +896,7 @@ class ScanService:
         if not cluster:
             return {"success": False, "error": f"Cluster {host.cluster_id} not found"}
 
-        return await asyncio.to_thread(
-            self._run_k8s_hardening_scan_sync, cluster, host
-        )
+        return await asyncio.to_thread(self._run_k8s_hardening_scan_sync, cluster, host)
 
     @staticmethod
     def _run_k8s_hardening_scan_sync(cluster, host) -> dict:

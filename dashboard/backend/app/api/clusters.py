@@ -5,13 +5,7 @@ import logging
 
 from app.api.deps import AdminUser, CurrentUser, DbSession, OperatorUser
 from app.models import Cluster
-from app.schemas.cluster import (
-    ClusterCreate,
-    ClusterResponse,
-    ClusterTestResult,
-    ClusterUpdate,
-    DiscoveryResult,
-)
+from app.schemas.cluster import ClusterCreate, ClusterResponse, ClusterTestResult, ClusterUpdate, DiscoveryResult
 from app.services.discovery import DiscoveryService
 from app.services.k8s_connector import K8sConnector
 from app.services.k8s_hardening import K8sHardeningScanner
@@ -242,9 +236,7 @@ async def list_cluster_hosts(
     if not cluster:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cluster not found")
 
-    result = await session.execute(
-        select(Host).where(Host.cluster_id == cluster_id).order_by(Host.name)
-    )
+    result = await session.execute(select(Host).where(Host.cluster_id == cluster_id).order_by(Host.name))
     hosts = result.scalars().all()
     return [
         {
@@ -291,9 +283,7 @@ async def detect_drift(
     if not cluster:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cluster not found")
 
-    result = await session.execute(
-        select(Host).where(Host.cluster_id == cluster_id)
-    )
+    result = await session.execute(select(Host).where(Host.cluster_id == cluster_id))
     hosts = result.scalars().all()
 
     if cluster.cluster_type == "docker":
@@ -307,9 +297,7 @@ async def detect_drift(
         ]
         drift_result = await asyncio.to_thread(_run_docker_drift, cluster, host_data)
     elif cluster.cluster_type == "kubernetes":
-        drift_result = await asyncio.to_thread(
-            _run_k8s_drift, cluster, cluster.k8s_namespace
-        )
+        drift_result = await asyncio.to_thread(_run_k8s_drift, cluster, cluster.k8s_namespace)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -352,6 +340,7 @@ def _run_k8s_drift(cluster: Cluster, namespace: str | None) -> dict:
         docker_client = None
         if cluster.docker_host:
             import docker
+
             docker_client = DiscoveryService._get_docker_client(cluster)
 
         detector = DriftDetector(connector=connector, docker_client=docker_client)
@@ -387,9 +376,7 @@ async def check_images(
     if not cluster:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cluster not found")
 
-    result = await session.execute(
-        select(Host).where(Host.cluster_id == cluster_id)
-    )
+    result = await session.execute(select(Host).where(Host.cluster_id == cluster_id))
     hosts = result.scalars().all()
 
     host_data = [
@@ -428,9 +415,7 @@ async def calculate_risk_scores(
     if not cluster:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cluster not found")
 
-    result = await session.execute(
-        select(Host).where(Host.cluster_id == cluster_id)
-    )
+    result = await session.execute(select(Host).where(Host.cluster_id == cluster_id))
     hosts = result.scalars().all()
 
     host_data = [

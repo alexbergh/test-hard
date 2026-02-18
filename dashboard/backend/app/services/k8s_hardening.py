@@ -404,8 +404,13 @@ class K8sHardeningScanner:
             if vol.get("type") == "hostPath":
                 path = vol.get("path", "")
                 sensitive_paths = [
-                    "/", "/etc", "/var/run/docker.sock", "/proc", "/sys",
-                    "/var/lib/kubelet", "/etc/kubernetes",
+                    "/",
+                    "/etc",
+                    "/var/run/docker.sock",
+                    "/proc",
+                    "/sys",
+                    "/var/lib/kubelet",
+                    "/etc/kubernetes",
                 ]
                 severity = CRITICAL if path in sensitive_paths else MEDIUM
                 self._add_finding(
@@ -504,9 +509,7 @@ class K8sHardeningScanner:
     # NetworkPolicy Checks
     # ------------------------------------------------------------------
 
-    def _check_network_policies(
-        self, policies: list[dict], namespaces: list[str], pods: list[dict]
-    ) -> None:
+    def _check_network_policies(self, policies: list[dict], namespaces: list[str], pods: list[dict]) -> None:
         """Check NetworkPolicy coverage."""
         # Namespaces with pods but no NetworkPolicy
         ns_with_pods = {p["namespace"] for p in pods}
@@ -599,13 +602,15 @@ class K8sHardeningScanner:
         remediation: str = "",
     ) -> None:
         """Add a finding to the results list."""
-        self.findings.append({
-            "rule_id": rule_id,
-            "title": title,
-            "severity": severity,
-            "status": status,
-            "category": category,
-            "target": target,
-            "detail": detail,
-            "remediation": remediation,
-        })
+        self.findings.append(
+            {
+                "rule_id": rule_id,
+                "title": title,
+                "severity": severity,
+                "status": status,
+                "category": category,
+                "target": target,
+                "detail": detail,
+                "remediation": remediation,
+            }
+        )

@@ -173,14 +173,12 @@ class HostService:
                     v1 = k8s_client.CoreV1Api(connector.connect())
                     if host_obj.host_type == "k8s_node":
                         node = v1.read_node(host_obj.k8s_node_name)
-                        for c in (node.status.conditions or []):
+                        for c in node.status.conditions or []:
                             if c.type == "Ready":
                                 return "online" if c.status == "True" else "offline"
                         return "unknown"
                     elif host_obj.host_type == "k8s_pod":
-                        pod = v1.read_namespaced_pod(
-                            host_obj.k8s_pod_name, host_obj.k8s_namespace
-                        )
+                        pod = v1.read_namespaced_pod(host_obj.k8s_pod_name, host_obj.k8s_namespace)
                         return "online" if pod.status.phase == "Running" else "offline"
                     return "unknown"
                 except Exception:

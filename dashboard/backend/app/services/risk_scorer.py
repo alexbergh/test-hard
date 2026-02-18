@@ -40,7 +40,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Container shares host IPC namespace",
         "remediation": "Set hostIPC: false",
     },
-
     # Volume security
     "mount_docker_sock": {
         "weight": 80,
@@ -77,7 +76,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Sensitive host path mounted",
         "remediation": "Remove hostPath mount or restrict to specific subpaths",
     },
-
     # User / privilege
     "run_as_root": {
         "weight": 20,
@@ -93,7 +91,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Privilege escalation not explicitly disabled",
         "remediation": "Set allowPrivilegeEscalation: false",
     },
-
     # Capabilities
     "no_cap_drop_all": {
         "weight": 15,
@@ -137,7 +134,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Dangerous capability added",
         "remediation": "Remove unnecessary capabilities",
     },
-
     # Filesystem
     "writable_rootfs": {
         "weight": 10,
@@ -146,7 +142,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Root filesystem is writable",
         "remediation": "Set readOnlyRootFilesystem: true",
     },
-
     # Resource limits
     "no_resource_limits": {
         "weight": 10,
@@ -155,7 +150,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "No CPU/memory limits set (DoS risk)",
         "remediation": "Set resources.limits for CPU and memory",
     },
-
     # Image
     "image_latest": {
         "weight": 10,
@@ -171,7 +165,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Full OS base image (larger attack surface)",
         "remediation": "Use distroless or alpine-based image",
     },
-
     # RBAC
     "cluster_admin_binding": {
         "weight": 40,
@@ -187,7 +180,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Pod uses default service account",
         "remediation": "Create dedicated ServiceAccount with minimal permissions",
     },
-
     # Network
     "no_network_policy": {
         "weight": 25,
@@ -196,7 +188,6 @@ RISK_WEIGHTS: dict[str, dict] = {
         "description": "Namespace has no NetworkPolicy (unrestricted traffic)",
         "remediation": "Create default-deny NetworkPolicy for the namespace",
     },
-
     # Drift
     "drift_detected": {
         "weight": 60,
@@ -247,15 +238,17 @@ class RiskScore:
         if not w:
             return
         self.total_score += w["weight"]
-        self.factors.append({
-            "factor_id": factor_id,
-            "weight": w["weight"],
-            "category": w["category"],
-            "severity": w["severity"],
-            "description": w["description"],
-            "remediation": w["remediation"],
-            "detail": extra_detail,
-        })
+        self.factors.append(
+            {
+                "factor_id": factor_id,
+                "weight": w["weight"],
+                "category": w["category"],
+                "severity": w["severity"],
+                "description": w["description"],
+                "remediation": w["remediation"],
+                "detail": extra_detail,
+            }
+        )
         self.max_severity = _max_severity(self.max_severity, w["severity"])
 
     def to_dict(self) -> dict:
@@ -459,8 +452,7 @@ class RiskScorer:
 
         # Full OS check
         img_lower = image.lower()
-        minimal = ("alpine", "distroless", "scratch", "busybox", "chainguard",
-                   "wolfi", "static", "ubi-micro")
+        minimal = ("alpine", "distroless", "scratch", "busybox", "chainguard", "wolfi", "static", "ubi-micro")
         if not any(m in img_lower for m in minimal):
             rs.add_factor("image_full_os", extra_detail=image)
 
