@@ -350,14 +350,14 @@ kubectl apply -k k8s/overlays/prod
 
 ## CIS Benchmarks Compliance
 
-Политики безопасности основаны на актуальных требованиях из CIS Kubernetes Benchmark v1.12.0, CIS Docker Benchmark v1.8.0 и FSTEK.
+Политики безопасности основаны на актуальных требованиях из CIS Kubernetes Benchmark v1.12.0, CIS Docker Benchmark v1.8.0.
 
 ### OPA Gatekeeper — 14 политик
 
 | # | Политика | CIS Ref | Назначение |
 |---|----------|---------|------------|
 | 1 | Disallowed Tags | 5.5.1 | Запрет :latest |
-| 2 | Allowed Repos | 5.5.1, FSTEK | Только доверенные реестры |
+| 2 | Allowed Repos | 5.5.1 | Только доверенные реестры |
 | 3 | Privileged Container | 5.2.1 | Запрет privileged |
 | 4 | RunAsNonRoot | 5.2.6 | Non-root пользователь |
 | 5 | Required Resources | best practice | CPU/memory лимиты |
