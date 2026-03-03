@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import platform
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable
@@ -32,7 +33,7 @@ def main(path: str) -> None:
         logger.error("Error reading file %s: %s", result_path, exc)
         return
 
-    host = data.get("host", os.uname().nodename)
+    host = data.get("host", platform.node())
 
     try:
         if "scenarios" in data:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import os
+import platform
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -114,7 +115,7 @@ def main(argv: list[str]) -> int:  # noqa: C901
         if len(stem_parts) >= 3 and stem_parts[0] == "openscap":
             hostname = "-".join(stem_parts[1:-1])
         else:
-            hostname = os.uname().nodename
+            hostname = platform.node()
         # Prepare metrics lines. Telegraf's inputs.file has name_override = "security_scanners",
         # so we intentionally emit bare metric names (openscap_*) here.
         metrics_lines = []

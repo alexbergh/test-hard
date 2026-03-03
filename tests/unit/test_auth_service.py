@@ -1,5 +1,6 @@
 """Unit tests for AuthService."""
 
+import os
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -7,23 +8,29 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+# Set env vars BEFORE any app imports to satisfy module-level Settings/engine creation
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test_auth.db")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-unit-tests-only")
+
 # Add backend to path
 BACKEND_ROOT = Path(__file__).parent.parent.parent / "dashboard" / "backend"
 sys.path.insert(0, str(BACKEND_ROOT))
+
+# Now safe to import - module-level engine creation will use sqlite URL
+from app.services.auth import AuthService  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
 def mock_settings():
     """Mock settings for all tests."""
-    with patch("app.config.get_settings") as mock:
-        settings = MagicMock()
-        settings.secret_key = "test-secret-key-for-unit-tests-only"
-        settings.algorithm = "HS256"
-        settings.access_token_expire_minutes = 30
-        settings.refresh_token_expire_days = 7
-        settings.debug = False
-        settings.environment = "development"
-        mock.return_value = settings
+    settings = MagicMock()
+    settings.secret_key = "test-secret-key-for-unit-tests-only"
+    settings.algorithm = "HS256"
+    settings.access_token_expire_minutes = 30
+    settings.refresh_token_expire_days = 7
+    settings.debug = False
+    settings.environment = "development"
+    with patch("app.services.auth.settings", settings):
         yield settings
 
 
@@ -171,7 +178,7 @@ class TestTokenForUser:
 class TestAuthenticateUser:
     """Tests for user authentication."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_authenticate_nonexistent_user(self, mock_settings):
         from app.services.auth import AuthService
 
@@ -184,7 +191,7 @@ class TestAuthenticateUser:
         user = await service.authenticate_user("nonexistent", "password")
         assert user is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_authenticate_wrong_password(self, mock_settings):
         from app.services.auth import AuthService
 
@@ -200,7 +207,7 @@ class TestAuthenticateUser:
         user = await service.authenticate_user("testuser", "wrongpassword")
         assert user is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_authenticate_success(self, mock_settings):
         from app.services.auth import AuthService
 
@@ -220,7 +227,7 @@ class TestAuthenticateUser:
 class TestChangePassword:
     """Tests for password change."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_change_password_wrong_current(self, mock_settings):
         from app.services.auth import AuthService
 
@@ -233,7 +240,7 @@ class TestChangePassword:
         result = await service.change_password(user_mock, "wrongcurrent", "newpassword")
         assert result is False
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_change_password_success(self, mock_settings):
         from app.services.auth import AuthService
 

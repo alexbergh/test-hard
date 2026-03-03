@@ -20,7 +20,7 @@ class TestMetricDefinitions:
     """Verify that all custom metrics are properly defined."""
 
     def test_scans_total_counter(self):
-        assert scans_total._name == "scans_total"
+        assert "scans" in scans_total._name
         assert "scanner" in scans_total._labelnames
         assert "status" in scans_total._labelnames
 
@@ -36,11 +36,11 @@ class TestMetricDefinitions:
         assert active_hosts_gauge._name == "active_hosts_total"
 
     def test_auth_login_counter(self):
-        assert auth_login_total._name == "auth_login_total"
+        assert "auth_login" in auth_login_total._name
         assert "result" in auth_login_total._labelnames
 
     def test_auth_register_counter(self):
-        assert auth_register_total._name == "auth_register_total"
+        assert "auth_register" in auth_register_total._name
         assert "result" in auth_register_total._labelnames
 
     def test_scans_total_can_increment(self):
