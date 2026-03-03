@@ -487,9 +487,11 @@ podman-compose up -d
 * macOS (Intel/Apple Silicon) + Podman Machine
 
 **Важно для Windows:** Запустите Podman API на TCP:
+
 ```bash
 podman machine ssh "podman system service --time=0 tcp:0.0.0.0:2375 &"
 ```
+
 И используйте `tcp://host.containers.internal:2375` для подключения из контейнеров.
 
 **Но:** нативное сканирование только для Linux/BSD.
