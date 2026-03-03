@@ -23,7 +23,7 @@ if "sqlite" in db_url:
     db_dir.mkdir(parents=True, exist_ok=True)
 
 # PostgreSQL connection pool settings
-engine_kwargs = {
+engine_kwargs: dict[str, bool | int] = {
     "echo": settings.debug,
     "future": True,
 }

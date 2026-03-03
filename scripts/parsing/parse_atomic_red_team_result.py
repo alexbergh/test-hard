@@ -90,7 +90,7 @@ def emit_modern_format(host: str, data: dict[str, Any]) -> None:
 
     summary = data.get("summary", {})
     for key, value in summary.items():
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             print(
                 render_metric(
                     "art_summary_total",
