@@ -2,16 +2,16 @@
 
 import asyncio
 import logging
-from typing import Sequence
+from collections.abc import Sequence
+
+# NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+import docker as podman
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.models import Host
 from app.schemas import HostCreate, HostUpdate
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-# NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
-import docker as podman
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -142,7 +142,7 @@ class HostService:
             writer.close()
             await writer.wait_closed()
             return "online"
-        except (asyncio.TimeoutError, OSError):
+        except (TimeoutError, OSError):
             return "offline"
 
     async def _check_k8s_status(self, host: Host) -> str:
@@ -211,8 +211,9 @@ class HostService:
 
 def _check_k8s_status_sync(cluster_obj, host_obj) -> str:
     """Synchronous K8s node/pod status check (runs in thread)."""
-    from app.services.k8s_connector import K8sConnector
     from kubernetes import client as k8s_client
+
+    from app.services.k8s_connector import K8sConnector
 
     connector = K8sConnector(
         api_url=cluster_obj.k8s_api_url,

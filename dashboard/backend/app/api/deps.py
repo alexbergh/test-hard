@@ -2,12 +2,13 @@
 
 from typing import Annotated
 
-from app.database import get_session
-from app.models import User
-from app.services.auth import AuthService
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_session
+from app.models import User
+from app.services.auth import AuthService
 
 security = HTTPBearer()
 

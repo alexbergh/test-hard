@@ -4,11 +4,12 @@ import csv
 import io
 import json
 
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import FileResponse, StreamingResponse
+
 from app.api.deps import CurrentUser, DbSession, OperatorUser
 from app.schemas import ScanCreate, ScanResponse, ScanSummary
 from app.services.scan import ScanService
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import FileResponse, StreamingResponse
 
 router = APIRouter()
 
@@ -88,9 +89,16 @@ async def create_scan(
     await session.commit()
 
     from app.services.audit import log_action
-    await log_action(session, "scan_started", user_id=current_user.id, username=current_user.username,
-                     resource_type="scan", resource_id=str(scan.id),
-                     detail=f"scanner={scan_data.scanner} host_id={scan_data.host_id}")
+
+    await log_action(
+        session,
+        "scan_started",
+        user_id=current_user.id,
+        username=current_user.username,
+        resource_type="scan",
+        resource_id=str(scan.id),
+        detail=f"scanner={scan_data.scanner} host_id={scan_data.host_id}",
+    )
 
     # Start scan immediately
     await scan_service.start_scan(scan.id)
@@ -195,14 +203,16 @@ async def export_scan_results(
         )
 
     results_data = []
-    for r in (scan.results or []):
-        results_data.append({
-            "rule_id": r.rule_id,
-            "title": r.title,
-            "severity": r.severity,
-            "status": r.status,
-            "category": r.category or "",
-        })
+    for r in scan.results or []:
+        results_data.append(
+            {
+                "rule_id": r.rule_id,
+                "title": r.title,
+                "severity": r.severity,
+                "status": r.status,
+                "category": r.category or "",
+            }
+        )
 
     if format == "json":
         export = {

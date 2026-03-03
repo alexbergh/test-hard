@@ -16,9 +16,8 @@ import logging
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,7 +85,7 @@ def check_nmap() -> bool:
     return False
 
 
-def run_nmap(targets: List[str], scan_type: str, timeout: int, extra_args: str, xml_output: str) -> bool:
+def run_nmap(targets: list[str], scan_type: str, timeout: int, extra_args: str, xml_output: str) -> bool:
     """Run nmap scan and save XML output."""
     profile_args = SCAN_PROFILES.get(scan_type, SCAN_PROFILES["quick"])
     cmd = f"nmap {profile_args} {extra_args} -oX {xml_output} {' '.join(targets)}"
@@ -113,12 +112,12 @@ def run_nmap(targets: List[str], scan_type: str, timeout: int, extra_args: str, 
         return False
 
 
-def parse_nmap_xml(xml_path: str) -> Dict:
+def parse_nmap_xml(xml_path: str) -> dict:
     """Parse nmap XML output into structured data."""
     import xml.etree.ElementTree as ET
 
     results = {
-        "scan_time": datetime.now(timezone.utc).isoformat(),
+        "scan_time": datetime.now(UTC).isoformat(),
         "hosts": [],
         "summary": {
             "total_hosts": 0,
@@ -169,7 +168,7 @@ def parse_nmap_xml(xml_path: str) -> Dict:
     return results
 
 
-def _parse_host(host_elem) -> Optional[Dict]:
+def _parse_host(host_elem) -> dict | None:
     """Parse a single host element."""
     status = host_elem.find("status")
     if status is None or status.get("state") != "up":
@@ -243,7 +242,7 @@ def _parse_host(host_elem) -> Optional[Dict]:
     return host
 
 
-def generate_prometheus_metrics(results: Dict, prom_path: str) -> None:
+def generate_prometheus_metrics(results: dict, prom_path: str) -> None:
     """Generate Prometheus metrics from scan results."""
     lines = []
 
@@ -252,23 +251,23 @@ def generate_prometheus_metrics(results: Dict, prom_path: str) -> None:
 
     lines.append("# HELP network_scan_hosts_total Total hosts discovered by network scan")
     lines.append("# TYPE network_scan_hosts_total gauge")
-    lines.append(f'network_scan_hosts_total {summary.get("hosts_up", 0)}')
+    lines.append(f"network_scan_hosts_total {summary.get('hosts_up', 0)}")
 
     lines.append("# HELP network_scan_hosts_down Hosts that are down")
     lines.append("# TYPE network_scan_hosts_down gauge")
-    lines.append(f'network_scan_hosts_down {summary.get("hosts_down", 0)}')
+    lines.append(f"network_scan_hosts_down {summary.get('hosts_down', 0)}")
 
     lines.append("# HELP network_scan_open_ports_total Total open ports discovered")
     lines.append("# TYPE network_scan_open_ports_total gauge")
-    lines.append(f'network_scan_open_ports_total {summary.get("open_ports", 0)}')
+    lines.append(f"network_scan_open_ports_total {summary.get('open_ports', 0)}")
 
     lines.append("# HELP network_scan_services_total Unique services discovered")
     lines.append("# TYPE network_scan_services_total gauge")
-    lines.append(f'network_scan_services_total {summary.get("services_found", 0)}')
+    lines.append(f"network_scan_services_total {summary.get('services_found', 0)}")
 
     lines.append("# HELP network_scan_timestamp Last scan timestamp")
     lines.append("# TYPE network_scan_timestamp gauge")
-    lines.append(f"network_scan_timestamp {int(datetime.now(timezone.utc).timestamp())}")
+    lines.append(f"network_scan_timestamp {int(datetime.now(UTC).timestamp())}")
 
     # Per-host metrics
     lines.append("# HELP network_scan_host_up Whether a discovered host is up (1=up)")
@@ -284,7 +283,7 @@ def generate_prometheus_metrics(results: Dict, prom_path: str) -> None:
         mac = host.get("mac", "")
         labels = f'ip="{ip}",hostname="{hostname}",vendor="{vendor}",mac="{mac}"'
         lines.append(f"network_scan_host_up{{{labels}}} 1")
-        lines.append(f'network_scan_host_ports{{{labels}}} {len(host.get("ports", []))}')
+        lines.append(f"network_scan_host_ports{{{labels}}} {len(host.get('ports', []))}")
 
     # Per-port metrics
     lines.append("# HELP network_scan_port_open Open port on a host (1=open)")
@@ -320,7 +319,7 @@ def main() -> int:
     (output / "history").mkdir(exist_ok=True)
     (output / "prometheus").mkdir(exist_ok=True)
 
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     xml_path = str(output / "history" / f"scan_{ts}.xml")
 
     # Run nmap
@@ -368,7 +367,7 @@ def main() -> int:
     )
 
     for host in results["hosts"]:
-        ports_str = ", ".join(f'{p["port"]}/{p["service"]}' for p in host.get("ports", [])[:10])
+        ports_str = ", ".join(f"{p['port']}/{p['service']}" for p in host.get("ports", [])[:10])
         logger.info(
             "  %s (%s) %s — ports: %s",
             host["ip"],

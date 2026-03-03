@@ -1,10 +1,11 @@
 """Notification settings and test endpoints."""
 
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
 from app.api.deps import CurrentUser
 from app.config import get_settings
 from app.services.notifications import send_scan_notification
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
 router = APIRouter()
 settings = get_settings()

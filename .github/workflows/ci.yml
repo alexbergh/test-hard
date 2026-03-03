@@ -106,11 +106,12 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-mock
+          pip install -r dashboard/backend/requirements.txt
+          pip install pytest pytest-cov pytest-mock pytest-asyncio
 
       - name: Run unit tests
         run: |
-          pytest tests/unit/ -v --cov=scripts --cov-report=xml --cov-report=term
+          PYTHONPATH=dashboard/backend:$PYTHONPATH pytest tests/unit/ -v --cov=scripts --cov-report=xml --cov-report=term
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

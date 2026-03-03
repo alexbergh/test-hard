@@ -2,15 +2,15 @@
 
 import asyncio
 import logging
-from typing import Sequence
-
-from app.models import Cluster, Host
-from app.services.k8s_connector import K8sConnector
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from collections.abc import Sequence
 
 # NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
 import docker as podman
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import Cluster, Host
+from app.services.k8s_connector import K8sConnector
 
 logger = logging.getLogger(__name__)
 

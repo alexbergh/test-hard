@@ -178,7 +178,7 @@ class ImageChecker:
                 status="fail",
                 category="image-pinning",
                 target=ref,
-                detail=f"Image '{image}' is not pinned by digest. " "Tags are mutable and can be overwritten.",
+                detail=f"Image '{image}' is not pinned by digest. Tags are mutable and can be overwritten.",
                 remediation="Use digest pinning: image@sha256:<digest>",
             )
 
@@ -283,9 +283,7 @@ class ImageChecker:
             if base in img_lower:
                 minor = int(version_match.group(2)) if version_match.group(2) else None
                 is_old = False
-                if major < eol_major:
-                    is_old = True
-                elif major == eol_major and eol_minor and minor is not None and minor <= eol_minor:
+                if major < eol_major or major == eol_major and eol_minor and minor is not None and minor <= eol_minor:
                     is_old = True
 
                 if is_old:

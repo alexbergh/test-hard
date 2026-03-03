@@ -79,7 +79,9 @@ rules:
     resources: ["podsecuritypolicies"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["constraints.gatekeeper.sh"]
-    resources: ["*"]
+    resources: ["k8spspprivilegedcontainer", "k8spspcapabilities", "k8spspreadonlyrootfilesystem",
+                "k8spspallowprivilegeescalation", "k8spsphostnamespace", "k8spsphostnetworkingports",
+                "k8spspvolumetypes", "k8spspallowedusers", "k8srequiredlabels", "k8srequiredprobes"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["templates.gatekeeper.sh"]
     resources: ["constrainttemplates"]

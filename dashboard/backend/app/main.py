@@ -1,14 +1,11 @@
 """FastAPI application entry point."""
 
+import asyncio
+import contextlib
 import logging
 import traceback
 from contextlib import asynccontextmanager
 
-from app.api import api_router
-from app.config import get_settings
-from app.database import init_db
-from app.services.scheduler import scheduler_service
-from app.tracing import setup_tracing
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,6 +13,12 @@ from prometheus_client import make_asgi_app
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+
+from app.api import api_router
+from app.config import get_settings
+from app.database import init_db
+from app.services.scheduler import scheduler_service
+from app.tracing import setup_tracing
 
 settings = get_settings()
 
@@ -26,10 +29,12 @@ if settings.environment == "production":
     from pythonjsonlogger import jsonlogger
 
     handler = logging.StreamHandler()
-    handler.setFormatter(jsonlogger.JsonFormatter(
-        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
-        rename_fields={"asctime": "timestamp", "levelname": "level"},
-    ))
+    handler.setFormatter(
+        jsonlogger.JsonFormatter(
+            fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+            rename_fields={"asctime": "timestamp", "levelname": "level"},
+        )
+    )
     logging.root.handlers = [handler]
     logging.root.setLevel(log_level)
 else:
@@ -55,7 +60,6 @@ async def lifespan(app: FastAPI):
     await scheduler_service.start()
 
     # Start WebSocket broadcast worker
-    import asyncio
     from app.services.ws_manager import message_queue, ws_manager
 
     async def _ws_broadcast_worker():
@@ -68,26 +72,26 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 logger.error("WS broadcast error: %s", e)
 
-    ws_task = asyncio.create_task(_ws_broadcast_worker())
+    ws_task = asyncio.create_task(_ws_broadcast_worker())  # noqa: F823
 
     yield
 
     ws_task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await ws_task
-    except asyncio.CancelledError:
-        pass
 
     # Shutdown
     logger.info("Shutting down...")
 
     # Cancel running scan tasks gracefully
     from app.services.scan import _background_tasks
+
     if _background_tasks:
         logger.info("Cancelling %d running scan task(s)...", len(_background_tasks))
         for task in _background_tasks:
             task.cancel()
         import asyncio
+
         results = await asyncio.gather(*_background_tasks, return_exceptions=True)
         for r in results:
             if isinstance(r, Exception) and not isinstance(r, asyncio.CancelledError):

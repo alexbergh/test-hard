@@ -1,5 +1,6 @@
 """Kubernetes connector service -- connects to K8s API, discovers pods/nodes/containers."""
 
+import contextlib
 import logging
 import tempfile
 from pathlib import Path
@@ -84,15 +85,13 @@ class K8sConnector:
             self._api_client.close()
             self._api_client = None
         for tf in self._temp_files:
-            try:
+            with contextlib.suppress(Exception):
                 tf.unlink(missing_ok=True)
-            except Exception:
-                pass
         self._temp_files.clear()
 
     def _write_temp(self, name: str, content: str) -> Path:
         """Write content to a temp file, return path."""
-        tmp = Path(tempfile.mktemp(suffix=f"_{name}"))
+        tmp = Path(tempfile.mkstemp(suffix=f"_{name}")[1])
         tmp.write_text(content)
         self._temp_files.append(tmp)
         return tmp
@@ -162,10 +161,7 @@ class K8sConnector:
     def list_pods(self, namespace: str | None = None) -> list[dict]:
         """List pods with security context extraction."""
         v1 = k8s_client.CoreV1Api(self.connect())
-        if namespace:
-            pods = v1.list_namespaced_pod(namespace)
-        else:
-            pods = v1.list_pod_for_all_namespaces()
+        pods = v1.list_namespaced_pod(namespace) if namespace else v1.list_pod_for_all_namespaces()
 
         result = []
         for pod in pods.items:

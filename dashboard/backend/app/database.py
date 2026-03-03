@@ -4,9 +4,10 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from app.config import get_settings
 from app.models import Base
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 settings = get_settings()
 
@@ -28,12 +29,14 @@ engine_kwargs = {
 }
 
 if "postgresql" in db_url:
-    engine_kwargs.update({
-        "pool_size": 10,
-        "max_overflow": 20,
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-    })
+    engine_kwargs.update(
+        {
+            "pool_size": 10,
+            "max_overflow": 20,
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+        }
+    )
 
 engine = create_async_engine(settings.database_url, **engine_kwargs)
 
@@ -57,13 +60,15 @@ async def init_db() -> None:
 
     # Seed default admin user if no users exist
     async with async_session_maker() as session:
-        from app.models import User
         from sqlalchemy import func, select
+
+        from app.models import User
 
         count = (await session.execute(select(func.count(User.id)))).scalar() or 0
         if count == 0:
-            import bcrypt
             import secrets
+
+            import bcrypt
 
             raw_password = settings.admin_default_password or secrets.token_urlsafe(16)
             hashed = bcrypt.hashpw(raw_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")

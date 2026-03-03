@@ -3,9 +3,10 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from app.models.base import Base, TimestampMixin
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.host import Host

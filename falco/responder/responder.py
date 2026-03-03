@@ -8,14 +8,13 @@ Part of test-hard security hardening platform.
 import logging
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import yaml
-from flask import Flask, jsonify, request
 
 # NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
 import docker as podman
+import yaml
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -279,7 +278,7 @@ def process_event(event: dict) -> dict:
         "rule": rule_name,
         "container": container_name,
         "actions": results,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -307,7 +306,7 @@ def health():
                 "status": "healthy",
                 "service": "falco-responder",
                 "dry_run": DRY_RUN,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         ),
         200,
@@ -329,7 +328,7 @@ def get_recent_events():
     cooldown_seconds = config.get("defaults", {}).get("cooldown_seconds", 60)
     active = {
         key: {
-            "last_action": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+            "last_action": datetime.fromtimestamp(ts, tz=UTC).isoformat(),
             "cooldown_remaining": max(0, cooldown_seconds - (now - ts)),
         }
         for key, ts in _cooldowns.items()

@@ -1,16 +1,17 @@
 """Scheduled scanning service using APScheduler."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import delete, select
 
 from app.config import get_settings
 from app.database import get_session_context
 from app.models import Scan, ScanSchedule
 from app.models.scan import ScanResult
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
-from sqlalchemy import delete, select
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
@@ -149,7 +150,7 @@ class SchedulerService:
             session.add(scan)
 
             # Update schedule tracking
-            schedule.last_run_at = datetime.now(timezone.utc)
+            schedule.last_run_at = datetime.now(UTC)
             schedule.run_count += 1
 
             # Calculate next run
@@ -170,7 +171,7 @@ class SchedulerService:
 
     async def _cleanup_old_scans(self) -> None:
         """Remove scans older than 30 days to enforce retention policy."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff = datetime.now(UTC) - timedelta(days=30)
         logger.info(f"Running scan retention cleanup, removing scans before {cutoff}")
 
         async with get_session_context() as session:

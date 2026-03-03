@@ -51,46 +51,80 @@ TASKS = [
     (2, "Фаза 1: Архитектурная проработка", 0, 2, None, True, [], ""),
     (3, "Анализ и проработка замечаний к архдоку", 10, 3, None, False, ["ЦКГС"], "Доработка имеющейся фактуры"),
     (4, "Промежуточное демо", 1, 3, 3, False, ["ЦКГС", "ЦМРК"], "Демонстрация текущего состояния решения"),
-    (5, "Внутреннее согласование скорректированной версии", 5, 3, 4, False, ["ЦКГС", "ЦМРК"],
-     "С учётом результатов демо"),
+    (
+        5,
+        "Внутреннее согласование скорректированной версии",
+        5,
+        3,
+        4,
+        False,
+        ["ЦКГС", "ЦМРК"],
+        "С учётом результатов демо",
+    ),
     (6, "Сбор, анализ и доработка замечаний", 10, 3, 5, False, ["ЦКГС"], ""),
     (7, "Буфер фазы 1", 1, 3, 6, False, [], "Резерв на непредвиденные задержки"),
     # Phase 2
     (8, "Фаза 2: Подготовка пилотной среды", 0, 2, None, True, [], ""),
-    (9, "Определение места и ресурсов для пилота", 3, 3, 7, False, ["ЦКГС", "ЦМРК"],
-     "Выделение стенда, сети, доступов"),
-    (10, "Развёртывание решения на стенде", 3, 3, 9, False, ["ЦКГС"],
-     "Docker Compose / K8s, мониторинг стек"),
-    (11, "Настройка интеграций с целевой инфраструктурой", 3, 3, 10, False, ["ЦКГС"],
-     "Подключение кластеров, хостов, сеть"),
+    (
+        9,
+        "Определение места и ресурсов для пилота",
+        3,
+        3,
+        7,
+        False,
+        ["ЦКГС", "ЦМРК"],
+        "Выделение стенда, сети, доступов",
+    ),
+    (10, "Развёртывание решения на стенде", 3, 3, 9, False, ["ЦКГС"], "Docker Compose / K8s, мониторинг стек"),
+    (
+        11,
+        "Настройка интеграций с целевой инфраструктурой",
+        3,
+        3,
+        10,
+        False,
+        ["ЦКГС"],
+        "Подключение кластеров, хостов, сеть",
+    ),
     (12, "Верификация развёртывания", 2, 3, 11, False, ["ЦКГС"], "Smoke-тесты, проверка компонентов"),
     (13, "Буфер фазы 2", 2, 3, 12, False, [], "Резерв на проблемы с инфраструктурой"),
     # Phase 3
     (14, "Фаза 3: Проведение пилота", 0, 2, None, True, [], ""),
-    (15, "Проведение пилота", 8, 3, 13, False, ["ЦКГС"],
-     "8 сценариев: discovery, hardening, scan, drift, image, monitoring, нагрузка, комплексный"),
-    (16, "Доработка решения по результатам пилота", 5, 3, 15, False, ["ЦКГС"],
-     "Исправление дефектов, доработка"),
+    (
+        15,
+        "Проведение пилота",
+        8,
+        3,
+        13,
+        False,
+        ["ЦКГС"],
+        "8 сценариев: discovery, hardening, scan, drift, image, monitoring, нагрузка, комплексный",
+    ),
+    (16, "Доработка решения по результатам пилота", 5, 3, 15, False, ["ЦКГС"], "Исправление дефектов, доработка"),
     (17, "Валидация результатов", 3, 3, 16, False, ["ЦКГС"], "Повторная проверка по критериям"),
     (18, "Подготовка отчёта о пилоте", 2, 3, 17, False, ["ЦКГС"], "Метрики, выводы, рекомендации"),
-    (19, "Внутреннее согласование результатов пилота", 5, 3, 18, False, ["ЦКГС", "ЦМРК"],
-     "Утверждение доработанной версии"),
+    (
+        19,
+        "Внутреннее согласование результатов пилота",
+        5,
+        3,
+        18,
+        False,
+        ["ЦКГС", "ЦМРК"],
+        "Утверждение доработанной версии",
+    ),
     # Phase 4
     (20, "Фаза 4: Архком РТЛабс", 0, 2, None, True, [], ""),
-    (21, "Актуализация архдока, запись на архком", 5, 3, 19, False, ["ЦКГС"],
-     "На основе согласованных результатов"),
+    (21, "Актуализация архдока, запись на архком", 5, 3, 19, False, ["ЦКГС"], "На основе согласованных результатов"),
     (22, "Представление решения на архкоме", 1, 3, 21, False, ["ЦКГС"], ""),
     (23, "Буфер (доработка по замечаниям архкома)", 2, 3, 22, False, ["ЦКГС"], "Если будут замечания"),
     # Phase 5
     (24, "Фаза 5: Ввод в эксплуатацию", 0, 2, None, True, [], ""),
-    (25, "Подготовка эксплуатационной документации", 3, 3, 23, False, ["ЦКГС"],
-     "Runbooks, инструкции, SLA"),
+    (25, "Подготовка эксплуатационной документации", 3, 3, 23, False, ["ЦКГС"], "Runbooks, инструкции, SLA"),
     (26, "Обучение и передача знаний", 2, 3, 25, False, ["ЦКГС"], "Операторы, администраторы"),
     (27, "Развёртывание в промышленной среде", 3, 3, 26, False, ["ЦКГС"], "С мониторингом процесса"),
-    (28, "Приёмочное тестирование (UAT)", 2, 3, 27, False, ["ЦКГС", "ЦМРК"],
-     "Подтверждение работоспособности"),
-    (29, "Подписание акта ввода в эксплуатацию", 1, 2, 28, False, ["ЦКГС", "ЦМРК"],
-     "Формальное завершение проекта"),
+    (28, "Приёмочное тестирование (UAT)", 2, 3, 27, False, ["ЦКГС", "ЦМРК"], "Подтверждение работоспособности"),
+    (29, "Подписание акта ввода в эксплуатацию", 1, 2, 28, False, ["ЦКГС", "ЦМРК"], "Формальное завершение проекта"),
 ]
 
 RESOURCES = {"ЦКГС": 1, "ЦМРК": 2}
@@ -102,7 +136,7 @@ def compute_dates():
     """Compute start/finish for every task based on predecessors."""
     dates = {}  # task_id -> (start, finish)
 
-    for tid, name, dur, level, pred, is_summary, res, notes in TASKS:
+    for tid, _name, dur, _level, pred, is_summary, _res, _notes in TASKS:
         if is_summary:
             continue
         if pred is None:
@@ -116,12 +150,12 @@ def compute_dates():
     # Task 29 is at outline level 2, direct child of task 1
     # Summary tasks: span their children
     summary_children = {
-        2: [3, 4, 5, 6, 7],     # phase 1
-        8: [9, 10, 11, 12, 13], # phase 2
+        2: [3, 4, 5, 6, 7],  # phase 1
+        8: [9, 10, 11, 12, 13],  # phase 2
         14: [15, 16, 17, 18, 19],  # phase 3
-        20: [21, 22, 23],       # phase 4
-        24: [25, 26, 27, 28],   # phase 5
-        1: list(range(2, 30)),   # top-level summary (must be last)
+        20: [21, 22, 23],  # phase 4
+        24: [25, 26, 27, 28],  # phase 5
+        1: list(range(2, 30)),  # top-level summary (must be last)
     }
     # Process bottom-up
     for summary_id in [2, 8, 14, 20, 24, 1]:
@@ -203,7 +237,7 @@ def build_xml():
     ET.SubElement(t0, "ManualStart").text = fmt_start(PROJECT_START)
     ET.SubElement(t0, "ManualFinish").text = fmt_finish(dates[1][1])
 
-    for tid, name, dur, level, pred, is_summary, res_names, notes in TASKS:
+    for tid, name, dur, level, pred, is_summary, _res_names, notes in TASKS:
         t = ET.SubElement(tasks_elem, "Task")
         ET.SubElement(t, "UID").text = str(tid)
         ET.SubElement(t, "ID").text = str(tid)
@@ -267,7 +301,7 @@ def build_xml():
     # ---- Assignments ----
     assignments_elem = ET.SubElement(project, "Assignments")
     assign_uid = 0
-    for tid, name, dur, level, pred, is_summary, res_names, notes in TASKS:
+    for tid, _name, _dur, _level, _pred, is_summary, res_names, _notes in TASKS:
         if is_summary:
             continue
         for res_name in res_names:
@@ -293,7 +327,8 @@ def write_xml(project, output_path):
     """Write pretty-printed XML to file."""
     rough = ET.tostring(project, encoding="unicode", xml_declaration=False)
     from xml.dom.minidom import parseString
-    dom = parseString(f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>{rough}')
+
+    dom = parseString(f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>{rough}')  # noqa: S318
     pretty = dom.toprettyxml(indent="  ", encoding="UTF-8")
     # Remove extra xml declaration from toprettyxml
     lines = pretty.decode("utf-8").split("\n")
@@ -316,7 +351,7 @@ def main():
     print(f"Tasks: {len(TASKS)}")
     print()
     print("Schedule:")
-    for tid, name, dur, level, pred, is_summary, res, notes in TASKS:
+    for tid, name, _dur, level, _pred, is_summary, res, _notes in TASKS:
         s, f = dates[tid]
         indent = "  " * (level - 1)
         marker = "[S]" if is_summary else "   "

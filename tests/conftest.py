@@ -3,7 +3,7 @@
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -19,7 +19,7 @@ def project_root() -> Path:
 
 
 @pytest.fixture
-def sample_lynis_report() -> Dict[str, Any]:
+def sample_lynis_report() -> dict[str, Any]:
     """Return sample Lynis report data."""
     return {
         "general": {"hostname": "test-host", "hardening_index": 75},
@@ -42,7 +42,7 @@ def sample_lynis_report() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_atomic_modern_report() -> Dict[str, Any]:
+def sample_atomic_modern_report() -> dict[str, Any]:
     """Return sample Atomic Red Team modern format report."""
     return {
         "host": "test-host",
@@ -90,7 +90,7 @@ def sample_atomic_modern_report() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_atomic_legacy_report() -> Dict[str, Any]:
+def sample_atomic_legacy_report() -> dict[str, Any]:
     """Return sample Atomic Red Team legacy format report."""
     return {
         "tests": [

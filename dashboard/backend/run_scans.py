@@ -3,16 +3,16 @@
 import asyncio
 import re
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+# NOTE: 'podman' is the Python SDK package name (API-compatible with Podman)
+import docker as podman_lib
+from sqlalchemy import select
 
 from app.config import get_settings
 from app.database import get_session_context
 from app.models import Host, Scan
 from app.models.scan import ScanResult
-from sqlalchemy import select
-
-# NOTE: 'podman' is the Python SDK package name (API-compatible with Podman)
-import docker as podman_lib
 
 settings = get_settings()
 
@@ -72,7 +72,7 @@ def parse_lynis(output: str) -> dict:
             if title and len(title) > 5:
                 findings.append(
                     {
-                        "rule_id": f"LYNIS-W-{len(findings)+1:04d}",
+                        "rule_id": f"LYNIS-W-{len(findings) + 1:04d}",
                         "title": title[:500],
                         "severity": "high",
                         "status": "fail",
@@ -104,7 +104,7 @@ def parse_lynis(output: str) -> dict:
             if title and len(title) > 5:
                 findings.append(
                     {
-                        "rule_id": f"LYNIS-WARN-{len(findings)+1:04d}",
+                        "rule_id": f"LYNIS-WARN-{len(findings) + 1:04d}",
                         "title": title[:500],
                         "severity": "high",
                         "status": "fail",
@@ -123,7 +123,7 @@ def parse_lynis(output: str) -> dict:
                     sev = "low"
                 findings.append(
                     {
-                        "rule_id": f"LYNIS-SUGG-{len(findings)+1:04d}",
+                        "rule_id": f"LYNIS-SUGG-{len(findings) + 1:04d}",
                         "title": title[:500],
                         "severity": sev,
                         "status": "fail",
@@ -159,7 +159,7 @@ async def main():
                 user_id=1,
                 scanner="lynis",
                 status="running",
-                started_at=datetime.now(timezone.utc),
+                started_at=datetime.now(UTC),
             )
             session.add(scan)
             await session.flush()
@@ -172,7 +172,7 @@ async def main():
                 parsed = parse_lynis(output)
 
                 scan.status = "completed"
-                scan.completed_at = datetime.now(timezone.utc)
+                scan.completed_at = datetime.now(UTC)
                 scan.duration_seconds = int(elapsed)
                 scan.score = parsed["score"]
                 scan.passed = parsed["passed"]
@@ -203,7 +203,7 @@ async def main():
             except Exception as e:
                 scan.status = "failed"
                 scan.error_message = str(e)
-                scan.completed_at = datetime.now(timezone.utc)
+                scan.completed_at = datetime.now(UTC)
                 host.status = "online"
                 await session.commit()
                 print(f"  FAILED: {e}")

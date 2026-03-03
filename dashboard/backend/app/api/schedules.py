@@ -1,14 +1,15 @@
 """Scan schedule management endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+from apscheduler.triggers.cron import CronTrigger
+from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession, OperatorUser
 from app.models import ScanSchedule
 from app.schemas import ScanScheduleCreate, ScanScheduleResponse, ScanScheduleUpdate
 from app.services.scheduler import scheduler_service
-from apscheduler.triggers.cron import CronTrigger
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
 
 router = APIRouter()
 
@@ -65,12 +66,12 @@ async def create_schedule(
     # Validate cron expression
     try:
         trigger = CronTrigger.from_crontab(schedule_data.cron_expression)
-        next_run = trigger.get_next_fire_time(None, datetime.now(timezone.utc))
+        next_run = trigger.get_next_fire_time(None, datetime.now(UTC))
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid cron expression: {e}",
-        )
+        ) from e
 
     schedule = ScanSchedule(
         host_id=schedule_data.host_id,
@@ -117,13 +118,13 @@ async def update_schedule(
     if schedule_data.cron_expression:
         try:
             trigger = CronTrigger.from_crontab(schedule_data.cron_expression)
-            next_run = trigger.get_next_fire_time(None, datetime.now(timezone.utc))
+            next_run = trigger.get_next_fire_time(None, datetime.now(UTC))
             schedule.next_run_at = next_run
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid cron expression: {e}",
-            )
+            ) from e
 
     # Update fields
     update_data = schedule_data.model_dump(exclude_unset=True)
@@ -181,7 +182,7 @@ async def toggle_schedule(
         # Recalculate next run time
         try:
             trigger = CronTrigger.from_crontab(schedule.cron_expression)
-            schedule.next_run_at = trigger.get_next_fire_time(None, datetime.now(timezone.utc))
+            schedule.next_run_at = trigger.get_next_fire_time(None, datetime.now(UTC))
         except ValueError:
             pass
 

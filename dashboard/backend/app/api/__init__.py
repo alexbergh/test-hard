@@ -1,7 +1,8 @@
 """API routes."""
 
-from app.api import auth, clusters, dashboard, health, hosts, notifications, scans, schedules, users, ws
 from fastapi import APIRouter
+
+from app.api import auth, clusters, dashboard, health, hosts, notifications, scans, schedules, users, ws
 
 api_router = APIRouter()
 

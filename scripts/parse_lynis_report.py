@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compatibility wrapper for parsing Lynis reports."""
+
 from parsing.parse_lynis_report import parse_lynis_report
 
 if __name__ == "__main__":

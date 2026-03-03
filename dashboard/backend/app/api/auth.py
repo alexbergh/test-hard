@@ -1,11 +1,12 @@
 """Authentication endpoints."""
 
-from app.api.deps import CurrentUser, DbSession
-from app.schemas import EmailUpdate, PasswordChange, RefreshTokenRequest, Token, UserCreate, UserLogin, UserResponse
-from app.services.auth import AuthService
 from fastapi import APIRouter, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+from app.api.deps import CurrentUser, DbSession
+from app.schemas import EmailUpdate, PasswordChange, RefreshTokenRequest, Token, UserCreate, UserLogin, UserResponse
+from app.services.auth import AuthService
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -36,12 +37,21 @@ async def register(request: Request, user_data: UserCreate, session: DbSession) 
     user = await auth_service.create_user(user_data)
 
     from app.metrics import auth_register_total
+
     auth_register_total.labels(result="success").inc()
 
     from app.services.audit import _extract_request_info, log_action
+
     ri = _extract_request_info(request)
-    await log_action(session, "user_registered", user_id=user.id, username=user.username,
-                     resource_type="user", resource_id=str(user.id), **ri)
+    await log_action(
+        session,
+        "user_registered",
+        user_id=user.id,
+        username=user.username,
+        resource_type="user",
+        resource_id=str(user.id),
+        **ri,
+    )
 
     return UserResponse.model_validate(user)
 
@@ -73,9 +83,17 @@ async def login(request: Request, credentials: UserLogin, session: DbSession) ->
     auth_login_total.labels(result="success").inc()
 
     from app.services.audit import _extract_request_info, log_action
+
     ri = _extract_request_info(request)
-    await log_action(session, "user_login", user_id=user.id, username=user.username,
-                     resource_type="user", resource_id=str(user.id), **ri)
+    await log_action(
+        session,
+        "user_login",
+        user_id=user.id,
+        username=user.username,
+        resource_type="user",
+        resource_id=str(user.id),
+        **ri,
+    )
 
     return auth_service.create_token_for_user(user)
 
@@ -118,8 +136,15 @@ async def change_password(
             detail="Current password is incorrect",
         )
     from app.services.audit import log_action
-    await log_action(session, "password_changed", user_id=current_user.id, username=current_user.username,
-                     resource_type="user", resource_id=str(current_user.id))
+
+    await log_action(
+        session,
+        "password_changed",
+        user_id=current_user.id,
+        username=current_user.username,
+        resource_type="user",
+        resource_id=str(current_user.id),
+    )
 
     return {"message": "Password changed successfully"}
 
@@ -131,8 +156,9 @@ async def update_email(
     current_user: CurrentUser,
 ) -> dict:
     """Update current user's email."""
-    from app.models import User
     from sqlalchemy import select
+
+    from app.models import User
 
     new_email = data.email
 

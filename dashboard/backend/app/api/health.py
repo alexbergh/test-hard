@@ -1,9 +1,10 @@
 """Health check endpoints."""
 
-from app.config import get_settings
 from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import text
+
+from app.config import get_settings
 
 router = APIRouter()
 settings = get_settings()
@@ -51,10 +52,9 @@ async def health_check() -> HealthResponse:
 @router.get("/ready", response_model=ReadinessResponse)
 async def readiness_check() -> ReadinessResponse:
     """Readiness check with dependency status."""
-    from app.services.scheduler import scheduler_service
-
     # Check database
     from app.database import get_session_context
+    from app.services.scheduler import scheduler_service
 
     db_status = "healthy"
     try:

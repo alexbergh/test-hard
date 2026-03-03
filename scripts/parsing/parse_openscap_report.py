@@ -5,7 +5,6 @@ import platform
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Optional
 
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
@@ -15,7 +14,7 @@ DEFAULT_RESULTS_ROOT = Path(os.environ.get("HARDENING_RESULTS_DIR", "/var/lib/ha
 DEFAULT_RESULTS_DIR = DEFAULT_RESULTS_ROOT / "openscap"
 
 
-def _latest_report(results_dir: Path) -> Optional[Path]:
+def _latest_report(results_dir: Path) -> Path | None:
     """Return the most recent ARF report in ``results_dir`` if it exists."""
     if not results_dir.is_dir():
         logger.debug("Results directory does not exist: %s", results_dir)
@@ -131,10 +130,7 @@ def main(argv: list[str]) -> int:  # noqa: C901
             + counts.get("notapplicable", 0)
             + counts.get("informational", 0)
         )
-        if evaluated > 0:
-            score = int(((evaluated - fail_count) * 100) / evaluated)
-        else:
-            score = 0
+        score = int((evaluated - fail_count) * 100 / evaluated) if evaluated > 0 else 0
 
         metrics_lines.append(f'openscap_pass_count{{host="{hostname}"}} {pass_count}')
         metrics_lines.append(f'openscap_fail_count{{host="{hostname}"}} {fail_count}')

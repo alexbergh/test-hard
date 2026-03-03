@@ -16,7 +16,6 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-for-unit-tests-only")
 BACKEND_ROOT = Path(__file__).parent.parent.parent / "dashboard" / "backend"
 sys.path.insert(0, str(BACKEND_ROOT))
 
-# Now safe to import - module-level engine creation will use sqlite URL
 from app.services.auth import AuthService  # noqa: E402
 
 
@@ -38,27 +37,19 @@ class TestPasswordHashing:
     """Tests for password hashing and verification."""
 
     def test_hash_password(self):
-        from app.services.auth import AuthService
-
         hashed = AuthService.get_password_hash("testpassword123")
         assert hashed != "testpassword123"
         assert hashed.startswith("$2b$")
 
     def test_verify_correct_password(self):
-        from app.services.auth import AuthService
-
         hashed = AuthService.get_password_hash("mypassword")
         assert AuthService.verify_password("mypassword", hashed) is True
 
     def test_verify_wrong_password(self):
-        from app.services.auth import AuthService
-
         hashed = AuthService.get_password_hash("mypassword")
         assert AuthService.verify_password("wrongpassword", hashed) is False
 
     def test_hash_is_unique(self):
-        from app.services.auth import AuthService
-
         hash1 = AuthService.get_password_hash("samepassword")
         hash2 = AuthService.get_password_hash("samepassword")
         assert hash1 != hash2  # bcrypt uses random salt
@@ -68,8 +59,6 @@ class TestAccessToken:
     """Tests for JWT access token creation and decoding."""
 
     def test_create_and_decode_access_token(self, mock_settings):
-        from app.services.auth import AuthService
-
         data = {"sub": "testuser", "user_id": 1, "role": "admin"}
         token = AuthService.create_access_token(data)
 
@@ -80,8 +69,6 @@ class TestAccessToken:
         assert decoded.role == "admin"
 
     def test_decode_expired_token(self, mock_settings):
-        from app.services.auth import AuthService
-
         data = {"sub": "testuser", "user_id": 1, "role": "viewer"}
         token = AuthService.create_access_token(data, expires_delta=timedelta(seconds=-1))
 
@@ -89,14 +76,10 @@ class TestAccessToken:
         assert decoded is None
 
     def test_decode_invalid_token(self):
-        from app.services.auth import AuthService
-
         decoded = AuthService.decode_token("invalid.token.string")
         assert decoded is None
 
     def test_decode_token_wrong_type(self, mock_settings):
-        from app.services.auth import AuthService
-
         data = {"sub": "testuser", "user_id": 1, "role": "viewer"}
         token = AuthService.create_access_token(data)
 
@@ -105,8 +88,6 @@ class TestAccessToken:
         assert decoded is None
 
     def test_token_without_username_returns_none(self, mock_settings):
-        from app.services.auth import AuthService
-
         data = {"user_id": 1, "role": "viewer"}  # no "sub"
         token = AuthService.create_access_token(data)
 
@@ -118,8 +99,6 @@ class TestRefreshToken:
     """Tests for refresh token creation and decoding."""
 
     def test_create_and_decode_refresh_token(self, mock_settings):
-        from app.services.auth import AuthService
-
         data = {"sub": "testuser", "user_id": 1, "role": "admin"}
         token = AuthService.create_refresh_token(data)
 
@@ -128,8 +107,6 @@ class TestRefreshToken:
         assert decoded.username == "testuser"
 
     def test_refresh_token_not_valid_as_access(self, mock_settings):
-        from app.services.auth import AuthService
-
         data = {"sub": "testuser", "user_id": 1, "role": "admin"}
         token = AuthService.create_refresh_token(data)
 
@@ -141,8 +118,6 @@ class TestTokenForUser:
     """Tests for create_token_for_user method."""
 
     def test_create_token_for_user(self, mock_settings):
-        from app.services.auth import AuthService
-
         session = AsyncMock()
         service = AuthService(session)
 
@@ -160,8 +135,6 @@ class TestTokenForUser:
         assert token.must_change_password is False
 
     def test_must_change_password_flag(self, mock_settings):
-        from app.services.auth import AuthService
-
         session = AsyncMock()
         service = AuthService(session)
 
@@ -180,8 +153,6 @@ class TestAuthenticateUser:
 
     @pytest.mark.asyncio(loop_scope="function")
     async def test_authenticate_nonexistent_user(self, mock_settings):
-        from app.services.auth import AuthService
-
         session = AsyncMock()
         result_mock = MagicMock()
         result_mock.scalar_one_or_none.return_value = None
@@ -193,8 +164,6 @@ class TestAuthenticateUser:
 
     @pytest.mark.asyncio(loop_scope="function")
     async def test_authenticate_wrong_password(self, mock_settings):
-        from app.services.auth import AuthService
-
         user_mock = MagicMock()
         user_mock.hashed_password = AuthService.get_password_hash("correctpassword")
 
@@ -209,8 +178,6 @@ class TestAuthenticateUser:
 
     @pytest.mark.asyncio(loop_scope="function")
     async def test_authenticate_success(self, mock_settings):
-        from app.services.auth import AuthService
-
         user_mock = MagicMock()
         user_mock.hashed_password = AuthService.get_password_hash("correctpassword")
 
@@ -229,8 +196,6 @@ class TestChangePassword:
 
     @pytest.mark.asyncio(loop_scope="function")
     async def test_change_password_wrong_current(self, mock_settings):
-        from app.services.auth import AuthService
-
         user_mock = MagicMock()
         user_mock.hashed_password = AuthService.get_password_hash("oldpassword")
 
@@ -242,8 +207,6 @@ class TestChangePassword:
 
     @pytest.mark.asyncio(loop_scope="function")
     async def test_change_password_success(self, mock_settings):
-        from app.services.auth import AuthService
-
         user_mock = MagicMock()
         user_mock.hashed_password = AuthService.get_password_hash("oldpassword")
         user_mock.must_change_password = True

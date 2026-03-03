@@ -398,9 +398,8 @@ class RiskScorer:
                     risk_factor = CAP_RISK_MAP.get(cap)
                     if risk_factor:
                         rs.add_factor(risk_factor, extra_detail=f"{key}={cap}")
-            if key.endswith(".capabilities_drop") and isinstance(val, list):
-                if "ALL" not in val:
-                    rs.add_factor("no_cap_drop_all", extra_detail=key)
+            if key.endswith(".capabilities_drop") and isinstance(val, list) and "ALL" not in val:
+                rs.add_factor("no_cap_drop_all", extra_detail=key)
 
     def _score_mounts(self, rs: RiskScore, sc: dict) -> None:
         """Score mount-related risks from security context."""

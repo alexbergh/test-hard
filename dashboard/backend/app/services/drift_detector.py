@@ -2,10 +2,10 @@
 
 import logging
 
-from app.services.k8s_connector import K8sConnector
-
 # NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
 import docker as podman
+
+from app.services.k8s_connector import K8sConnector
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class DriftDetector:
                 c = self.podman_client.containers.get(container_id)
                 return self._extract_podman_runtime(c.attrs)
             except Exception:
-                pass
+                logger.debug("Failed to inspect container %s", container_id)
 
         # Fallback: return None (cannot verify runtime)
         return None
@@ -201,7 +201,7 @@ class DriftDetector:
                 actual="true",
                 detail="Container is running privileged but spec declares privileged=false. "
                 "Possible privilege escalation via mutating webhook or runtime override.",
-                remediation="Investigate admission controllers and runtime config. " "Enforce PodSecurity admission.",
+                remediation="Investigate admission controllers and runtime config. Enforce PodSecurity admission.",
             )
 
     def _compare_capabilities(self, ref: str, spec: dict, runtime: dict) -> None:
@@ -251,7 +251,7 @@ class DriftDetector:
                 expected=sorted(spec_drop),
                 actual=sorted(runtime_drop),
                 detail=f"Spec drops {sorted(spec_drop)} but runtime only drops {sorted(runtime_drop)}",
-                remediation="Container runtime is not enforcing capability drop. " "Check CRI configuration.",
+                remediation="Container runtime is not enforcing capability drop. Check CRI configuration.",
             )
 
     def _compare_user(self, ref: str, spec: dict, runtime: dict) -> None:
@@ -261,19 +261,18 @@ class DriftDetector:
         runtime_user = runtime.get("user", "")
 
         # If spec says non-root but runtime is root
-        if spec_user and spec_user != 0:
-            if runtime_user == "" or runtime_user == "0" or runtime_user == "root":
-                self._add(
-                    rule_id="DRIFT-004",
-                    severity=CRITICAL,
-                    category="privilege-bypass",
-                    target=ref,
-                    field="runAsUser",
-                    expected=str(spec_user),
-                    actual=runtime_user or "0 (root)",
-                    detail="Spec declares non-root user but container runs as root.",
-                    remediation="Enforce runAsNonRoot via PodSecurity Standards.",
-                )
+        if spec_user and spec_user != 0 and (runtime_user == "" or runtime_user == "0" or runtime_user == "root"):
+            self._add(
+                rule_id="DRIFT-004",
+                severity=CRITICAL,
+                category="privilege-bypass",
+                target=ref,
+                field="runAsUser",
+                expected=str(spec_user),
+                actual=runtime_user or "0 (root)",
+                detail="Spec declares non-root user but container runs as root.",
+                remediation="Enforce runAsNonRoot via PodSecurity Standards.",
+            )
 
     def _compare_read_only_rootfs(self, ref: str, spec: dict, runtime: dict) -> None:
         """Detect read-only rootfs bypass."""
@@ -357,7 +356,7 @@ class DriftDetector:
                     actual=runtime_image,
                     detail="Container is running a different image than declared in spec. "
                     "Possible supply chain attack.",
-                    remediation="Investigate image pull policy and registry. " "Use image digest pinning.",
+                    remediation="Investigate image pull policy and registry. Use image digest pinning.",
                 )
 
     # ------------------------------------------------------------------
@@ -433,19 +432,18 @@ class DriftDetector:
         # User changed to root
         exp_user = expected.get("user", "")
         act_user = actual.get("user", "")
-        if exp_user and exp_user != "0" and exp_user != "root":
-            if act_user in ("", "0", "root"):
-                self._add(
-                    rule_id="DRIFT-D05",
-                    severity=CRITICAL,
-                    category="privilege-bypass",
-                    target=ref,
-                    field="user",
-                    expected=exp_user,
-                    actual=act_user or "root",
-                    detail="Container was running as non-root but now runs as root.",
-                    remediation="Investigate container image or podman-compose changes.",
-                )
+        if exp_user and exp_user != "0" and exp_user != "root" and act_user in ("", "0", "root"):
+            self._add(
+                rule_id="DRIFT-D05",
+                severity=CRITICAL,
+                category="privilege-bypass",
+                target=ref,
+                field="user",
+                expected=exp_user,
+                actual=act_user or "root",
+                detail="Container was running as non-root but now runs as root.",
+                remediation="Investigate container image or podman-compose changes.",
+            )
 
         # New mounts
         expected_mounts = {m.get("source") for m in expected.get("mounts", []) if m.get("source")}

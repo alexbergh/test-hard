@@ -2,18 +2,19 @@
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Sequence
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.config import get_settings
 from app.models import Host, Scan
 from app.models.scan import ScanResult
 from app.schemas import ScanCreate
 from app.services.notifications import send_scan_notification
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -163,7 +164,7 @@ class ScanService:
             return None
 
         scan.status = "running"
-        scan.started_at = datetime.now(timezone.utc)
+        scan.started_at = datetime.now(UTC)
         await self.session.flush()
 
         scans_in_progress.labels(scanner=scan.scanner).inc()
@@ -181,7 +182,7 @@ class ScanService:
             return None
 
         scan.status = "cancelled"
-        scan.completed_at = datetime.now(timezone.utc)
+        scan.completed_at = datetime.now(UTC)
         await self.session.flush()
         return scan
 
@@ -203,7 +204,7 @@ class ScanService:
             if not host:
                 scan.status = "failed"
                 scan.error_message = "Host not found"
-                scan.completed_at = datetime.now(timezone.utc)
+                scan.completed_at = datetime.now(UTC)
                 await session.commit()
                 logger.error(f"Host not found for scan {scan_id}")
                 return
@@ -216,12 +217,14 @@ class ScanService:
                 logger.info(f"Executing {scan.scanner} scan on {host.name} (scan_id={scan_id})")
 
                 # Notify WS clients about scan start
-                await message_queue.put({
-                    "type": "scan_started",
-                    "scan_id": scan_id,
-                    "scanner": scan.scanner,
-                    "host_name": host.name,
-                })
+                await message_queue.put(
+                    {
+                        "type": "scan_started",
+                        "scan_id": scan_id,
+                        "scanner": scan.scanner,
+                        "host_name": host.name,
+                    }
+                )
 
                 # Execute scanner
                 if scan.scanner == "lynis":
@@ -238,12 +241,12 @@ class ScanService:
                     result = {"success": False, "error": f"Unknown scanner: {scan.scanner}"}
 
                 # Update scan with results
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 scan.completed_at = now
                 if scan.started_at:
                     started = scan.started_at
                     if started.tzinfo is None:
-                        started = started.replace(tzinfo=timezone.utc)
+                        started = started.replace(tzinfo=UTC)
                     scan.duration_seconds = int((now - started).total_seconds())
 
                 if result.get("success"):
@@ -285,16 +288,18 @@ class ScanService:
                     )
 
                     # Notify WS clients
-                    await message_queue.put({
-                        "type": "scan_completed",
-                        "scan_id": scan_id,
-                        "scanner": scan.scanner,
-                        "host_name": host.name,
-                        "score": scan.score,
-                        "passed": scan.passed,
-                        "failed": scan.failed,
-                        "duration_seconds": scan.duration_seconds,
-                    })
+                    await message_queue.put(
+                        {
+                            "type": "scan_completed",
+                            "scan_id": scan_id,
+                            "scanner": scan.scanner,
+                            "host_name": host.name,
+                            "score": scan.score,
+                            "passed": scan.passed,
+                            "failed": scan.failed,
+                            "duration_seconds": scan.duration_seconds,
+                        }
+                    )
                 else:
                     scans_total.labels(scanner=scan.scanner, status="failed").inc()
                     scan.status = "failed"
@@ -310,13 +315,15 @@ class ScanService:
                     )
 
                     # Notify WS clients
-                    await message_queue.put({
-                        "type": "scan_failed",
-                        "scan_id": scan_id,
-                        "scanner": scan.scanner,
-                        "host_name": host.name,
-                        "error": scan.error_message,
-                    })
+                    await message_queue.put(
+                        {
+                            "type": "scan_failed",
+                            "scan_id": scan_id,
+                            "scanner": scan.scanner,
+                            "host_name": host.name,
+                            "error": scan.error_message,
+                        }
+                    )
 
                 host.status = "online"
                 await session.commit()
@@ -331,7 +338,7 @@ class ScanService:
                 scans_in_progress.labels(scanner=scan.scanner).dec()
                 scan.status = "failed"
                 scan.error_message = str(e)
-                scan.completed_at = datetime.now(timezone.utc)
+                scan.completed_at = datetime.now(UTC)
                 host.status = "online"
                 await session.commit()
 

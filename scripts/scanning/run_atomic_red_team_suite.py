@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Execute curated Atomic Red Team scenarios and persist structured results."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,10 +9,10 @@ import logging
 import os
 import socket
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
 
 # Configure logging
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -39,9 +40,9 @@ class TestSpec:
     """Normalized test specification pulled from YAML or CLI input."""
 
     number: int
-    description: Optional[str] = None
-    arguments: Dict[str, str] = field(default_factory=dict)
-    copy_source_files: Optional[bool] = None
+    description: str | None = None
+    arguments: dict[str, str] = field(default_factory=dict)
+    copy_source_files: bool | None = None
     get_prereqs_before_run: bool = False
 
 
@@ -51,12 +52,12 @@ class ScenarioSpec:
 
     id: str
     technique: str
-    technique_name: Optional[str] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
-    detection: Optional[List[str]] = None
-    supported_platforms: Optional[List[str]] = None
-    tests: List[TestSpec] = field(default_factory=list)
+    technique_name: str | None = None
+    name: str | None = None
+    description: str | None = None
+    detection: list[str] | None = None
+    supported_platforms: list[str] | None = None
+    tests: list[TestSpec] = field(default_factory=list)
     source: str = "scenarios"
 
 
@@ -66,21 +67,21 @@ class TestResult:
     number: int
     name: str
     executor: str
-    supported_platforms: List[str]
+    supported_platforms: list[str]
     status: str
-    return_code: Optional[int] = None
-    start_timestamp: Optional[str] = None
-    end_timestamp: Optional[str] = None
-    command: Optional[str] = None
-    output: Optional[str] = None
-    error: Optional[str] = None
+    return_code: int | None = None
+    start_timestamp: str | None = None
+    end_timestamp: str | None = None
+    command: str | None = None
+    output: str | None = None
+    error: str | None = None
 
 
 @dataclass
 class ScenarioResult:
     spec: ScenarioSpec
-    technique_name: Optional[str]
-    tests: List[TestResult]
+    technique_name: str | None
+    tests: list[TestResult]
     status: str
 
 
@@ -138,7 +139,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_scenarios(args: argparse.Namespace) -> List[ScenarioSpec]:
+def load_scenarios(args: argparse.Namespace) -> list[ScenarioSpec]:
     if args.technique:
         logger.info("Loading technique %s from CLI", args.technique)
         tests = []
@@ -161,10 +162,10 @@ def load_scenarios(args: argparse.Namespace) -> List[ScenarioSpec]:
         raise FileNotFoundError(f"Scenario file {scenario_path} does not exist")
     with scenario_path.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle) or {}
-    scenarios: List[ScenarioSpec] = []
+    scenarios: list[ScenarioSpec] = []
     for entry in payload.get("scenarios", []):
         tests = entry.get("tests", [])
-        normalized: List[TestSpec] = []
+        normalized: list[TestSpec] = []
         for item in tests:
             if isinstance(item, int):
                 normalized.append(TestSpec(number=item))
@@ -237,7 +238,7 @@ def ensure_repo(operator: AtomicOperator, args: argparse.Namespace) -> Path:
     raise FileNotFoundError("Download failed. Specify --atomics-path manually.")
 
 
-def find_atomics_root(base: Path, hint: Optional[str] = None) -> Optional[Path]:
+def find_atomics_root(base: Path, hint: str | None = None) -> Path | None:
     """Locate a directory that contains the Atomic Red Team 'atomics' folder."""
 
     candidates: Iterable[Path]
@@ -270,7 +271,7 @@ def combine_status(current: str, new: str) -> str:
     return current
 
 
-def parse_response_payload(raw: Dict) -> Dict:
+def parse_response_payload(raw: dict) -> dict:
     payload = raw.get("response") if isinstance(raw, dict) else None
     if isinstance(payload, dict):
         return payload
@@ -330,16 +331,16 @@ def execute_test(  # noqa: C901
     mode: str,
     timeout: int,
     dry_run: bool,
-    raw_command: Optional[str] = None,
-    raw_executor: Optional[str] = None,
+    raw_command: str | None = None,
+    raw_executor: str | None = None,
 ) -> TestResult:
-    guid = getattr(test_obj, "auto_generated_guid")
-    result_kwargs = dict(
-        techniques=[technique_id],
-        atomics_path=str(repo_path),
-        test_guids=[guid],
-        command_timeout=timeout,
-    )
+    guid = test_obj.auto_generated_guid
+    result_kwargs = {
+        "techniques": [technique_id],
+        "atomics_path": str(repo_path),
+        "test_guids": [guid],
+        "command_timeout": timeout,
+    }
     if spec.arguments:
         result_kwargs["input_arguments"] = spec.arguments
     if spec.copy_source_files is not None:
@@ -353,8 +354,8 @@ def execute_test(  # noqa: C901
         result_kwargs["cleanup"] = True
 
     status = "skipped" if dry_run else "unknown"
-    response_data: Dict[str, Dict] = {}
-    error_message: Optional[str] = None
+    response_data: dict[str, dict] = {}
+    error_message: str | None = None
 
     if dry_run:
         response = {}
@@ -436,7 +437,7 @@ def run_scenario(
     # Load technique without platform filtering to preserve original test numbering
     technique_yaml = repo_path / "atomics" / scenario.technique / f"{scenario.technique}.yaml"
     if technique_yaml.exists():
-        with open(technique_yaml, "r", encoding="utf-8") as fh:
+        with open(technique_yaml, encoding="utf-8") as fh:
             raw = yaml.safe_load(fh)
         all_tests_raw = raw.get("atomic_tests", [])
     else:
@@ -460,13 +461,9 @@ def run_scenario(
         for t in technique.atomic_tests:
             guid_to_test[getattr(t, "auto_generated_guid", None) or id(t)] = t
 
-    tests_to_run: List[TestSpec]
-    if scenario.tests:
-        tests_to_run = scenario.tests
-    else:
-        tests_to_run = [TestSpec(number=index + 1) for index in range(len(all_tests_raw))]
+    tests_to_run: list[TestSpec] = scenario.tests or [TestSpec(number=index + 1) for index in range(len(all_tests_raw))]
 
-    results: List[TestResult] = []
+    results: list[TestResult] = []
     scenario_status = "passed"
     for spec in tests_to_run:
         try:
@@ -564,7 +561,7 @@ def write_outputs(
     hostname: str,
     mode: str,
     repo_path: Path,
-    scenario_results: List[ScenarioResult],
+    scenario_results: list[ScenarioResult],
 ) -> Path:
     timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     history_dir = output_dir / "history"
@@ -685,7 +682,7 @@ def _escape_label_value(value: str) -> str:
     return str(value).replace("\\", "\\\\").replace('"', '\\"')
 
 
-def render_metric(name: str, labels: Dict[str, str], value: int) -> str:
+def render_metric(name: str, labels: dict[str, str], value: int) -> str:
     encoded_labels = ",".join(f'{key}="{_escape_label_value(val)}"' for key, val in sorted(labels.items()))
     return f"{name}{{{encoded_labels}}} {value}"
 
@@ -712,7 +709,7 @@ def main() -> None:
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Output directory: %s", output_dir)
 
-        results: List[ScenarioResult] = []
+        results: list[ScenarioResult] = []
         for scenario in scenarios:
             try:
                 results.append(

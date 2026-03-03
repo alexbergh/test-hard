@@ -498,36 +498,34 @@ class K8sHardeningScanner:
 
         # Container runtime version check
         runtime = node.get("container_runtime", "")
-        if runtime:
-            # Check for very old versions
-            if "docker://" in runtime or "podman://" in runtime:
-                version_str = runtime.replace("docker://", "").replace("podman://", "")
-                try:
-                    major = int(version_str.split(".")[0])
-                    if major < 4 and "podman://" in runtime:
-                        self._add_finding(
-                            rule_id="K8S-NODE-002",
-                            title="Node uses outdated Podman version",
-                            severity=MEDIUM,
-                            status="fail",
-                            category="node-security",
-                            target=node_ref,
-                            detail=f"Podman version {version_str} is outdated.",
-                            remediation="Upgrade to Podman 4.0+ or migrate to containerd.",
-                        )
-                    elif major < 20 and "docker://" in runtime:
-                        self._add_finding(
-                            rule_id="K8S-NODE-002",
-                            title="Node uses outdated container runtime version",
-                            severity=MEDIUM,
-                            status="fail",
-                            category="node-security",
-                            target=node_ref,
-                            detail=f"Container runtime version {version_str} is outdated.",
-                            remediation="Upgrade container runtime or migrate to containerd.",
-                        )
-                except (ValueError, IndexError):
-                    pass
+        if runtime and ("docker://" in runtime or "podman://" in runtime):
+            version_str = runtime.replace("docker://", "").replace("podman://", "")
+            try:
+                major = int(version_str.split(".")[0])
+                if major < 4 and "podman://" in runtime:
+                    self._add_finding(
+                        rule_id="K8S-NODE-002",
+                        title="Node uses outdated Podman version",
+                        severity=MEDIUM,
+                        status="fail",
+                        category="node-security",
+                        target=node_ref,
+                        detail=f"Podman version {version_str} is outdated.",
+                        remediation="Upgrade to Podman 4.0+ or migrate to containerd.",
+                    )
+                elif major < 20 and "docker://" in runtime:
+                    self._add_finding(
+                        rule_id="K8S-NODE-002",
+                        title="Node uses outdated container runtime version",
+                        severity=MEDIUM,
+                        status="fail",
+                        category="node-security",
+                        target=node_ref,
+                        detail=f"Container runtime version {version_str} is outdated.",
+                        remediation="Upgrade container runtime or migrate to containerd.",
+                    )
+            except (ValueError, IndexError):
+                pass
 
     # ------------------------------------------------------------------
     # NetworkPolicy Checks
@@ -596,8 +594,7 @@ class K8sHardeningScanner:
                             category="rbac",
                             target=f"sa/{subject.get('namespace', 'cluster')}/{subject['name']}",
                             detail=(
-                                f"ClusterRoleBinding '{binding['name']}' grants "
-                                f"{role_name} to SA '{subject['name']}'."
+                                f"ClusterRoleBinding '{binding['name']}' grants {role_name} to SA '{subject['name']}'."
                             ),
                             remediation="Use a more restrictive ClusterRole.",
                         )
@@ -610,8 +607,7 @@ class K8sHardeningScanner:
                             category="rbac",
                             target=f"group/{subject['name']}",
                             detail=(
-                                f"ClusterRoleBinding '{binding['name']}' grants "
-                                f"{role_name} to all authenticated users."
+                                f"ClusterRoleBinding '{binding['name']}' grants {role_name} to all authenticated users."
                             ),
                             remediation="Remove this binding. Use specific user/group bindings.",
                         )

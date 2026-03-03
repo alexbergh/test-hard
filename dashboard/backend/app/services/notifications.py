@@ -48,12 +48,7 @@ def send_scan_notification(
             f"</table>"
         )
     else:
-        body = (
-            f"Scan failed.\n\n"
-            f"Host: {host_name}\n"
-            f"Scanner: {scanner}\n"
-            f"Error: {error_message or 'Unknown error'}\n"
-        )
+        body = f"Scan failed.\n\nHost: {host_name}\nScanner: {scanner}\nError: {error_message or 'Unknown error'}\n"
         html = (
             f"<h2 style='color:red;'>Scan Failed</h2>"
             f"<table style='border-collapse:collapse;'>"

@@ -1,5 +1,6 @@
 """WebSocket connection manager for real-time notifications."""
 
+import asyncio
 import logging
 from typing import Any
 
@@ -50,6 +51,4 @@ class ConnectionManager:
 ws_manager = ConnectionManager()
 
 # Async queue for cross-task communication (scan tasks -> WS broadcast)
-import asyncio
-
 message_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()

@@ -2,15 +2,16 @@
 
 import logging
 import socket
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
-from app.api.deps import CurrentUser, DbSession
-from app.models import Host, Scan, ScanSchedule
-from app.models.scan import ScanResult
 from fastapi import APIRouter
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
+
+from app.api.deps import CurrentUser, DbSession
+from app.models import Host, Scan, ScanSchedule
+from app.models.scan import ScanResult
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +203,7 @@ async def _get_schedules(session):
 
     active_schedules = sum(1 for s in schedules if s.is_active)
     upcoming_scans = []
-    for s in sorted(schedules, key=lambda x: x.next_run_at or datetime.max.replace(tzinfo=timezone.utc)):
+    for s in sorted(schedules, key=lambda x: x.next_run_at or datetime.max.replace(tzinfo=UTC)):
         if s.is_active and s.next_run_at:
             upcoming_scans.append(
                 {
@@ -276,8 +277,8 @@ async def _fetch_falco_recent_events(client):
         params={
             "query": '{source="syscall"} | json',
             "limit": "20",
-            "start": str(int((datetime.now(timezone.utc) - timedelta(hours=6)).timestamp())),
-            "end": str(int(datetime.now(timezone.utc).timestamp())),
+            "start": str(int((datetime.now(UTC) - timedelta(hours=6)).timestamp())),
+            "end": str(int(datetime.now(UTC).timestamp())),
         },
     )
     if r.status_code != 200:
@@ -289,7 +290,7 @@ async def _fetch_falco_recent_events(client):
         for ts, line in stream.get("values", []):
             recent_events.append(
                 {
-                    "time": datetime.fromtimestamp(int(ts) / 1e9, tz=timezone.utc).isoformat(),
+                    "time": datetime.fromtimestamp(int(ts) / 1e9, tz=UTC).isoformat(),
                     "priority": labels.get("priority", "unknown"),
                     "rule": labels.get("rule", "unknown"),
                     "output": line[:300],
@@ -305,7 +306,7 @@ async def _populate_falco_data(client, falco_events):
         hc = await client.get("http://falcosidekick:2801/healthz")
         falco_events["sidekick_up"] = hc.status_code == 200
     except Exception:
-        pass
+        logger.debug("Falcosidekick health check failed")
 
     try:
         total, by_priority = await _fetch_falco_priority_counts(client)
@@ -357,9 +358,9 @@ async def get_dashboard_stats(
     host_scores, score_distribution, avg_score = _get_host_stats(hosts)
 
     if hours is not None:
-        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        since = datetime.now(UTC) - timedelta(hours=hours)
     else:
-        since = datetime.now(timezone.utc) - timedelta(days=days)
+        since = datetime.now(UTC) - timedelta(days=days)
 
     total_scans, scans_by_status, scans_by_scanner, avg_duration = await _get_scan_stats(session, since)
     score_trend = await _get_score_trend(session, since)

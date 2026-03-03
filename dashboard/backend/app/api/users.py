@@ -1,11 +1,12 @@
 """User management endpoints (admin only)."""
 
+from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import select
+
 from app.api.deps import AdminUser, DbSession
 from app.models import User
 from app.schemas import UserCreate, UserResponse
 from app.services.auth import AuthService
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
 
 router = APIRouter()
 

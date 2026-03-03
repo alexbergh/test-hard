@@ -2,9 +2,10 @@
 
 from datetime import datetime
 
-from app.models.base import Base
 from sqlalchemy import DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app.models.base import Base
 
 
 class AuditLog(Base):

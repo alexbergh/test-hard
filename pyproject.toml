@@ -99,6 +99,17 @@ ignore = [
     "B008",   # function call in default arg (FastAPI Depends)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"dashboard/backend/app/config.py" = ["S104"]            # binding to 0.0.0.0 is intentional
+"dashboard/backend/app/services/auth.py" = ["S106"]     # token_type="bearer" is not a password
+"dashboard/backend/app/schemas/auth.py" = ["S105"]      # token_type="bearer" is not a password
+"dashboard/backend/app/services/scan.py" = ["S108", "S314"]  # /tmp and xml parsing in containers
+"dashboard/backend/run_scans.py" = ["T201"]             # CLI script uses print
+"scanners/openscap/entrypoint.py" = ["T201"]            # CLI script uses print
+"falco/responder/responder.py" = ["S104"]               # binding to 0.0.0.0 is intentional
+"scripts/**/*.py" = ["T201", "S108", "S110", "S311", "S314"]  # scripts: print, /tmp, xml, random
+"tests/**/*.py" = ["S105", "S106", "S108", "E402"]     # test passwords + /tmp + sys.path imports
+
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 

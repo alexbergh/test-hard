@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Parse Atomic Red Team execution results into Prometheus metrics."""
+
 from __future__ import annotations
 
 import json
 import logging
-import os
 import platform
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Iterable
+from typing import Any
 
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
@@ -48,8 +49,8 @@ def main(path: str) -> None:
         raise
 
 
-def emit_modern_format(host: str, data: Dict[str, Any]) -> None:
-    scenarios: Iterable[Dict[str, Any]] = data.get("scenarios", [])
+def emit_modern_format(host: str, data: dict[str, Any]) -> None:
+    scenarios: Iterable[dict[str, Any]] = data.get("scenarios", [])
     for scenario in scenarios:
         scenario_id = scenario.get("id") or scenario.get("technique") or "unknown"
         technique = scenario.get("technique")
@@ -99,7 +100,7 @@ def emit_modern_format(host: str, data: Dict[str, Any]) -> None:
             )
 
 
-def emit_legacy_format(host: str, data: Dict[str, Any]) -> None:
+def emit_legacy_format(host: str, data: dict[str, Any]) -> None:
     for test in data.get("tests", []):
         test_id = test.get("id", "unknown")
         passed = bool(test.get("passed", False))
@@ -114,7 +115,7 @@ def emit_legacy_format(host: str, data: Dict[str, Any]) -> None:
         print(render_metric("art_test_result", labels, value))
 
 
-def render_metric(name: str, labels: Dict[str, Any], value: Any) -> str:
+def render_metric(name: str, labels: dict[str, Any], value: Any) -> str:
     def escape_label_value(val: str) -> str:
         """Escape backslashes and quotes in label values."""
         return str(val).replace("\\", "\\\\").replace('"', '\\"')

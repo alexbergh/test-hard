@@ -65,8 +65,7 @@ def main():
             f.write(("\n".join(lines) + "\n").encode())
 
         print(
-            f"  {image}: C={counts['CRITICAL']} H={counts['HIGH']} "
-            f"M={counts['MEDIUM']} L={counts['LOW']} total={total}"
+            f"  {image}: C={counts['CRITICAL']} H={counts['HIGH']} M={counts['MEDIUM']} L={counts['LOW']} total={total}"
         )
 
     print(f"\nDone. Regenerated {len(json_files)} .prom files.")

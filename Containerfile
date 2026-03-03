@@ -110,7 +110,7 @@ RUN find /opt/test-hard/scanners -type f -name "*.sh" -exec chmod +x {} \;
 WORKDIR /opt/test-hard
 
 # Add entrypoint script
-COPY docker/entrypoint.sh /entrypoint.sh
+COPY containers/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Labels

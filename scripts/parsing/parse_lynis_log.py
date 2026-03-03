@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Parse Lynis text log and generate Prometheus metrics."""
+
 import re
 import sys
 from pathlib import Path
@@ -13,7 +14,7 @@ def parse_lynis_log(log_path: str, hostname: str = "localhost") -> None:
         print(f"Error: Log file not found: {path}", file=sys.stderr)
         sys.exit(1)
 
-    with open(path, "r") as f:
+    with open(path) as f:
         content = f.read()
 
     # Extract hardening index

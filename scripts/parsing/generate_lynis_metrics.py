@@ -4,6 +4,7 @@
 This is a pragmatic helper that extracts a few useful counts so Telegraf
 can ingest them via the file input plugin.
 """
+
 import re
 import sys
 from pathlib import Path
@@ -17,10 +18,7 @@ def main(path: str) -> int:
 
     text = p.read_text(errors="ignore")
     stem_parts = p.stem.split("-")
-    if len(stem_parts) >= 3 and stem_parts[0] == "lynis":
-        hostname = "-".join(stem_parts[1:-1])
-    else:
-        hostname = p.stem
+    hostname = "-".join(stem_parts[1:-1]) if len(stem_parts) >= 3 and stem_parts[0] == "lynis" else p.stem
 
     failed = 1 if re.search(r"(?i)fatal error|error", text) else 0
     warnings = len(re.findall(r"(?i)\bwarning\b", text))
@@ -74,7 +72,7 @@ def main(path: str) -> int:
 
     if not details:
         details.append(
-            "lynis_test_result" f'{{host="{esc(hostname)}",type="info",test_id="none",description="No issues found"}} 1'
+            f'lynis_test_result{{host="{esc(hostname)}",type="info",test_id="none",description="No issues found"}} 1'
         )
 
     details_file = p.with_name(f"{p.stem}_details.prom")

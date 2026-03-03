@@ -1,14 +1,15 @@
 """Authentication service."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
-from app.config import get_settings
-from app.models import User
-from app.schemas import Token, TokenData, UserCreate
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config import get_settings
+from app.models import User
+from app.schemas import Token, TokenData, UserCreate
 
 settings = get_settings()
 
@@ -33,7 +34,7 @@ class AuthService:
     def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
         """Create a JWT access token."""
         to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.access_token_expire_minutes))
+        expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=settings.access_token_expire_minutes))
         to_encode.update({"exp": expire, "type": "access"})
         return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
@@ -41,7 +42,7 @@ class AuthService:
     def create_refresh_token(data: dict) -> str:
         """Create a JWT refresh token with longer expiry."""
         to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+        expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
         to_encode.update({"exp": expire, "type": "refresh"})
         return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
@@ -119,6 +120,6 @@ class AuthService:
             return False
         user.hashed_password = self.get_password_hash(new_password)
         user.must_change_password = False
-        user.password_changed_at = datetime.now(timezone.utc)
+        user.password_changed_at = datetime.now(UTC)
         await self.session.flush()
         return True

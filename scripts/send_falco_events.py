@@ -8,7 +8,7 @@ which then forwards them to Loki, Alertmanager, and Prometheus.
 import random
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 
@@ -321,7 +321,7 @@ SCANNER_RULES = [
 
 
 def send_event(container: dict, rule_def: dict) -> bool:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     output_fields = dict(rule_def["fields"])
     output_fields["container.id"] = container["id"]
     output_fields["container.name"] = container["name"]

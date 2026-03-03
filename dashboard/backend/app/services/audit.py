@@ -3,8 +3,9 @@
 import logging
 from typing import Any
 
-from app.models.audit import AuditLog
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.audit import AuditLog
 
 logger = logging.getLogger(__name__)
 

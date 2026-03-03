@@ -11,11 +11,11 @@ This setup.py is provided for backward compatibility.
 from setuptools import setup
 
 # Read version from VERSION file
-with open("VERSION", "r", encoding="utf-8") as f:
+with open("VERSION", encoding="utf-8") as f:
     version = f.read().strip()
 
 # Read long description from README
-with open("README.md", "r", encoding="utf-8") as f:
+with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
 
 setup(

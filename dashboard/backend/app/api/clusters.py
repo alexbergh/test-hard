@@ -3,13 +3,14 @@
 import asyncio
 import logging
 
+from fastapi import APIRouter, HTTPException, status
+
 from app.api.deps import AdminUser, CurrentUser, DbSession, OperatorUser
 from app.models import Cluster
 from app.schemas.cluster import ClusterCreate, ClusterResponse, ClusterTestResult, ClusterUpdate, DiscoveryResult
 from app.services.discovery import DiscoveryService
 from app.services.k8s_connector import K8sConnector
 from app.services.k8s_hardening import K8sHardeningScanner
-from fastapi import APIRouter, HTTPException, status
 
 logger = logging.getLogger(__name__)
 
@@ -228,8 +229,9 @@ async def list_cluster_hosts(
     current_user: CurrentUser,
 ) -> list[dict]:
     """List all hosts belonging to a cluster."""
-    from app.models import Host
     from sqlalchemy import select
+
+    from app.models import Host
 
     svc = DiscoveryService(session)
     cluster = await svc.get_cluster_by_id(cluster_id)
@@ -275,8 +277,9 @@ async def detect_drift(
     against live Podman inspect.
     For K8s clusters: compares pod spec against container runtime state.
     """
-    from app.models import Host
     from sqlalchemy import select
+
+    from app.models import Host
 
     svc = DiscoveryService(session)
     cluster = await svc.get_cluster_by_id(cluster_id)
@@ -365,9 +368,10 @@ async def check_images(
     current_user: OperatorUser,
 ) -> dict:
     """Run image security checks on all hosts in a cluster."""
+    from sqlalchemy import select
+
     from app.models import Host
     from app.services.image_checker import ImageChecker
-    from sqlalchemy import select
 
     svc = DiscoveryService(session)
     cluster = await svc.get_cluster_by_id(cluster_id)
@@ -404,9 +408,10 @@ async def calculate_risk_scores(
     current_user: OperatorUser,
 ) -> dict:
     """Calculate risk scores for all hosts in a cluster."""
+    from sqlalchemy import select
+
     from app.models import Host
     from app.services.risk_scorer import RiskScorer
-    from sqlalchemy import select
 
     svc = DiscoveryService(session)
     cluster = await svc.get_cluster_by_id(cluster_id)
