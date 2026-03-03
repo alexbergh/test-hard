@@ -107,8 +107,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r dashboard/backend/requirements.txt
-          pip install -r requirements.txt --upgrade-strategy only-if-needed
-          pip install pytest pytest-cov pytest-mock pytest-asyncio
+          pip install pytest pytest-cov pytest-mock pytest-asyncio aiosqlite
 
       - name: Run unit tests
         run: |
