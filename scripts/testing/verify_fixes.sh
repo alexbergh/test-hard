@@ -9,8 +9,8 @@ ERRORS=0
 
 # Check 1: No hardcoded paths
 echo "Checking for hardcoded paths..."
-if grep -r "/Users/" docker-compose*.yml 2>/dev/null; then
-    echo "[ERROR] Found hardcoded paths in docker-compose files"
+if grep -r "/Users/" podman-compose*.yml 2>/dev/null; then
+    echo "[ERROR] Found hardcoded paths in podman-compose files"
     ERRORS=$((ERRORS + 1))
 else
     echo "[OK] No hardcoded paths found"

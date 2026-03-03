@@ -13,10 +13,12 @@ async def list_hosts(
     session: DbSession,
     current_user: CurrentUser,
     include_inactive: bool = False,
+    limit: int = 100,
+    offset: int = 0,
 ) -> list[HostResponse]:
     """List all hosts."""
     host_service = HostService(session)
-    hosts = await host_service.get_all_hosts(include_inactive=include_inactive)
+    hosts = await host_service.get_all_hosts(include_inactive=include_inactive, limit=limit, offset=offset)
     return [HostResponse.model_validate(h) for h in hosts]
 
 
@@ -117,12 +119,12 @@ async def check_host_status(
     return {"host_id": host_id, "status": status_result}
 
 
-@router.post("/sync-docker", response_model=list[HostResponse])
-async def sync_docker_containers(
+@router.post("/sync-podman", response_model=list[HostResponse])
+async def sync_podman_containers(
     session: DbSession,
     current_user: OperatorUser,
 ) -> list[HostResponse]:
-    """Sync hosts from running Docker containers."""
+    """Sync hosts from running Podman containers."""
     host_service = HostService(session)
-    created_hosts = await host_service.sync_docker_containers()
+    created_hosts = await host_service.sync_podman_containers()
     return [HostResponse.model_validate(h) for h in created_hosts]

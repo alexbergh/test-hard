@@ -202,7 +202,7 @@ class ImageChecker:
                 category="image-user",
                 target=ref,
                 detail=detail,
-                remediation="Set USER in Dockerfile or securityContext.runAsUser to non-root UID.",
+                remediation="Set USER in Containerfile or securityContext.runAsUser to non-root UID.",
             )
         else:
             self._add(

@@ -24,8 +24,8 @@ A clear description of what you expected to happen.
 ## Environment
 
 - OS: [e.g. Ubuntu 22.04]
-- Docker version: [e.g. 24.0.0]
-- Docker Compose version: [e.g. 2.20.0]
+- Podman version: [e.g. 24.0.0]
+- Podman Compose version: [e.g. 2.20.0]
 - Project version: [e.g. 1.0.0]
 
 ## Logs

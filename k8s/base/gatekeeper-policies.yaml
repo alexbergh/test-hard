@@ -5,12 +5,12 @@
 #
 # Политики основаны на:
 #   - CIS Kubernetes Benchmark v1.12.0 (разделы 5.2.x, 5.3.x, 5.7.x)
-#   - CIS Docker Benchmark v1.8.0
+#   - CIS Container Benchmark v1.8.0
 #   - FSTEK requirements for containerization
 #   - OWASP Container Security / NIST SP 800-190
 #
 # 13 политик: image tags, repos, privileged, non-root, resources,
-# docker socket, probes, privilege escalation, dangerous capabilities,
+# podman socket, probes, privilege escalation, dangerous capabilities,
 # drop ALL caps, seccomp profile, host namespaces, readOnlyRootFilesystem,
 # require NetworkPolicy
 # =============================================================================
@@ -365,19 +365,19 @@ spec:
 
 ---
 # ─────────────────────────────────────────────────
-# 6. Запрет монтирования Docker-сокета (CIS Docker 5.31)
+# 6. Запрет монтирования сокета контейнерного рантайма (CIS 5.31)
 # ─────────────────────────────────────────────────
 apiVersion: templates.gatekeeper.sh/v1
 kind: ConstraintTemplate
 metadata:
-  name: k8sblockdockersocket
+  name: k8sblockruntimesocket
   annotations:
-    description: "Запрет монтирования /var/run/docker.sock в контейнеры"
+    description: "Запрет монтирования сокета контейнерного рантайма в контейнеры"
 spec:
   crd:
     spec:
       names:
-        kind: K8sBlockDockerSocket
+        kind: K8sBlockRuntimeSocket
       validation:
         openAPIV3Schema:
           type: object
@@ -389,17 +389,21 @@ spec:
   targets:
     - target: admission.k8s.gatekeeper.sh
       rego: |
-        package k8sblockdockersocket
+        package k8sblockruntimesocket
 
         violation[{"msg": msg}] {
           volume := input.review.object.spec.volumes[_]
-          has_docker_socket(volume)
+          has_runtime_socket(volume)
           not all_containers_exempt
-          msg := sprintf("Монтирование Docker-сокета запрещено (volume: '%v'). Используйте docker-proxy.", [volume.name])
+          msg := sprintf("Монтирование сокета рантайма запрещено (volume: '%v'). Используйте podman-proxy.", [volume.name])
         }
 
-        has_docker_socket(volume) {
-          volume.hostPath.path == "/var/run/docker.sock"
+        has_runtime_socket(volume) {
+          volume.hostPath.path == "/run/podman/podman.sock"
+        }
+
+        has_runtime_socket(volume) {
+          volume.hostPath.path == "/var/run/docker.sock"  # Legacy path
         }
 
         all_containers_exempt {
@@ -415,9 +419,9 @@ spec:
 
 ---
 apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sBlockDockerSocket
+kind: K8sBlockRuntimeSocket
 metadata:
-  name: block-docker-socket
+  name: block-runtime-socket
   namespace: monitoring
 spec:
   match:
@@ -429,7 +433,7 @@ spec:
     namespaces: ["monitoring"]
   parameters:
     exemptImages:
-      # Falco требует доступ к Docker-сокету для enrichment
+      # Falco требует доступ к сокету рантайма для enrichment
       - "falcosecurity/falco.*"
 
 ---
@@ -559,7 +563,7 @@ spec:
 ---
 # ─────────────────────────────────────────────────
 # 9. Блокировка опасных capabilities (CIS 5.2.7/5.2.8)
-#    Список из CIS Docker Benchmark v1.8.0 + capabilities-config.yaml
+#    Список из CIS Container Benchmark v1.8.0 + capabilities-config.yaml
 # ─────────────────────────────────────────────────
 apiVersion: templates.gatekeeper.sh/v1
 kind: ConstraintTemplate

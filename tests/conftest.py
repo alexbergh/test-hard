@@ -160,9 +160,9 @@ def mock_env_vars(monkeypatch):
 
 
 @pytest.fixture(scope="session")
-def docker_compose_file(tmp_path_factory):
-    """Provide path to docker-compose file for integration tests."""
-    return PROJECT_ROOT / "docker-compose.yml"
+def podman_compose_file(tmp_path_factory):
+    """Provide path to podman-compose file for integration tests."""
+    return PROJECT_ROOT / "podman-compose.yml"
 
 
 @pytest.fixture
@@ -174,9 +174,9 @@ def cli_runner():
 
 
 def pytest_collection_modifyitems(config, items):
-    """Automatically skip Docker-dependent tests when Docker is unavailable."""
-    docker_available = shutil.which("docker") is not None
+    """Automatically skip Podman-dependent tests when Podman is unavailable."""
+    podman_available = shutil.which("podman") is not None
 
     for item in items:
-        if "requires_docker" in item.keywords and not docker_available:
-            item.add_marker(pytest.mark.skip(reason="Docker is not installed"))
+        if "requires_podman" in item.keywords and not podman_available:
+            item.add_marker(pytest.mark.skip(reason="Podman is not installed"))

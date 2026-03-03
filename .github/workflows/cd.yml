@@ -41,7 +41,7 @@ jobs:
           echo "Deploying version ${{ steps.version.outputs.VERSION }} to staging"
           # Add actual deployment commands here
           # Example: kubectl apply -f k8s/staging/
-          # Or: docker-compose -f docker-compose.staging.yml up -d
+          # Or: podman-compose -f podman-compose.staging.yml up -d
 
       - name: Run smoke tests
         run: |
@@ -85,7 +85,7 @@ jobs:
           echo "Deploying version ${{ steps.version.outputs.VERSION }} to production"
           # Add actual deployment commands here
           # Example: kubectl apply -f k8s/production/
-          # Or: docker-compose -f docker-compose.prod.yml up -d
+          # Or: podman-compose -f podman-compose.prod.yml up -d
 
       - name: Run smoke tests
         run: |

@@ -25,7 +25,7 @@
     (container.mount.dest[/proc] != "N/A" or
      container.mount.dest[/etc] != "N/A" or
      container.mount.dest[/root] != "N/A" or
-     container.mount.dest[/var/run/docker.sock] != "N/A")
+     container.mount.dest[/var/run/docker.sock] != "N/A")  # Legacy path check
 
 - macro: known_shell_binaries
   condition: (proc.name in (bash, sh, dash, zsh, csh, tcsh, ksh, fish))
@@ -145,10 +145,10 @@
   tags: [hardening, privilege_escalation]
 
 - rule: User Added to Privileged Group
-  desc: Detect when a user is added to sudo/wheel/docker group
+  desc: Detect when a user is added to sudo/wheel/podman group
   condition: >
     spawned_process and proc.name in (usermod, gpasswd)
-    and proc.args contains "-aG" and proc.args intersects ("sudo", "wheel", "docker", "root", "adm")
+    and proc.args contains "-aG" and proc.args intersects ("sudo", "wheel", "podman", "root", "adm")
   output: >
     User added to privileged group (user=%user.name proc=%proc.name args=%proc.args container=%container.name)
   priority: CRITICAL
@@ -172,7 +172,7 @@
   condition: >
     container and spawned_process and user.uid = 0
     and not scanner_container
-    and not proc.name in (init, systemd, entrypoint.sh, docker-entrypoint)
+    and not proc.name in (init, systemd, entrypoint.sh, container-entrypoint)
   output: >
     Process running as root in container (user=%user.name proc=%proc.name
     container=%container.name image=%container.image.repository)
@@ -213,14 +213,14 @@
   priority: CRITICAL
   tags: [hardening, container_security, privileged]
 
-- rule: Container Docker Socket Mount
-  desc: Detect containers with Docker socket mounted
+- rule: Container Podman Socket Mount
+  desc: Detect containers with Podman socket mounted
   condition: >
     container and spawned_process
-    and container.mount.dest[/var/run/docker.sock] != "N/A"
-    and not container.name = docker-proxy
+    and container.mount.dest[/var/run/docker.sock] != "N/A"  # Legacy path check
+    and not container.name = podman-proxy
   output: >
-    Container has Docker socket mounted — container escape risk
+    Container has Podman socket mounted — container escape risk
     (container=%container.name image=%container.image.repository user=%user.name)
   priority: CRITICAL
   tags: [hardening, container_security, escape]
@@ -230,7 +230,7 @@
   condition: >
     container and spawned_process and sensitive_mount_paths
     and not scanner_container
-    and not container.name in (promtail, telegraf, docker-proxy)
+    and not container.name in (promtail, telegraf, podman-proxy)
   output: >
     Container has sensitive host path mounted (container=%container.name
     image=%container.image.repository user=%user.name)

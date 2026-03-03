@@ -16,7 +16,7 @@ error() {
 }
 
 # Check if we're in the right directory
-if [ ! -f "$PROJECT_ROOT/docker-compose.yml" ]; then
+if [ ! -f "$PROJECT_ROOT/podman-compose.yml" ]; then
     error "Must be run from project root or scripts directory"
 fi
 

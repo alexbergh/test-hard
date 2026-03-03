@@ -4,7 +4,7 @@
 
 ## Содержание
 
-* [Проблемы с Docker](#проблемы-с-docker)
+* [Проблемы с Podman](#проблемы-с-podman)
 * [Проблемы с Grafana](#проблемы-с-grafana)
 * [Проблемы с Prometheus](#проблемы-с-prometheus)
 * [Проблемы с Telegraf](#проблемы-с-telegraf)
@@ -17,14 +17,14 @@
 
 ---
 
-## Проблемы с Docker
+## Проблемы с Podman
 
 ### Контейнеры не запускаются
 
 **Симптомы:**
 
 ```bash
-docker compose up -d
+podman-compose up -d
 # Контейнеры падают или не запускаются
 ```
 
@@ -32,13 +32,13 @@ docker compose up -d
 
 ```bash
 # Проверить логи
-docker compose logs
+podman-compose logs
 
 # Проверить статус
-docker compose ps
+podman-compose ps
 
 # Проверить конфигурацию
-docker compose config
+podman-compose config
 ```
 
 **Решения:**
@@ -57,24 +57,24 @@ docker compose config
 
    ```bash
    # Проверить ресурсы
-   docker system df
+   podman system df
    
    # Очистить
-   docker system prune -a
+   podman system prune -a
    ```
 
 3. **Проблемы с сетью:**
 
    ```bash
    # Пересоздать сеть
-   docker compose down
-   docker network prune
-   docker compose up -d
+   podman-compose down
+   podman network prune
+   podman-compose up -d
    ```
 
 ---
 
-### Docker съедает всю память
+### Podman съедает всю память
 
 **Симптомы:**
 
@@ -87,10 +87,10 @@ docker compose config
 1. **Проверить использование:**
 
    ```bash
-   docker stats
+   podman stats
    ```
 
-2. **Ограничения уже установлены в docker-compose.yml:**
+2. **Ограничения уже установлены в podman-compose.yml:**
 
    ```yaml
    services:
@@ -107,43 +107,35 @@ docker compose config
    --storage.tsdb.retention.size=5GB  # было 10GB
    ```
 
-4. **Настроить Docker daemon:**
+4. **На Windows проверить ресурсы Podman машины:**
 
-   ```json
-   # /etc/docker/daemon.json
-   {
-     "log-driver": "json-file",
-     "log-opts": {
-       "max-size": "10m",
-       "max-file": "3"
-     }
-   }
+   ```bash
+   podman machine inspect
+   # Увеличить память при необходимости
+   podman machine stop
+   podman machine set --memory 8192
+   podman machine start
    ```
 
 ---
 
-### Permission denied при доступе к Docker
+### Permission denied при доступе к Podman
 
 **Симптомы:**
 
 ```
-Got permission denied while trying to connect to the Docker daemon socket
+Got permission denied while trying to connect to the Podman socket
 ```
 
-**НЕ ДЕЛАЙТЕ:**
+**Решение:**
 
-```bash
-# НЕ добавляйте пользователя в docker group!
-sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
-```
+Podman по умолчанию работает в rootless режиме:
 
-**Правильное решение:**
-
-1. **Используйте Docker Socket Proxy (уже настроен):**
+1. **Используйте Podman Socket Proxy (уже настроен):**
 
    ```yaml
-   # docker-compose.yml
-   docker-proxy:
+   # podman-compose.yml
+   podman-proxy:
      image: tecnativa/docker-socket-proxy
      environment:
        - CONTAINERS=1
@@ -155,7 +147,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 
    ```bash
    # /etc/sudoers.d/scanner
-   scanner ALL=(ALL) NOPASSWD: /usr/bin/docker
+   scanner ALL=(ALL) NOPASSWD: /usr/bin/podman
    ```
 
 ---
@@ -179,7 +171,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
    curl http://localhost:9091/metrics | grep security_scanners
    
    # Telegraf работает?
-   docker compose logs telegraf
+   podman-compose logs telegraf
    ```
 
 2. **Проверить Prometheus:**
@@ -205,7 +197,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 1. **Перезапустить Telegraf:**
 
    ```bash
-   docker compose restart telegraf
+   podman-compose restart telegraf
    sleep 10
    ```
 
@@ -222,7 +214,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 
    ```bash
    # Проверить inputs
-   docker exec telegraf telegraf --test --config /etc/telegraf/telegraf.conf
+   podman exec telegraf telegraf --test --config /etc/telegraf/telegraf.conf
    ```
 
 ---
@@ -247,7 +239,7 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 2. **Сбросить пароль:**
 
    ```bash
-   docker compose exec grafana grafana-cli admin reset-admin-password admin
+   podman exec grafana grafana-cli admin reset-admin-password admin
    ```
 
 3. **Проверить доступность:**
@@ -289,9 +281,9 @@ sudo usermod -aG docker $USER  # НЕБЕЗОПАСНО!
 3. **Удалить старые данные:**
 
    ```bash
-   docker compose down
+   podman-compose down
    rm -rf prometheus-data/*
-   docker compose up -d
+   podman-compose up -d
    ```
 
 ---
@@ -323,7 +315,7 @@ curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job, he
 2. **Перезапустить Prometheus:**
 
    ```bash
-   docker compose restart prometheus
+   podman-compose restart prometheus
    ```
 
 ---
@@ -343,10 +335,10 @@ curl http://localhost:9091/metrics
 
 ```bash
 # Тест конфигурации
-docker compose exec telegraf telegraf --test
+podman exec telegraf telegraf --test
 
 # Проверить логи
-docker compose logs telegraf | tail -50
+podman-compose logs telegraf | tail -50
 ```
 
 **Решения:**
@@ -389,7 +381,7 @@ Error: Cannot access /hostfs
 **Решение:**
 
 ```yaml
-# docker-compose.yml - проверить volumes
+# podman-compose.yml - проверить volumes
 volumes:
   - /:/hostfs:ro  # Read-only access к хост системе
 ```
@@ -410,7 +402,7 @@ ERROR: Unable to load XCCDF document
 
    ```bash
    # Список доступных профилей
-   docker compose exec openscap-scanner \
+   podman-compose exec openscap-scanner \
      oscap info /usr/share/xml/scap/ssg/content/ssg-ubuntu2004-ds.xml
    ```
 
@@ -467,7 +459,7 @@ Permission denied (publickey)
 
 ```bash
 # Проверить порты
-docker compose ps
+podman-compose ps
 
 # Проверить файрвол
 sudo ufw status
@@ -488,7 +480,7 @@ curl -v http://localhost:3000
 2. **Проверить binding:**
 
    ```yaml
-   # docker-compose.yml
+   # podman-compose.yml
    ports:
      - "3000:3000"  # не "127.0.0.1:3000:3000"
    ```
@@ -506,7 +498,7 @@ Could not resolve host
 **Решение:**
 
 ```yaml
-# docker-compose.yml
+# podman-compose.yml
 services:
   prometheus:
     dns:
@@ -535,7 +527,7 @@ curl http://localhost:2801/healthz
 curl -s "http://localhost:9090/api/v1/query?query=falco_events"
 
 # Проверить логи Falcosidekick
-docker compose logs falcosidekick --tail 20
+podman-compose logs falcosidekick --tail 20
 ```
 
 **Решения:**
@@ -543,7 +535,7 @@ docker compose logs falcosidekick --tail 20
 1. **Перезапустить Grafana с очисткой кэша:**
 
    ```bash
-   docker compose restart grafana
+   podman-compose restart grafana
    ```
 
 2. **Отправить тестовые события:**
@@ -555,9 +547,9 @@ docker compose logs falcosidekick --tail 20
 3. **Пересоздать volume Grafana (крайняя мера):**
 
    ```bash
-   docker compose down grafana
-   docker volume rm test-hard_grafana-data
-   docker compose up -d grafana
+   podman-compose down grafana
+   podman volume rm test-hard_grafana-data
+   podman-compose up -d grafana
    ```
 
 ---
@@ -573,10 +565,10 @@ docker compose logs falcosidekick --tail 20
 
 ```bash
 # Проверить конфигурацию outputs
-docker exec falcosidekick cat /etc/falcosidekick/config.yaml
+podman exec falcosidekick cat /etc/falcosidekick/config.yaml
 
 # Проверить доступность Loki из контейнера
-docker exec falcosidekick wget -qO- http://loki:3100/ready
+podman exec falcosidekick wget -qO- http://loki:3100/ready
 ```
 
 ---
@@ -597,7 +589,7 @@ docker exec falcosidekick wget -qO- http://loki:3100/ready
 ls reports/trivy/*_metrics.prom
 
 # Проверить логи Telegraf на ошибки парсинга
-docker logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
+podman logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
 ```
 
 **Решения:**
@@ -629,7 +621,7 @@ docker logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
 
    ```yaml
    # Уменьшить количество контейнеров
-   # docker-compose.yml
+   # podman-compose.yml
    deploy:
      replicas: 2  # было 5
    ```
@@ -638,7 +630,7 @@ docker logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
 
    ```bash
    # Использовать tmpfs для reports
-   # docker-compose.yml
+   # podman-compose.yml
    tmpfs:
      - /reports
    ```
@@ -658,16 +650,16 @@ docker logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
 
 **Решения:**
 
-1. **Использовать BuildKit:**
+1. **Использовать Buildah cache:**
 
    ```bash
-   export DOCKER_BUILDKIT=1
-   docker compose build
+   # Podman использует Buildah с поддержкой cache mounts
+   podman-compose build
    ```
 
 2. **Использовать cache:**
 
-   ```dockerfile
+   ```containerfile
    # Используйте RUN --mount=type=cache
    RUN --mount=type=cache,target=/var/cache/apt \
        apt-get update && apt-get install -y package
@@ -675,7 +667,7 @@ docker logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
 
 3. **Multi-stage builds уже используются:**
 
-   ```dockerfile
+   ```containerfile
    FROM python:3.11-slim as builder
    # ...
    FROM python:3.11-slim
@@ -698,7 +690,7 @@ docker logs telegraf --tail 20 2>&1 | grep -i "trivy\|error"
 По умолчанию **dry-run включен:**
 
 ```yaml
-# docker-compose.yml
+# podman-compose.yml
 environment:
   - ATOMIC_DRY_RUN=true
 ```
@@ -706,7 +698,7 @@ environment:
 Для реальных тестов (ТОЛЬКО в изолированных окружениях):
 
 ```bash
-ATOMIC_DRY_RUN=false docker compose up atomic-test
+ATOMIC_DRY_RUN=false podman-compose up atomic-test
 ```
 
 ---
@@ -719,7 +711,7 @@ ATOMIC_DRY_RUN=false docker compose up atomic-test
 
    ```bash
    # Через Grafana Explore
-   {job="docker"} |= "error"
+   {job="podman"} |= "error"
    ```
 
 2. **Проверить Prometheus alerts:**
@@ -758,11 +750,11 @@ curl -sf http://localhost:9093/-/healthy && echo "Alertmanager OK"
 ```bash
 # Создать diagnostic bundle
 mkdir -p diagnostics
-docker compose ps > diagnostics/ps.txt
-docker compose logs > diagnostics/logs.txt
-docker stats --no-stream > diagnostics/stats.txt
-docker system df > diagnostics/df.txt
-cp docker-compose.yml diagnostics/
+podman-compose ps > diagnostics/ps.txt
+podman-compose logs > diagnostics/logs.txt
+podman stats --no-stream > diagnostics/stats.txt
+podman system df > diagnostics/df.txt
+cp podman-compose.yml diagnostics/
 cp .env diagnostics/env.txt
 
 tar czf diagnostics-$(date +%Y%m%d).tar.gz diagnostics/
@@ -778,13 +770,13 @@ tar czf diagnostics-$(date +%Y%m%d).tar.gz diagnostics/
 # WARNING: Удалит все данные!
 
 # Остановить и удалить все
-docker compose down -v
+podman-compose down -v
 
-# Очистить Docker
-docker system prune -a --volumes
+# Очистить Podman
+podman system prune -a --volumes
 
 # Пересоздать
-docker compose up -d --build
+podman-compose up -d --build
 
 # Подождать
 sleep 60
@@ -810,11 +802,11 @@ make scan
    * Опишите шаги воспроизведения
 
 3. **Укажите:**
-   * Версию Docker/Docker Compose
+   * Версию Podman/podman-compose
    * OS и версию
    * Логи ошибок
    * Конфигурацию (без секретов!)
 
 ---
 
-**Обновлено:** 15.02.2026
+**Обновлено:** Март 2026

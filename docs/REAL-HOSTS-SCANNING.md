@@ -1,4 +1,4 @@
-# Сканирование реальных хостов, VM и Docker контейнеров
+# Сканирование реальных хостов, VM и Podman контейнеров
 
 ## Обзор
 
@@ -6,7 +6,7 @@
 
 1. **Тестовые контейнеры** (по умолчанию) - для демонстрации
 2. **Реальные хосты и VM** - через SSH
-3. **Production Docker контейнеры** - через Docker API
+3. **Production Podman контейнеры** - через Podman API
 
 ---
 
@@ -194,7 +194,7 @@ done
 
 ---
 
-## Режим 3: Production Docker контейнеры
+## Режим 3: Production Podman контейнеры
 
 ### Архитектура
 
@@ -203,7 +203,7 @@ done
 │  test-hard      │
 │  (мониторинг)   │
 └────────┬────────┘
-         │ Docker API
+         │ Podman API
          ├──────────► nginx-prod
          ├──────────► app-backend
          ├──────────► redis-cache
@@ -212,33 +212,25 @@ done
 
 ### Подготовка
 
-#### 1. Настроить Docker API доступ
+#### 1. Настроить Podman API доступ
 
 ```bash
-# На Docker хосте
-# Разрешить TCP доступ (только для доверенных сетей!)
-sudo systemctl edit docker.service
+# На Podman хосте (Linux)
+# Запустить Podman API на TCP (только для доверенных сетей!)
+podman system service --time=0 tcp:0.0.0.0:2375 &
 
-# Добавить:
-[Service]
-ExecStart=
-ExecStart=/usr/bin/dockerd -H fd:// -H tcp://0.0.0.0:2375
-
-sudo systemctl daemon-reload
-sudo systemctl restart docker
+# На Windows (Podman Machine)
+podman machine ssh "podman system service --time=0 tcp:0.0.0.0:2375 &"
 ```
 
 **ВАЖНО:** Для production используйте TLS:
 
 ```bash
 # Генерировать сертификаты
-./scripts/generate-docker-tls.sh
+./scripts/generate-podman-tls.sh
 
-# Настроить Docker с TLS
-sudo systemctl edit docker.service
-[Service]
-ExecStart=
-ExecStart=/usr/bin/dockerd -H fd:// -H tcp://0.0.0.0:2376 --tlsverify --tlscacert=/etc/docker/ca.pem --tlscert=/etc/docker/server-cert.pem --tlskey=/etc/docker/server-key.pem
+# Настроить Podman с TLS
+podman system service --time=0 tcp:0.0.0.0:2376 --tls-verify --tls-cert=/etc/podman/server-cert.pem --tls-key=/etc/podman/server-key.pem
 ```
 
 #### 2. Создать список контейнеров
@@ -254,31 +246,31 @@ postgres-db
 
 ### Запуск сканирования
 
-Создайте `scripts/scan-docker-containers.sh`:
+Создайте `scripts/scan-podman-containers.sh`:
 
 ```bash
 #!/bin/bash
 set -euo pipefail
 
-DOCKER_HOST=${1:-tcp://docker-host:2375}
+PODMAN_HOST=${1:-tcp://podman-host:2375}
 CONTAINERS_FILE=${2:-production-containers.txt}
 
-export DOCKER_HOST
+export CONTAINER_HOST=$PODMAN_HOST
 
-echo "Scanning containers on $DOCKER_HOST..."
+echo "Scanning containers on $PODMAN_HOST..."
 
 while IFS= read -r container; do
   echo "Scanning $container..."
   
   # Установить Lynis в контейнер
-  docker exec "$container" sh -c "apt-get update && apt-get install -y lynis || dnf install -y lynis" 2>/dev/null || true
+  podman exec "$container" sh -c "apt-get update && apt-get install -y lynis || dnf install -y lynis" 2>/dev/null || true
   
   # Запустить сканирование
-  docker exec "$container" lynis audit system --quick --quiet
+  podman exec "$container" lynis audit system --quick --quiet
   
   # Скачать отчеты
-  docker cp "${container}:/var/log/lynis.log" "./reports/lynis/${container}.log"
-  docker cp "${container}:/var/log/lynis-report.dat" "./reports/lynis/${container}.dat" 2>/dev/null || true
+  podman cp "${container}:/var/log/lynis.log" "./reports/lynis/${container}.log"
+  podman cp "${container}:/var/log/lynis-report.dat" "./reports/lynis/${container}.dat" 2>/dev/null || true
   
   # Парсить метрики
   python3 scripts/parse_lynis_report.py "./reports/lynis/${container}.log" > "./reports/lynis/${container}_metrics.prom"
@@ -290,10 +282,10 @@ done < "$CONTAINERS_FILE"
 Использование:
 
 ```bash
-chmod +x scripts/scan-docker-containers.sh
+chmod +x scripts/scan-podman-containers.sh
 
 # Сканировать контейнеры
-./scripts/scan-docker-containers.sh tcp://192.168.1.50:2375 production-containers.txt
+./scripts/scan-podman-containers.sh tcp://192.168.1.50:2375 production-containers.txt
 ```
 
 ---
@@ -366,7 +358,7 @@ spec:
 
 1. **Используйте SSH ключи** вместо паролей
 2. **Ограничьте доступ** scanner пользователя (только чтение)
-3. **Используйте TLS** для Docker API
+3. **Используйте TLS** для Podman API
 4. **Сканируйте в off-peak** часы (ночью)
 5. **Храните отчеты** минимум 90 дней
 6. **Настройте alerts** на критические находки
@@ -427,14 +419,14 @@ curl "http://localhost:9090/api/v1/query?query=lynis_score"
 ./scripts/scan-remote-host.sh web-server-1.example.com
 ```
 
-### Сканировать Docker контейнеры
+### Сканировать Podman контейнеры
 
 ```bash
 # Получить список running контейнеров
-docker ps --format "{{.Names}}" > running-containers.txt
+podman ps --format "{{.Names}}" > running-containers.txt
 
 # Сканировать
-./scripts/scan-docker-containers.sh tcp://localhost:2375 running-containers.txt
+./scripts/scan-podman-containers.sh tcp://localhost:2375 running-containers.txt
 ```
 
 ---
@@ -451,11 +443,11 @@ ssh -i ~/.ssh/scanner_key scanner@target-host
 sudo ufw allow 22/tcp
 ```
 
-### Docker API недоступен
+### Podman API недоступен
 
 ```bash
 # Проверить
-curl http://docker-host:2375/version
+curl http://podman-host:2375/version
 
 # Проверить firewall
 sudo firewall-cmd --add-port=2375/tcp --permanent
@@ -478,8 +470,8 @@ sudo dnf install -y lynis
 
 * [Ansible Documentation](https://docs.ansible.com/)
 * [Lynis Documentation](https://cisofy.com/documentation/lynis/)
-* [Docker API](https://docs.docker.com/engine/api/)
+* [Podman API](https://docs.podman.io/en/latest/_static/api.html)
 
 ---
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

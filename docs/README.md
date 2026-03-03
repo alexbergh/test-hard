@@ -19,18 +19,18 @@
 
 ### Сканирование и мониторинг
 
-- **[Сканирование реальных хостов](REAL-HOSTS-SCANNING.md)** -- сканирование production серверов, VM и Docker контейнеров
+- **[Сканирование реальных хостов](REAL-HOSTS-SCANNING.md)** -- сканирование production серверов, VM и Podman контейнеров
 - **[Централизованное логирование](LOGGING.md)** -- настройка и использование Loki + Promtail
 
-### Docker и развертывание
+### Podman и развертывание
 
-- **[Docker оптимизации](DOCKER_OPTIMIZATIONS.md)** -- multi-stage builds, BuildKit cache, метрики
-- **[Docker Quick Start](DOCKER_QUICK_START.md)** -- быстрое руководство по оптимизированным образам
-- **[Локальная сборка образа](LOCAL-BUILD.md)** -- сборка unified Docker образа без доступа к GHCR
+- **[Podman оптимизации](PODMAN_OPTIMIZATIONS.md)** -- multi-stage builds, Buildah cache, метрики
+- **[Podman Quick Start](PODMAN_QUICK_START.md)** -- быстрое руководство по оптимизированным образам
+- **[Локальная сборка образа](LOCAL-BUILD.md)** -- сборка unified образа без доступа к GHCR
 
 ### Установка
 
-- **[Нативная установка](NATIVE-INSTALLATION.md)** -- установка без Docker на bare metal / VM / BSD
+- **[Нативная установка](NATIVE-INSTALLATION.md)** -- установка без Podman на bare metal / VM / BSD
 
 ## Быстрая навигация
 
@@ -43,8 +43,8 @@
 | Создать безопасного пользователя | [USER-SETUP.md](USER-SETUP.md) |
 | Сканировать реальные серверы | [REAL-HOSTS-SCANNING.md](REAL-HOSTS-SCANNING.md) |
 | Настроить логирование | [LOGGING.md](LOGGING.md) |
-| Оптимизировать Docker образы | [DOCKER_OPTIMIZATIONS.md](DOCKER_OPTIMIZATIONS.md) |
-| Установить без Docker | [NATIVE-INSTALLATION.md](NATIVE-INSTALLATION.md) |
+| Оптимизировать Podman образы | [PODMAN_OPTIMIZATIONS.md](PODMAN_OPTIMIZATIONS.md) |
+| Установить без Podman | [NATIVE-INSTALLATION.md](NATIVE-INSTALLATION.md) |
 | Собрать образ локально | [LOCAL-BUILD.md](LOCAL-BUILD.md) |
 
 ### По компонентам
@@ -79,8 +79,8 @@
 |  +-- Prometheus           +-- Loki                            |
 |  +-- Grafana (10 dashb.)  +-- Promtail                        |
 |  +-- Alertmanager                                             |
-|  +-- Telegraf             Docker Security                     |
-|                           +-- Socket Proxy                    |
+|  +-- Telegraf             Podman Security                     |
+|                           +-- Podman Socket Proxy             |
 |  Web Dashboard                                                |
 |  +-- FastAPI backend      Network Scanning                    |
 |  +-- React frontend       +-- nmap host/port discovery        |
@@ -94,7 +94,7 @@
 
 1. **Тестовые контейнеры** (по умолчанию) -- для демонстрации и разработки
 2. **Реальные хосты через SSH** -- для production серверов и VM
-3. **Production Docker контейнеры** -- через Docker API
+3. **Production Podman контейнеры** -- через Podman API
 
 Подробнее: [REAL-HOSTS-SCANNING.md](REAL-HOSTS-SCANNING.md)
 
@@ -102,16 +102,16 @@
 
 ### Минимальные
 
-- Docker 20.10+
-- Docker Compose v2.0+
+- Podman 4.0+
+- podman-compose 1.0+
 - 2 CPU cores
 - 4 GB RAM
 - 10 GB disk space
 
 ### Рекомендуемые
 
-- Docker 24.0+
-- Docker Compose v2.20+
+- Podman 5.0+
+- podman-compose 1.2+
 - 4 CPU cores
 - 8 GB RAM
 - 50 GB disk space
@@ -139,4 +139,4 @@ make logs       # посмотреть логи
 
 ---
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

@@ -34,8 +34,8 @@ def test_lynis_metrics_generator_exists_and_invoked():
     assert "generate_lynis_metrics.py" in content
 
 
-def test_dockerfile_contains_lynis_default_profile():
-    p = Path("Dockerfile")
+def test_Containerfile_contains_lynis_default_profile():
+    p = Path("Containerfile")
     assert p.exists()
     txt = p.read_text()
     assert "/etc/lynis/default.prf" in txt

@@ -29,7 +29,7 @@ mkdir -p "$TEMP_BACKUP"
 log "Backing up configuration files..."
 mkdir -p "$TEMP_BACKUP/config"
 cp -r "$PROJECT_ROOT/.env" "$TEMP_BACKUP/config/" 2>/dev/null || log "[WARN] No .env file found"
-cp -r "$PROJECT_ROOT/docker-compose.yml" "$TEMP_BACKUP/config/"
+cp -r "$PROJECT_ROOT/podman-compose.yml" "$TEMP_BACKUP/config/"
 cp -r "$PROJECT_ROOT/prometheus" "$TEMP_BACKUP/config/"
 cp -r "$PROJECT_ROOT/grafana/provisioning" "$TEMP_BACKUP/config/"
 cp -r "$PROJECT_ROOT/telegraf" "$TEMP_BACKUP/config/"
@@ -42,7 +42,7 @@ if [ -d "$PROJECT_ROOT/prometheus-data" ]; then
     cp -r "$PROJECT_ROOT/prometheus-data" "$TEMP_BACKUP/"
     log "[OK] Prometheus data backed up"
 else
-    log "[WARN] No Prometheus data found (docker volume)"
+    log "[WARN] No Prometheus data found (podman volume)"
 fi
 
 # Backup Grafana data
@@ -51,7 +51,7 @@ if [ -d "$PROJECT_ROOT/grafana-data" ]; then
     cp -r "$PROJECT_ROOT/grafana-data" "$TEMP_BACKUP/"
     log "[OK] Grafana data backed up"
 else
-    log "[WARN] No Grafana data found (docker volume)"
+    log "[WARN] No Grafana data found (podman volume)"
 fi
 
 # Backup reports
@@ -68,13 +68,13 @@ if [ -d "$PROJECT_ROOT/art-storage" ]; then
     log "[OK] ART results backed up"
 fi
 
-# Export Docker volumes if they exist
-log "Exporting Docker volumes..."
-COMPOSE_BIN="${COMPOSE_BIN:-docker compose}"
+# Export Podman volumes if they exist
+log "Exporting Podman volumes..."
+COMPOSE_BIN="${COMPOSE_BIN:-podman-compose}"
 
 if $COMPOSE_BIN ps prometheus >/dev/null 2>&1; then
     log "Exporting Prometheus volume..."
-    docker run --rm \
+    podman run --rm \
         -v test-hard_prometheus-data:/data \
         -v "$TEMP_BACKUP":/backup \
         alpine tar czf /backup/prometheus-volume.tar.gz -C /data . 2>/dev/null || \
@@ -83,7 +83,7 @@ fi
 
 if $COMPOSE_BIN ps grafana >/dev/null 2>&1; then
     log "Exporting Grafana volume..."
-    docker run --rm \
+    podman run --rm \
         -v test-hard_grafana-data:/data \
         -v "$TEMP_BACKUP":/backup \
         alpine tar czf /backup/grafana-volume.tar.gz -C /data . 2>/dev/null || \
@@ -97,8 +97,8 @@ Backup Name: $BACKUP_NAME
 Timestamp: $TIMESTAMP
 Date: $(date)
 Hostname: $(hostname)
-Docker Version: $(docker --version)
-Docker Compose Version: $($COMPOSE_BIN version --short 2>/dev/null || echo "unknown")
+Podman Version: $(podman --version)
+Podman Compose Version: $($COMPOSE_BIN version --short 2>/dev/null || echo "unknown")
 Project Path: $PROJECT_ROOT
 EOF
 

@@ -156,6 +156,8 @@ class ScanService:
 
     async def start_scan(self, scan_id: int) -> Scan | None:
         """Start a pending scan."""
+        from app.metrics import scans_in_progress
+
         scan = await self.get_scan_by_id(scan_id)
         if not scan or scan.status != "pending":
             return None
@@ -163,6 +165,8 @@ class ScanService:
         scan.status = "running"
         scan.started_at = datetime.now(timezone.utc)
         await self.session.flush()
+
+        scans_in_progress.labels(scanner=scan.scanner).inc()
 
         # Run scan in background (store ref to prevent GC)
         task = asyncio.create_task(self._execute_scan(scan_id))
@@ -184,6 +188,8 @@ class ScanService:
     async def _execute_scan(self, scan_id: int) -> None:
         """Execute scan in background."""
         from app.database import get_session_context
+        from app.metrics import scans_duration_seconds, scans_in_progress, scans_total
+        from app.services.ws_manager import message_queue
 
         logger.info(f"Background scan task started for scan_id={scan_id}")
 
@@ -209,6 +215,14 @@ class ScanService:
 
                 logger.info(f"Executing {scan.scanner} scan on {host.name} (scan_id={scan_id})")
 
+                # Notify WS clients about scan start
+                await message_queue.put({
+                    "type": "scan_started",
+                    "scan_id": scan_id,
+                    "scanner": scan.scanner,
+                    "host_name": host.name,
+                })
+
                 # Execute scanner
                 if scan.scanner == "lynis":
                     result = await self._run_lynis_scan(host, scan)
@@ -233,6 +247,7 @@ class ScanService:
                     scan.duration_seconds = int((now - started).total_seconds())
 
                 if result.get("success"):
+                    scans_total.labels(scanner=scan.scanner, status="completed").inc()
                     scan.status = "completed"
                     scan.score = result.get("score", 0)
                     scan.passed = result.get("passed", 0)
@@ -268,7 +283,20 @@ class ScanService:
                         scan.passed,
                         scan.failed,
                     )
+
+                    # Notify WS clients
+                    await message_queue.put({
+                        "type": "scan_completed",
+                        "scan_id": scan_id,
+                        "scanner": scan.scanner,
+                        "host_name": host.name,
+                        "score": scan.score,
+                        "passed": scan.passed,
+                        "failed": scan.failed,
+                        "duration_seconds": scan.duration_seconds,
+                    })
                 else:
+                    scans_total.labels(scanner=scan.scanner, status="failed").inc()
                     scan.status = "failed"
                     scan.error_message = result.get("error", "Unknown error")
 
@@ -281,10 +309,26 @@ class ScanService:
                         error_message=scan.error_message,
                     )
 
+                    # Notify WS clients
+                    await message_queue.put({
+                        "type": "scan_failed",
+                        "scan_id": scan_id,
+                        "scanner": scan.scanner,
+                        "host_name": host.name,
+                        "error": scan.error_message,
+                    })
+
                 host.status = "online"
                 await session.commit()
 
+                # Record metrics
+                scans_in_progress.labels(scanner=scan.scanner).dec()
+                if scan.duration_seconds:
+                    scans_duration_seconds.labels(scanner=scan.scanner).observe(scan.duration_seconds)
+
             except Exception as e:
+                scans_total.labels(scanner=scan.scanner, status="error").inc()
+                scans_in_progress.labels(scanner=scan.scanner).dec()
                 scan.status = "failed"
                 scan.error_message = str(e)
                 scan.completed_at = datetime.now(timezone.utc)
@@ -292,19 +336,20 @@ class ScanService:
                 await session.commit()
 
     async def _run_lynis_scan(self, host: Host, scan: Scan) -> dict:
-        """Run Lynis scan on host via Docker Python SDK (non-blocking)."""
+        """Run Lynis scan on host via Podman Python SDK (non-blocking)."""
         if host.host_type != "container":
             return {"success": False, "error": "Only container scans are supported"}
 
-        # Run the blocking Docker SDK call in a thread
+        # Run the blocking Podman SDK call in a thread
         return await asyncio.to_thread(self._run_lynis_scan_sync, host.name, host.os_family, scan.id)
 
     @staticmethod
     def _run_lynis_scan_sync(host_name: str, os_family: str | None, scan_id: int) -> dict:
-        """Synchronous Lynis scan execution via Docker SDK (runs in thread)."""
+        """Synchronous Lynis scan execution via Podman SDK (runs in thread)."""
         import logging
 
-        import docker as docker_lib
+        # NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+        import docker as podman_lib
 
         logger = logging.getLogger(__name__)
         reports_dir = Path(settings.reports_dir) / "lynis"
@@ -313,11 +358,11 @@ class ScanService:
         report_path = reports_dir / f"{host_name}_{scan_id}.log"
 
         try:
-            docker_host = settings.docker_host
-            if docker_host.startswith("tcp://"):
-                client = docker_lib.DockerClient(base_url=docker_host)
+            podman_host = settings.podman_host
+            if podman_host.startswith("tcp://"):
+                client = podman_lib.DockerClient(base_url=podman_host)
             else:
-                client = docker_lib.from_env()
+                client = podman_lib.from_env()
 
             container = client.containers.get(host_name)
 
@@ -359,28 +404,29 @@ class ScanService:
             return {"success": False, "error": str(e)}
 
     async def _run_openscap_scan(self, host: Host, scan: Scan) -> dict:
-        """Run OpenSCAP scan on host via Docker Python SDK."""
+        """Run OpenSCAP scan on host via Podman Python SDK."""
         if host.host_type != "container":
             return {"success": False, "error": "Only container scans are supported"}
         return await asyncio.to_thread(self._run_openscap_scan_sync, host.name, host.os_family, scan.id, scan.profile)
 
     @staticmethod
     def _run_openscap_scan_sync(host_name: str, os_family: str | None, scan_id: int, profile: str | None) -> dict:
-        """Synchronous OpenSCAP scan via Docker SDK."""
+        """Synchronous OpenSCAP scan via Podman SDK."""
         import xml.etree.ElementTree as ET
 
-        import docker as docker_lib
+        # NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+        import docker as podman_lib
 
         reports_dir = Path(settings.reports_dir) / "openscap"
         reports_dir.mkdir(parents=True, exist_ok=True)
         report_path = reports_dir / f"{host_name}_{scan_id}.xml"
 
         try:
-            docker_host = settings.docker_host
-            if docker_host.startswith("tcp://"):
-                client = docker_lib.DockerClient(base_url=docker_host)
+            podman_host = settings.podman_host
+            if podman_host.startswith("tcp://"):
+                client = podman_lib.DockerClient(base_url=podman_host)
             else:
-                client = docker_lib.from_env()
+                client = podman_lib.from_env()
 
             container = client.containers.get(host_name)
 
@@ -532,28 +578,29 @@ class ScanService:
             return {"success": False, "error": str(e)}
 
     async def _run_trivy_scan(self, host: Host, scan: Scan) -> dict:
-        """Run Trivy vulnerability scan on container image via Docker SDK."""
+        """Run Trivy vulnerability scan on container image via Podman SDK."""
         if host.host_type != "container":
             return {"success": False, "error": "Only container scans are supported"}
         return await asyncio.to_thread(self._run_trivy_scan_sync, host.name, scan.id)
 
     @staticmethod
     def _run_trivy_scan_sync(host_name: str, scan_id: int) -> dict:
-        """Synchronous Trivy scan via Docker SDK - runs trivy container."""
+        """Synchronous Trivy scan via Podman SDK - runs trivy container."""
         import json
 
-        import docker as docker_lib
+        # NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+        import docker as podman_lib
 
         reports_dir = Path(settings.reports_dir) / "trivy"
         reports_dir.mkdir(parents=True, exist_ok=True)
         report_path = reports_dir / f"{host_name}_{scan_id}.json"
 
         try:
-            docker_host = settings.docker_host
-            if docker_host.startswith("tcp://"):
-                client = docker_lib.DockerClient(base_url=docker_host)
+            podman_host = settings.podman_host
+            if podman_host.startswith("tcp://"):
+                client = podman_lib.DockerClient(base_url=podman_host)
             else:
-                client = docker_lib.from_env()
+                client = podman_lib.from_env()
 
             # Get the target container's image name
             target = client.containers.get(host_name)
@@ -568,7 +615,7 @@ class ScanService:
             trivy_output = client.containers.run(
                 image="aquasec/trivy:0.58.0",
                 command=f"image --no-progress --format json --scanners vuln {image_name}",
-                volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "ro"}},
+                volumes={"/run/podman/podman.sock": {"bind": "/var/run/podman/podman.sock", "mode": "ro"}},
                 remove=True,
                 detach=False,
             )
@@ -648,8 +695,9 @@ class ScanService:
 
     @staticmethod
     def _run_atomic_scan_sync(host_name: str, scan_id: int) -> dict:
-        """Synchronous Atomic Red Team security tests via Docker SDK."""
-        import docker as docker_lib
+        """Synchronous Atomic Red Team security tests via Podman SDK."""
+        # NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+        import docker as podman_lib
 
         reports_dir = Path(settings.reports_dir) / "atomic"
         reports_dir.mkdir(parents=True, exist_ok=True)
@@ -788,11 +836,11 @@ class ScanService:
         ]
 
         try:
-            docker_host = settings.docker_host
-            if docker_host.startswith("tcp://"):
-                client = docker_lib.DockerClient(base_url=docker_host)
+            podman_host = settings.podman_host
+            if podman_host.startswith("tcp://"):
+                client = podman_lib.DockerClient(base_url=podman_host)
             else:
-                client = docker_lib.from_env()
+                client = podman_lib.from_env()
 
             container = client.containers.get(host_name)
             logger.info(f"Starting Atomic Red Team tests on {host_name} ({len(tests)} tests)")

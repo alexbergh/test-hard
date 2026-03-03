@@ -8,7 +8,7 @@
 scripts/
 ├── scanning/       # Сканирование: Lynis, OpenSCAP, ART, Trivy, nmap, SSH
 ├── parsing/        # Парсеры отчетов в Prometheus-формат
-├── monitoring/     # Health checks и измерение Docker-метрик
+├── monitoring/     # Health checks и измерение Podman-метрик
 ├── setup/          # Установка зависимостей и настройка пользователей
 ├── testing/        # Тестирование функциональности
 ├── backup/         # Backup конфигурации и данных

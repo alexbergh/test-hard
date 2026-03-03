@@ -1,0 +1,51 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+*.egg
+dist
+build
+
+# Virtual environments
+venv
+.venv
+env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+tests
+.pytest_cache
+.coverage
+htmlcov
+coverage.xml
+
+# Reports and data (runtime only)
+reports
+data
+*.db
+
+# Documentation
+*.md
+LICENSE
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Container files
+Containerfile
+.containerignore
+podman-compose*.yml

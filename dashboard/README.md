@@ -27,14 +27,14 @@ npm install
 npm run dev
 ```
 
-### Docker
+### Podman
 
 ```bash
 # Start dashboard
-docker compose up -d
+podman-compose up -d
 
 # With tracing
-docker compose -f docker-compose.yml -f ../docker-compose.tracing.yml up -d
+podman-compose -f podman-compose.yml -f ../podman-compose.tracing.yml up -d
 ```
 
 ## Architecture
@@ -48,15 +48,15 @@ dashboard/
 │   │   ├── schemas/   # Pydantic schemas
 │   │   ├── services/  # Business logic
 │   │   └── main.py    # Application entry
-│   └── Dockerfile
+│   └── Containerfile
 ├── frontend/          # React frontend
 │   ├── src/
 │   │   ├── components/
 │   │   ├── pages/
 │   │   ├── store/     # Zustand state
 │   │   └── lib/       # API client
-│   └── Dockerfile
-└── docker-compose.yml
+│   └── Containerfile
+└── podman-compose.yml
 ```
 
 ## API Endpoints
@@ -67,7 +67,7 @@ dashboard/
 | POST | `/api/v1/auth/register` | Register new user |
 | GET | `/api/v1/hosts` | List all hosts |
 | POST | `/api/v1/hosts` | Create host |
-| POST | `/api/v1/hosts/sync-docker` | Sync from Docker |
+| POST | `/api/v1/hosts/sync-podman` | Sync from Podman |
 | GET | `/api/v1/scans` | List scans |
 | POST | `/api/v1/scans` | Start new scan |
 | GET | `/api/v1/schedules` | List schedules |

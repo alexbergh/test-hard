@@ -13,7 +13,7 @@ install -d -m 0775 "$RESULT_DIR"
 
 if ! command -v oscap >/dev/null 2>&1; then
   echo "OpenSCAP (oscap) not found; install it (e.g. 'sudo apt install openscap-scanner' or 'sudo dnf install openscap-scanner')" >&2
-  echo "Alternatively run 'docker compose run --rm openscap-scanner' from the repository root." >&2
+  echo "Alternatively run 'podman-compose run --rm openscap-scanner' from the repository root." >&2
   exit 1
 fi
 

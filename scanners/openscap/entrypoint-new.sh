@@ -16,15 +16,15 @@ install_openscap() {
   local name="$1"
   case "$name" in
     target-fedora)
-      docker exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
+      podman exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
       ;;
     target-centos)
-      docker exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
+      podman exec "$name" sh -c "dnf -y install openscap-scanner scap-security-guide 2>&1 | grep -v 'already installed' || true"
       ;;
     target-debian|target-ubuntu)
       # For Debian/Ubuntu install openscap packages inside the target so
       # scans can be executed there in a consistent way
-      docker exec "$name" sh -c "apt-get update >/dev/null 2>&1 || true; \
+      podman exec "$name" sh -c "apt-get update >/dev/null 2>&1 || true; \
         if command -v add-apt-repository >/dev/null 2>&1; then \
           add-apt-repository -y universe >/dev/null 2>&1 || true; \
         else \
@@ -33,7 +33,7 @@ install_openscap() {
         fi; \
         apt-get update && apt-get install -y --no-install-recommends openscap-scanner scap-security-guide || true"
 
-      if ! docker exec "$name" command -v oscap >/dev/null 2>&1; then
+      if ! podman exec "$name" command -v oscap >/dev/null 2>&1; then
         echo "OpenSCAP not available in $name after install attempt; skipping" >&2
         return 2
       fi
@@ -79,12 +79,12 @@ scan_container() {
   fi
 
   # РџСЂРѕРІРµСЂРёС‚СЊ С‡С‚Рѕ datastream СЃСѓС‰РµСЃС‚РІСѓРµС‚, РёР»Рё РЅР°Р№С‚Рё Р°Р»СЊС‚РµСЂРЅР°С‚РёРІРЅС‹Р№ РїСѓС‚СЊ
-  if ! docker exec "$name" test -f "$datastream" 2>/dev/null; then
+  if ! podman exec "$name" test -f "$datastream" 2>/dev/null; then
     echo "Primary datastream $datastream not found, searching alternatives..." >&2
 
     # РСЃРєР°С‚СЊ datastream С„Р°Р№Р»С‹ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё
     local found_datastream
-    found_datastream=$(docker exec "$name" find /usr -name "*ssg*ds.xml" -type f 2>/dev/null | head -1 || true)
+    found_datastream=$(podman exec "$name" find /usr -name "*ssg*ds.xml" -type f 2>/dev/null | head -1 || true)
 
     if [ -z "$found_datastream" ]; then
       echo "No datastream files found in $name, skipping" >&2
@@ -102,7 +102,7 @@ scan_container() {
 
   # Р—Р°РїСѓСЃС‚РёС‚СЊ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ РІРЅСѓС‚СЂРё РєРѕРЅС‚РµР№РЅРµСЂР°
   # Make sure requested profile exists in datastream; if not, pick a fallback
-  available_profiles=$(docker exec "$name" oscap info "$datastream" 2>/dev/null | grep -Eo 'Profile ID: .*' | sed -E 's/(Profile ID: )//' || true)
+  available_profiles=$(podman exec "$name" oscap info "$datastream" 2>/dev/null | grep -Eo 'Profile ID: .*' | sed -E 's/(Profile ID: )//' || true)
   if [[ -n "$available_profiles" ]]; then
     if ! echo "$available_profiles" | grep -q "^${PROFILE}$"; then
       echo "Requested profile ${PROFILE} not present in datastream; selecting fallback" >&2
@@ -120,8 +120,8 @@ scan_container() {
   # Run the scan. Prefer running oscap inside the target container; if oscap is
   # not available in the target, fetch the datastream and run oscap locally
   # inside this scanner container.
-  if docker exec "$name" command -v oscap >/dev/null 2>&1; then
-    if ! docker exec "$name" oscap xccdf eval \
+  if podman exec "$name" command -v oscap >/dev/null 2>&1; then
+    if ! podman exec "$name" oscap xccdf eval \
       --profile "$PROFILE" \
       --results "$result_file" \
       --report "$report_file" \
@@ -130,8 +130,8 @@ scan_container() {
     fi
   else
     tmp_ds="/tmp/ssg-${name}.xml"
-    # try to copy datastream content via docker exec cat
-    if docker exec "$name" sh -c "cat \"$datastream\"" >"$tmp_ds" 2>/dev/null; then
+    # try to copy datastream content via podman exec cat
+    if podman exec "$name" sh -c "cat \"$datastream\"" >"$tmp_ds" 2>/dev/null; then
       oscap xccdf eval \
         --profile "$PROFILE" \
         --results "$result_file" \
@@ -145,26 +145,26 @@ scan_container() {
 
   # Attempt to copy outputs even if the command exited non-zero
   local copied_any=0
-  if ! docker exec "$name" test -s "$result_file" 2>/dev/null; then
+  if ! podman exec "$name" test -s "$result_file" 2>/dev/null; then
     echo "[OpenSCAP] Result XML not found in $name at $result_file" >&2
   fi
-  if ! docker exec "$name" test -s "$report_file" 2>/dev/null; then
+  if ! podman exec "$name" test -s "$report_file" 2>/dev/null; then
     echo "[OpenSCAP] Report HTML not found in $name at $report_file" >&2
   fi
-  if docker cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null; then
+  if podman cp "$name:$result_file" "/reports/openscap/${name}.xml" 2>/dev/null; then
     copied_any=1
   else
-    if docker exec "$name" sh -c "cat '$result_file'" >"/reports/openscap/${name}.xml" 2>/dev/null; then
+    if podman exec "$name" sh -c "cat '$result_file'" >"/reports/openscap/${name}.xml" 2>/dev/null; then
       copied_any=1
     else
       echo "Failed to copy XML from $name:$result_file" >&2
     fi
   fi
 
-  if docker cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null; then
+  if podman cp "$name:$report_file" "/reports/openscap/${name}.html" 2>/dev/null; then
     copied_any=1
   else
-    if docker exec "$name" sh -c "cat '$report_file'" >"/reports/openscap/${name}.html" 2>/dev/null; then
+    if podman exec "$name" sh -c "cat '$report_file'" >"/reports/openscap/${name}.html" 2>/dev/null; then
       copied_any=1
     else
       echo "Failed to copy HTML from $name:$report_file" >&2

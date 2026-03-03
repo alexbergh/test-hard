@@ -14,11 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check for Docker image updates
+      - name: Check for Podman image updates
         run: |
-          echo "Checking for Docker image updates..."
-          docker compose pull || true
-          docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+          echo "Checking for Podman image updates..."
+          podman-compose pull || true
+          podman images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
       - name: Check Python dependencies
         run: |
@@ -31,8 +31,8 @@ jobs:
           echo "" >> update-report.md
           echo "Generated on: $(date)" >> update-report.md
           echo "" >> update-report.md
-          echo "## Docker Images" >> update-report.md
-          docker compose config --images >> update-report.md
+          echo "## Podman Images" >> update-report.md
+          podman-compose config --images >> update-report.md
 
       - name: Upload report
         uses: actions/upload-artifact@v3

@@ -4,17 +4,17 @@
 
 ### Системные требования
 
-- **OS**: Linux / macOS / Windows (WSL2)
-- **Docker**: 20.10+
-- **Docker Compose**: 2.0+
+- **OS**: Linux / macOS / Windows (Podman Machine)
+- **Podman**: 4.0+
+- **podman-compose**: 1.0+
 - **RAM**: минимум 4 GB (рекомендуется 8 GB)
 - **Disk**: минимум 10 GB свободного места
 
 ### Проверка требований
 
 ```bash
-docker --version
-docker compose version
+podman --version
+podman-compose version
 ```
 
 ---
@@ -33,9 +33,9 @@ cd test-hard
 ```bash
 ls -la
 # Должны быть:
-# - docker-compose.yml
-# - Dockerfile
-# - docker/               (Dockerfiles для целевых ОС)
+# - podman-compose.yml
+# - Containerfile
+# - containers/               (Dockerfiles для целевых ОС)
 # - falco/                (конфигурация Falco)
 # - trivy/                (конфигурация Trivy)
 # - grafana/              (дашборды и provisioning)
@@ -61,20 +61,20 @@ nano .env
 
 ```bash
 # Полная сборка всех сервисов
-docker compose build --no-cache
+podman-compose build
 
-# Или параллельная сборка (быстрее)
-docker compose build --parallel
+# Или сборка без кэша
+podman-compose build --no-cache
 ```
 
 ### Шаг 5: Запуск инфраструктуры
 
 ```bash
 # Запуск всех сервисов
-docker compose up -d
+podman-compose up -d
 
 # Проверка статуса
-docker compose ps
+podman-compose ps
 ```
 
 ### Шаг 6: Проверка сервисов
@@ -121,8 +121,8 @@ python3 scripts/scan_all_images.py
 # Falco: генерация событий для всех контейнеров
 python3 scripts/send_falco_events.py
 
-# Network: сканирование Docker-сети
-docker exec telegraf python3 /opt/test-hard/scripts/scanning/run_network_scan.py \
+# Network: сканирование Podman-сети
+podman exec telegraf python3 /opt/test-hard/scripts/scanning/run_network_scan.py \
   --targets 172.19.0.0/24 --scan-type quick --output /var/lib/network-scan
 ```
 
@@ -243,7 +243,7 @@ curl http://localhost:9090/api/v1/label/__name__/values | grep -E "security|triv
 **Решение 2: Перезапустить Telegraf**
 
 ```bash
-docker compose restart telegraf
+podman-compose restart telegraf
 sleep 20
 curl http://localhost:9091/metrics | grep security_scanners
 ```
@@ -258,8 +258,8 @@ curl http://localhost:9091/metrics | grep security_scanners
 
 ```bash
 # Логи сканеров
-docker logs lynis-scanner
-docker logs openscap-scanner
+podman logs lynis-scanner
+podman logs openscap-scanner
 
 # Проверить файлы метрик
 ls -lh reports/lynis/
@@ -271,16 +271,16 @@ ls -lh reports/trivy/
 
 ```bash
 # Остановить все
-docker compose down -v
+podman-compose down -v
 
 # Очистить старые образы
-docker system prune -a
+podman system prune -a
 
 # Пересобрать
-docker compose build --no-cache
+podman-compose build --no-cache
 
 # Запустить
-docker compose up -d
+podman-compose up -d
 ```
 
 ### Проблема: Trivy метрики не появляются в Prometheus
@@ -289,7 +289,7 @@ Telegraf читает `.prom` файлы из `/reports/trivy/`. Файлы до
 
 ```bash
 # Внутри контейнера telegraf проверить логи на ошибки парсинга
-docker logs telegraf --tail 20 | grep -i "trivy\|error"
+podman logs telegraf --tail 20 | grep -i "trivy\|error"
 ```
 
 ---
@@ -301,11 +301,11 @@ docker logs telegraf --tail 20 | grep -i "trivy\|error"
 git pull origin main
 
 # Пересобрать измененные сервисы
-docker compose build --no-cache
+podman-compose build --no-cache
 
 # Перезапустить
-docker compose down
-docker compose up -d
+podman-compose down
+podman-compose up -d
 ```
 
 ---
@@ -314,11 +314,11 @@ docker compose up -d
 
 ```
 test-hard/
-├── docker-compose.yml           # Все сервисы: мониторинг, сканеры, Falco, Trivy
-├── Dockerfile                   # Единый multi-stage образ (Lynis, OpenSCAP, Telegraf)
+├── podman-compose.yml           # Все сервисы: мониторинг, сканеры, Falco, Trivy
+├── Containerfile                   # Единый multi-stage образ (Lynis, OpenSCAP, Telegraf)
 ├── .env.example                 # Шаблон переменных окружения
 ├── Makefile                     # Упрощенные команды
-├── docker/                      # Dockerfiles для целевых ОС
+├── containers/                      # Dockerfiles для целевых ОС
 │   ├── ubuntu/
 │   ├── debian/
 │   ├── fedora/
@@ -399,7 +399,7 @@ test-hard/
 
 ```bash
 # Через CLI
-docker exec grafana grafana-cli admin reset-admin-password <new_password>
+podman exec grafana grafana-cli admin reset-admin-password <new_password>
 
 # Или через .env перед первым запуском
 GF_ADMIN_PASSWORD=your_secure_password
@@ -417,12 +417,12 @@ sudo ufw allow from 127.0.0.1 to any port 9090
 
 ## Чеклист развертывания
 
-- [ ] Docker и Docker Compose установлены
+- [ ] Podman и podman-compose установлены
 - [ ] Репозиторий склонирован
 - [ ] `.env` файл создан и пароли изменены
-- [ ] Образы собраны (`docker compose build`)
-- [ ] Сервисы запущены (`docker compose up -d`)
-- [ ] Все контейнеры работают (`docker compose ps`)
+- [ ] Образы собраны (`podman-compose build`)
+- [ ] Сервисы запущены (`podman-compose up -d`)
+- [ ] Все контейнеры работают (`podman-compose ps`)
 - [ ] Сканирование выполнено (`./scripts/scanning/run_hardening_suite.sh`)
 - [ ] Trivy сканирование выполнено (`python3 scripts/scan_all_images.py`)
 - [ ] Метрики видны в Telegraf (`curl http://localhost:9091/metrics`)
@@ -433,4 +433,4 @@ sudo ufw allow from 127.0.0.1 to any port 9090
 
 ---
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

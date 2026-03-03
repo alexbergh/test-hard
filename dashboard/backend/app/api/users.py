@@ -11,9 +11,14 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[UserResponse])
-async def list_users(session: DbSession, current_user: AdminUser) -> list[UserResponse]:
+async def list_users(
+    session: DbSession,
+    current_user: AdminUser,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[UserResponse]:
     """List all users (admin only)."""
-    result = await session.execute(select(User).order_by(User.id))
+    result = await session.execute(select(User).order_by(User.id).limit(limit).offset(offset))
     users = result.scalars().all()
     return [UserResponse.model_validate(u) for u in users]
 

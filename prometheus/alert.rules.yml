@@ -150,14 +150,14 @@ groups:
             Check for systematic issues or ongoing attack.
 
       - alert: FalcoContainerEscape
-        expr: sum(rate(falco_events{rule=~".*Docker Socket.*|.*Privileged.*|.*Sensitive Mount.*"}[5m])) > 0
+        expr: sum(rate(falco_events{rule=~".*Podman Socket.*|.*Privileged.*|.*Sensitive Mount.*"}[5m])) > 0
         for: 0m
         labels:
           severity: critical
         annotations:
           summary: "Falco detected potential container escape"
           description: |
-            Container escape indicators detected: Docker socket mount, privileged mode, or sensitive host mounts.
+            Container escape indicators detected: Podman socket mount, privileged mode, or sensitive host mounts.
             Immediate investigation required.
 
       - alert: FalcoCredentialAccess

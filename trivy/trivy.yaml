@@ -57,7 +57,7 @@ db:
 # Rego-политики (custom OPA checks)
 misconfiguration:
   scanners:
-    - dockerfile
+    - Containerfile
     - kubernetes
   policy-namespaces:
     - user

@@ -11,18 +11,19 @@ from app.models import Host, Scan
 from app.models.scan import ScanResult
 from sqlalchemy import select
 
-import docker as docker_lib
+# NOTE: 'podman' is the Python SDK package name (API-compatible with Podman)
+import docker as podman_lib
 
 settings = get_settings()
 
 
 def run_lynis_on_container(container_name: str) -> tuple[str, float]:
     """Run lynis on a container, return (output, elapsed_seconds)."""
-    docker_host = settings.docker_host
-    if docker_host.startswith("tcp://"):
-        client = docker_lib.DockerClient(base_url=docker_host)
+    podman_host = settings.podman_host
+    if podman_host.startswith("tcp://"):
+        client = podman_lib.DockerClient(base_url=podman_host)
     else:
-        client = docker_lib.from_env()
+        client = podman_lib.from_env()
 
     container = client.containers.get(container_name)
     print(f"  Running lynis on {container_name}...")

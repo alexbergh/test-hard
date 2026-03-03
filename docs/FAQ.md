@@ -30,14 +30,14 @@ test-hard -- автоматизированная платформа для secu
 
 **Минимальные:**
 
-* Docker 20.10+
-* Docker Compose v2.0+
+* Podman 4.0+
+* podman-compose 1.0+
 * 2 CPU, 4 GB RAM, 10 GB disk
 
 **Рекомендуемые:**
 
-* Docker 24.0+
-* Docker Compose v2.20+
+* Podman 5.0+
+* podman-compose 1.2+
 * 4 CPU, 8 GB RAM, 50 GB disk
 
 ### Как быстро развернуть платформу?
@@ -61,7 +61,7 @@ nano .env  # Измените GF_ADMIN_PASSWORD
 
 См. [SECURITY.md](SECURITY.md) для деталей.
 
-### Можно ли запустить без Docker?
+### Можно ли запустить без Podman?
 
 Да, есть возможность нативной установки. См. [NATIVE-INSTALLATION.md](NATIVE-INSTALLATION.md).
 
@@ -77,7 +77,7 @@ make scan
 ./scripts/scanning/scan-remote-host.sh user@host
 
 # Сканирование production контейнера
-docker exec container-name lynis audit system
+podman exec container-name lynis audit system
 ```
 
 См. [REAL-HOSTS-SCANNING.md](REAL-HOSTS-SCANNING.md).
@@ -114,7 +114,7 @@ docker exec container-name lynis audit system
 1. Создайте дашборд в UI
 2. Export → Save JSON
 3. Поместите в `grafana/dashboards/`
-4. Пересоберите: `docker compose restart grafana`
+4. Пересоберите: `podman-compose restart grafana`
 
 ## Troubleshooting
 
@@ -141,35 +141,27 @@ make scan
 
 См. [DEPLOYMENT.md#troubleshooting](DEPLOYMENT.md#устранение-неполадок).
 
-### Docker съедает всю память
+### Podman съедает всю память
 
 **Решение:**
 
-1. Ограничить ресурсы в docker-compose.yml (уже настроено)
+1. Ограничить ресурсы в podman-compose.yml (уже настроено)
 2. Очистить неиспользуемые ресурсы:
 
 ```bash
-docker system prune -a
-docker volume prune
+podman system prune -a
+podman volume prune
 ```
 
-3. Настроить Docker daemon:
+3. На Windows проверить ресурсы Podman машины:
 
-```json
-{
-  "default-ulimits": {
-    "nofile": {
-      "Name": "nofile",
-      "Hard": 64000,
-      "Soft": 64000
-    }
-  }
-}
+```bash
+podman machine inspect
 ```
 
 ### Ошибка "denied" при pull образов из GHCR
 
-При запуске `docker compose up` появляется ошибка:
+При запуске `podman-compose up` появляется ошибка:
 
 ```
 Error response from daemon: denied
@@ -183,23 +175,23 @@ Error response from daemon: denied
 # Создайте Personal Access Token на GitHub с правами read:packages
 # https://github.com/settings/tokens
 
-echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+echo $GITHUB_TOKEN | podman login ghcr.io -u YOUR_USERNAME --password-stdin
 ```
 
 **Решение 2 — Собрать образ локально:**
 
 ```bash
 # В корне проекта
-docker build -t ghcr.io/alexbergh/test-hard:latest .
+podman build -t ghcr.io/alexbergh/test-hard:latest .
 
 # Затем запустить как обычно
-docker compose up -d
+podman-compose up -d
 ```
 
 **Решение 3 — Использовать dev-конфигурацию с локальной сборкой:**
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d --build
+podman-compose -f podman-compose.dev.yml up -d --build
 ```
 
 ### Контейнеры не запускаются
@@ -208,10 +200,10 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 ```bash
 # Логи конкретного сервиса
-docker compose logs <service>
+podman-compose logs <service>
 
 # Проверка конфигурации
-docker compose config
+podman-compose config
 
 # Проверка портов
 ss -tlnp | grep -E '3000|9090|9091|9093'
@@ -225,15 +217,13 @@ chmod +x scripts/**/*.sh
 find scripts -name "*.sh" -exec chmod +x {} \;
 ```
 
-### Ошибка "Permission denied" при доступе к Docker
+### Ошибка "Permission denied" при доступе к Podman
 
-**Не добавляйте пользователя в docker group!**
+**Используйте rootless Podman (рекомендуется):**
 
-Используйте:
-
-* Docker Socket Proxy (рекомендуется)
+* Podman Socket Proxy
 * sudo с ограниченными правами
-* Rootless Docker
+* Rootless Podman (по умолчанию)
 
 См. [USER-SETUP.md](USER-SETUP.md).
 
@@ -244,22 +234,22 @@ find scripts -name "*.sh" -exec chmod +x {} \;
 Да, при соблюдении рекомендаций:
 
 * Измените пароли по умолчанию
-* Используйте Docker Socket Proxy
+* Используйте Podman Socket Proxy
 * Настройте TLS/SSL
 * Ограничьте сетевой доступ
 * Регулярно обновляйте компоненты
 
 См. [SECURITY.md](SECURITY.md).
 
-### Как защитить Docker socket?
+### Как защитить Podman socket?
 
-Используется Docker Socket Proxy:
+Используется Podman Socket Proxy:
 
 * Только чтение
 * Ограниченные API endpoints
 * Нет доступа к VOLUMES, NETWORKS
 
-Настроено по умолчанию в docker-compose.yml.
+Настроено по умолчанию в podman-compose.yml.
 
 ### Atomic Red Team безопасен?
 
@@ -268,7 +258,7 @@ find scripts -name "*.sh" -exec chmod +x {} \;
 Для реальных тестов:
 
 ```bash
-ATOMIC_DRY_RUN=false docker compose up
+ATOMIC_DRY_RUN=false podman-compose up
 ```
 
 **Только в изолированных тестовых окружениях!**
@@ -292,7 +282,7 @@ ssh-copy-id -i ~/.ssh/scanner_key_new.pub user@host
 
 1. Настройте Alertmanager в `prometheus/alertmanager.yml`
 2. Добавьте правила в `prometheus/alert.rules.yml`
-3. Перезапустите: `docker compose restart alertmanager`
+3. Перезапустите: `podman-compose restart alertmanager`
 
 Пример:
 
@@ -345,10 +335,10 @@ curl http://localhost:9090/api/v1/query?query=security_scanners_lynis_score > me
 security_scan:
   stage: security
   script:
-    - docker compose up -d
+    - podman-compose up -d
     - sleep 30
     - make scan
-    - docker compose logs --tail=100
+    - podman-compose logs --tail=100
   artifacts:
     paths:
       - reports/
@@ -423,8 +413,8 @@ pre-commit run --all-files
 
 ### Как добавить поддержку нового дистрибутива?
 
-1. Создайте Dockerfile в `docker/`
-2. Добавьте в docker-compose.yml
+1. Создайте Containerfile в `containers/`
+2. Добавьте в podman-compose.yml
 3. Обновите парсеры если нужно
 4. Добавьте тесты
 5. Обновите документацию
@@ -435,14 +425,14 @@ pre-commit run --all-files
 
 1. Используйте BuildKit cache
 2. Запускайте сканеры параллельно
-3. Оптимизируйте Docker образы
+3. Оптимизируйте Podman образы
 4. Используйте SSD диски
 
-См. [DOCKER_OPTIMIZATIONS.md](DOCKER_OPTIMIZATIONS.md).
+См. [PODMAN_OPTIMIZATIONS.md](PODMAN_OPTIMIZATIONS.md).
 
 ### Как уменьшить использование ресурсов?
 
-1. Настройте resource limits в docker-compose.yml
+1. Настройте resource limits в podman-compose.yml
 2. Уменьшите retention period в Prometheus
 3. Отключите ненужные сканеры
 4. Используйте меньше target контейнеров
@@ -453,25 +443,25 @@ pre-commit run --all-files
 
 ```bash
 # Все логи
-docker compose logs
+podman-compose logs
 
 # Конкретный сервис
-docker compose logs prometheus
+podman-compose logs prometheus
 
 # Follow режим
-docker compose logs -f grafana
+podman-compose logs -f grafana
 
 # Loki logs (если включен)
-curl http://localhost:3100/loki/api/v1/query?query={job="docker"}
+curl http://localhost:3100/loki/api/v1/query?query={job="podman"}
 ```
 
 ### Как обновить платформу?
 
 ```bash
 git pull origin main
-docker compose pull
-docker compose build --pull
-docker compose up -d
+podman-compose pull
+podman-compose build
+podman-compose up -d
 ```
 
 ### Есть ли готовые дашборды?
@@ -491,10 +481,16 @@ docker compose up -d
 
 ### Поддерживается ли Windows/macOS?
 
-Да, через Docker Desktop:
+Да, через Podman:
 
-* Windows 10/11 + WSL2
-* macOS (Intel/Apple Silicon)
+* Windows 10/11 + Podman Machine
+* macOS (Intel/Apple Silicon) + Podman Machine
+
+**Важно для Windows:** Запустите Podman API на TCP:
+```bash
+podman machine ssh "podman system service --time=0 tcp:0.0.0.0:2375 &"
+```
+И используйте `tcp://host.containers.internal:2375` для подключения из контейнеров.
 
 **Но:** нативное сканирование только для Linux/BSD.
 
@@ -509,4 +505,4 @@ docker compose up -d
 
 **Не нашли ответ?** Создайте [новый issue](https://github.com/alexbergh/test-hard/issues/new).
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

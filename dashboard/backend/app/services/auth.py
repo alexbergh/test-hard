@@ -34,14 +34,24 @@ class AuthService:
         """Create a JWT access token."""
         to_encode = data.copy()
         expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.access_token_expire_minutes))
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": expire, "type": "access"})
         return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
 
     @staticmethod
-    def decode_token(token: str) -> TokenData | None:
+    def create_refresh_token(data: dict) -> str:
+        """Create a JWT refresh token with longer expiry."""
+        to_encode = data.copy()
+        expire = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+        to_encode.update({"exp": expire, "type": "refresh"})
+        return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+
+    @staticmethod
+    def decode_token(token: str, expected_type: str = "access") -> TokenData | None:
         """Decode and validate a JWT token."""
         try:
             payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+            if payload.get("type") != expected_type:
+                return None
             username: str = payload.get("sub")
             user_id: int = payload.get("user_id")
             role: str = payload.get("role")
@@ -91,10 +101,13 @@ class AuthService:
         return user
 
     def create_token_for_user(self, user: User) -> Token:
-        """Create access token for a user."""
-        access_token = self.create_access_token(data={"sub": user.username, "user_id": user.id, "role": user.role})
+        """Create access and refresh tokens for a user."""
+        token_data = {"sub": user.username, "user_id": user.id, "role": user.role}
+        access_token = self.create_access_token(data=token_data)
+        refresh_token = self.create_refresh_token(data=token_data)
         return Token(
             access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",
             expires_in=settings.access_token_expire_minutes * 60,
             must_change_password=user.must_change_password,

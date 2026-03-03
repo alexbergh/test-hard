@@ -9,13 +9,14 @@ from app.services.k8s_connector import K8sConnector
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import docker
+# NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+import docker as podman
 
 logger = logging.getLogger(__name__)
 
 
 class DiscoveryService:
-    """Discovers hosts from Kubernetes clusters and Docker endpoints."""
+    """Discovers hosts from Kubernetes clusters and Podman endpoints."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -58,9 +59,9 @@ class DiscoveryService:
             kubeconfig_path=data.kubeconfig_path,
             kubeconfig_context=data.kubeconfig_context,
             k8s_namespace=data.k8s_namespace,
-            docker_host=data.docker_host,
-            docker_tls_verify=data.docker_tls_verify,
-            docker_cert_path=data.docker_cert_path,
+            podman_host=data.podman_host,
+            podman_tls_verify=data.podman_tls_verify,
+            podman_cert_path=data.podman_cert_path,
             containerd_socket=getattr(data, "containerd_socket", None),
             auto_discover=data.auto_discover,
             discover_filter=data.discover_filter,
@@ -103,8 +104,8 @@ class DiscoveryService:
         """Test cluster connection and return info."""
         if cluster.cluster_type == "kubernetes":
             return await asyncio.to_thread(self._test_k8s_connection, cluster)
-        elif cluster.cluster_type == "docker":
-            return await asyncio.to_thread(self._test_docker_connection, cluster)
+        elif cluster.cluster_type == "podman":
+            return await asyncio.to_thread(self._test_podman_connection, cluster)
         else:
             return {"success": False, "message": f"Unsupported cluster type: {cluster.cluster_type}"}
 
@@ -145,28 +146,28 @@ class DiscoveryService:
             }
 
     @staticmethod
-    def _get_docker_client(cluster: Cluster):
-        """Build a Docker client from cluster settings."""
-        if cluster.docker_host:
-            if cluster.docker_tls_verify and cluster.docker_cert_path:
-                tls_config = docker.tls.TLSConfig(
+    def _get_podman_client(cluster: Cluster):
+        """Build a Podman client from cluster settings."""
+        if cluster.podman_host:
+            if cluster.podman_tls_verify and cluster.podman_cert_path:
+                tls_config = podman.tls.TLSConfig(
                     client_cert=(
-                        f"{cluster.docker_cert_path}/cert.pem",
-                        f"{cluster.docker_cert_path}/key.pem",
+                        f"{cluster.podman_cert_path}/cert.pem",
+                        f"{cluster.podman_cert_path}/key.pem",
                     ),
-                    ca_cert=f"{cluster.docker_cert_path}/ca.pem",
+                    ca_cert=f"{cluster.podman_cert_path}/ca.pem",
                     verify=True,
                 )
-                return docker.DockerClient(base_url=cluster.docker_host, tls=tls_config)
-            return docker.DockerClient(base_url=cluster.docker_host)
-        # No explicit host -- auto-detect (npipe on Windows, unix socket on Linux)
-        return docker.from_env()
+                return podman.DockerClient(base_url=cluster.podman_host, tls=tls_config)
+            return podman.DockerClient(base_url=cluster.podman_host)
+        # No explicit host -- auto-detect (unix socket on Linux)
+        return podman.from_env()
 
     @staticmethod
-    def _test_docker_connection(cluster: Cluster) -> dict:
-        """Test Docker connection (runs in thread)."""
+    def _test_podman_connection(cluster: Cluster) -> dict:
+        """Test Podman connection (runs in thread)."""
         try:
-            client = DiscoveryService._get_docker_client(cluster)
+            client = DiscoveryService._get_podman_client(cluster)
 
             client.info()  # verify connection is alive
             containers = client.containers.list()
@@ -175,17 +176,17 @@ class DiscoveryService:
 
             return {
                 "success": True,
-                "cluster_type": "docker",
-                "message": f"Connected to Docker {version.get('Version', '?')}",
+                "cluster_type": "podman",
+                "message": f"Connected to Podman {version.get('Version', '?')}",
                 "version": version.get("Version"),
                 "container_count": len(containers),
                 "node_count": 1,
             }
         except Exception as e:
-            logger.error("Docker connection test failed: %s", e)
+            logger.error("Podman connection test failed: %s", e)
             return {
                 "success": False,
-                "cluster_type": "docker",
+                "cluster_type": "podman",
                 "message": f"Connection failed: {e}",
             }
 
@@ -305,12 +306,12 @@ class DiscoveryService:
         }
 
     # ------------------------------------------------------------------
-    # Discovery: Docker
+    # Discovery: Podman
     # ------------------------------------------------------------------
 
-    async def sync_docker_hosts(self, cluster: Cluster) -> dict:
-        """Discover Docker containers and sync hosts to DB."""
-        raw = await asyncio.to_thread(self._discover_docker_sync, cluster)
+    async def sync_podman_hosts(self, cluster: Cluster) -> dict:
+        """Discover Podman containers and sync hosts to DB."""
+        raw = await asyncio.to_thread(self._discover_podman_sync, cluster)
         if not raw.get("success"):
             cluster.status = "error"
             cluster.last_error = raw.get("error", "Discovery failed")
@@ -349,7 +350,7 @@ class DiscoveryService:
         await self.session.flush()
         total = created + updated
         logger.info(
-            "Docker discovery for %s: created=%d updated=%d total=%d",
+            "Podman discovery for %s: created=%d updated=%d total=%d",
             cluster.name,
             created,
             updated,
@@ -365,10 +366,10 @@ class DiscoveryService:
         }
 
     @staticmethod
-    def _discover_docker_sync(cluster: Cluster) -> dict:
-        """Synchronous Docker discovery."""
+    def _discover_podman_sync(cluster: Cluster) -> dict:
+        """Synchronous Podman discovery."""
         try:
-            client = DiscoveryService._get_docker_client(cluster)
+            client = DiscoveryService._get_podman_client(cluster)
 
             containers_list = client.containers.list(all=True)
             version = client.version()
@@ -380,7 +381,7 @@ class DiscoveryService:
                 host_config = inspect.get("HostConfig", {})
                 network_settings = inspect.get("NetworkSettings", {})
 
-                # Extract security-relevant Docker inspect fields
+                # Extract security-relevant Podman inspect fields
                 security_context = {
                     "privileged": host_config.get("Privileged", False),
                     "pid_mode": host_config.get("PidMode", ""),
@@ -430,7 +431,7 @@ class DiscoveryService:
                 "version": version.get("Version"),
             }
         except Exception as e:
-            logger.error("Docker discovery failed: %s", e)
+            logger.error("Podman discovery failed: %s", e)
             return {"success": False, "error": str(e)}
 
     # ------------------------------------------------------------------
@@ -539,7 +540,7 @@ class DiscoveryService:
 
     @staticmethod
     def _create_container_host(cluster: Cluster, cdata: dict, host_name: str) -> Host:
-        """Create a Host record for a Docker container."""
+        """Create a Host record for a Podman container."""
         os_family = _detect_os_from_image(cdata.get("image", ""))
         return Host(
             name=host_name,
@@ -551,7 +552,7 @@ class DiscoveryService:
             cluster_id=cluster.id,
             container_id=cdata.get("id"),
             container_image=cdata.get("image"),
-            container_runtime="docker",
+            container_runtime="podman",
             security_context=cdata.get("security_context", {}),
             k8s_labels=cdata.get("labels", {}),
             enabled_scanners={"openscap": True, "lynis": True, "trivy": True},
@@ -559,7 +560,7 @@ class DiscoveryService:
 
     @staticmethod
     def _update_container_host(host: Host, cluster: Cluster, cdata: dict) -> None:
-        """Update existing Docker container host."""
+        """Update existing Podman container host."""
         host.status = "online" if cdata.get("status") == "running" else "offline"
         host.cluster_id = cluster.id
         host.container_id = cdata.get("id")

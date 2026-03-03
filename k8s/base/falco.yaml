@@ -59,8 +59,8 @@ spec:
             - name: etc
               mountPath: /host/etc
               readOnly: true
-            - name: docker-socket
-              mountPath: /host/var/run/docker.sock
+            - name: runtime-socket
+              mountPath: /host/var/run/docker.sock  # Falco expects this path
               readOnly: true
             - name: falco-config
               mountPath: /etc/falco/falco.yaml
@@ -130,9 +130,9 @@ spec:
         - name: etc
           hostPath:
             path: /etc
-        - name: docker-socket
+        - name: runtime-socket
           hostPath:
-            path: /var/run/docker.sock
+            path: /run/podman/podman.sock
         - name: falco-config
           configMap:
             name: falco-config

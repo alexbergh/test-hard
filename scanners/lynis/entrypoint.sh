@@ -14,13 +14,13 @@ run_install() {
   local name="$1"
   case "$name" in
     target-fedora)
-      docker exec "$name" sh -c "dnf -y update && dnf -y install lynis procps-ng"
+      podman exec "$name" sh -c "dnf -y update && dnf -y install lynis procps-ng"
       ;;
     target-centos)
-      docker exec "$name" sh -c "dnf -y update && dnf -y install epel-release && dnf -y install lynis procps-ng"
+      podman exec "$name" sh -c "dnf -y update && dnf -y install epel-release && dnf -y install lynis procps-ng"
       ;;
     target-debian|target-ubuntu)
-      docker exec "$name" sh -c "apt-get update && apt-get install -y lynis procps"
+      podman exec "$name" sh -c "apt-get update && apt-get install -y lynis procps"
       ;;
     *)
       echo "Unknown container $name for Lynis install; skipping" >&2
@@ -35,14 +35,14 @@ audit_container() {
   echo "[Lynis] Running audit for ${name}" >&2
 
   # РЈРґР°Р»РёС‚СЊ СЃС‚Р°СЂС‹Рµ PID Рё lock С„Р°Р№Р»С‹
-  docker exec "$name" sh -c "rm -f /var/run/lynis.pid /var/run/lynis.lock" 2>/dev/null || true
+  podman exec "$name" sh -c "rm -f /var/run/lynis.pid /var/run/lynis.lock" 2>/dev/null || true
 
-  if ! docker exec "$name" lynis audit system --quiet --logfile /tmp/lynis.log --report-file /tmp/lynis-report.dat; then
+  if ! podman exec "$name" lynis audit system --quiet --logfile /tmp/lynis.log --report-file /tmp/lynis-report.dat; then
     echo "Lynis audit failed inside ${name}" >&2
     return 1
   fi
-  docker cp "${name}:/tmp/lynis.log" "$logfile" >/dev/null 2>&1 || docker exec "${name}" cat /tmp/lynis.log > "$logfile"
-  docker cp "${name}:/var/log/lynis-report.dat" "/reports/lynis/${name}.dat" >/dev/null 2>&1 || true
+  podman cp "${name}:/tmp/lynis.log" "$logfile" >/dev/null 2>&1 || podman exec "${name}" cat /tmp/lynis.log > "$logfile"
+  podman cp "${name}:/var/log/lynis-report.dat" "/reports/lynis/${name}.dat" >/dev/null 2>&1 || true
 
   # РР·РІР»РµС‡СЊ РјРµС‚СЂРёРєРё РёР· РѕС‚С‡С‘С‚Р° Рё СЃРѕР·РґР°С‚СЊ Prometheus metrics
   extract_lynis_metrics "$name" "$logfile"

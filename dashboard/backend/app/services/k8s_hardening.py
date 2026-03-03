@@ -417,7 +417,8 @@ class K8sHardeningScanner:
                 sensitive_paths = [
                     "/",
                     "/etc",
-                    "/var/run/docker.sock",
+                    "/run/podman/podman.sock",
+                    "/var/run/docker.sock",  # Legacy compatibility
                     "/proc",
                     "/sys",
                     "/var/lib/kubelet",
@@ -435,19 +436,20 @@ class K8sHardeningScanner:
                     remediation="Avoid hostPath mounts. Use PVC or emptyDir instead.",
                 )
 
-        # Check for docker.sock mount specifically
+        # Check for podman.sock or docker.sock mount specifically
         for container in pod.get("containers", []):
             for vm in container.get("volume_mounts", []):
-                if "docker.sock" in vm.get("mount_path", ""):
+                mount_path = vm.get("mount_path", "")
+                if "podman.sock" in mount_path or "docker.sock" in mount_path:
                     self._add_finding(
                         rule_id="K8S-VOL-002",
-                        title="Container mounts Docker socket",
+                        title="Container mounts container runtime socket",
                         severity=CRITICAL,
                         status="fail",
                         category="volume-security",
                         target=f"{pod_ref}/{container['name']}",
-                        detail="Docker socket mount allows container escape.",
-                        remediation="Remove docker.sock mount. Use Docker Socket Proxy.",
+                        detail="Container runtime socket mount allows container escape.",
+                        remediation="Remove podman.sock mount. Use Podman Socket Proxy.",
                     )
 
     def _check_service_account(self, pod: dict, pod_ref: str) -> None:
@@ -498,20 +500,31 @@ class K8sHardeningScanner:
         runtime = node.get("container_runtime", "")
         if runtime:
             # Check for very old versions
-            if "docker://" in runtime:
-                version_str = runtime.replace("docker://", "")
+            if "docker://" in runtime or "podman://" in runtime:
+                version_str = runtime.replace("docker://", "").replace("podman://", "")
                 try:
                     major = int(version_str.split(".")[0])
-                    if major < 20:
+                    if major < 4 and "podman://" in runtime:
                         self._add_finding(
                             rule_id="K8S-NODE-002",
-                            title="Node uses outdated Docker version",
+                            title="Node uses outdated Podman version",
                             severity=MEDIUM,
                             status="fail",
                             category="node-security",
                             target=node_ref,
-                            detail=f"Docker version {version_str} is outdated.",
-                            remediation="Upgrade to Docker 24.0+ or migrate to containerd.",
+                            detail=f"Podman version {version_str} is outdated.",
+                            remediation="Upgrade to Podman 4.0+ or migrate to containerd.",
+                        )
+                    elif major < 20 and "docker://" in runtime:
+                        self._add_finding(
+                            rule_id="K8S-NODE-002",
+                            title="Node uses outdated container runtime version",
+                            severity=MEDIUM,
+                            status="fail",
+                            category="node-security",
+                            target=node_ref,
+                            detail=f"Container runtime version {version_str} is outdated.",
+                            remediation="Upgrade container runtime or migrate to containerd.",
                         )
                 except (ValueError, IndexError):
                     pass

@@ -1,4 +1,4 @@
-"""Cluster model for Kubernetes and Docker connections."""
+"""Cluster model for Kubernetes and Podman connections."""
 
 from typing import TYPE_CHECKING, Literal
 
@@ -9,12 +9,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 if TYPE_CHECKING:
     from app.models.host import Host
 
-ClusterType = Literal["kubernetes", "docker", "containerd"]
+ClusterType = Literal["kubernetes", "podman", "containerd"]
 ClusterStatus = Literal["connected", "disconnected", "error", "unknown"]
 
 
 class Cluster(Base, TimestampMixin):
-    """Cluster model representing a K8s or Docker connection target."""
+    """Cluster model representing a K8s or Podman connection target."""
 
     __tablename__ = "clusters"
 
@@ -23,7 +23,7 @@ class Cluster(Base, TimestampMixin):
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Connection type: kubernetes, docker, containerd
+    # Connection type: kubernetes, podman, containerd
     cluster_type: Mapped[str] = mapped_column(String(50), default="kubernetes")
 
     # Kubernetes connection settings
@@ -36,12 +36,12 @@ class Cluster(Base, TimestampMixin):
     kubeconfig_context: Mapped[str | None] = mapped_column(String(255), nullable=True)
     k8s_namespace: Mapped[str | None] = mapped_column(String(255), nullable=True)  # None = all namespaces
 
-    # Docker connection settings
-    docker_host: Mapped[str | None] = mapped_column(
+    # Podman connection settings
+    podman_host: Mapped[str | None] = mapped_column(
         String(500), nullable=True
-    )  # tcp://host:2376 or unix:///var/run/docker.sock
-    docker_tls_verify: Mapped[bool] = mapped_column(Boolean, default=False)
-    docker_cert_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    )  # tcp://host:2376 or unix:///run/podman/podman.sock
+    podman_tls_verify: Mapped[bool] = mapped_column(Boolean, default=False)
+    podman_cert_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # containerd connection settings
     containerd_socket: Mapped[str | None] = mapped_column(String(500), nullable=True)  # /run/containerd/containerd.sock

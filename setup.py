@@ -46,7 +46,7 @@ setup(
         "Topic :: System :: Monitoring",
         "Topic :: Security",
     ],
-    keywords="security hardening monitoring prometheus grafana docker",
+    keywords="security hardening monitoring prometheus grafana podman",
     python_requires=">=3.11",
     # Configuration is read from pyproject.toml
     # This setup.py is for compatibility only

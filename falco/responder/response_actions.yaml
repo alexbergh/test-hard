@@ -4,8 +4,8 @@
 # Action types:
 #   - log: Log the event (always enabled)
 #   - kill_process: Kill the offending process (requires container access)
-#   - pause_container: Pause the container via Docker API
-#   - stop_container: Stop the container via Docker API
+#   - pause_container: Pause the container via Podman API
+#   - stop_container: Stop the container via Podman API
 #   - network_isolate: Disconnect container from all networks
 #   - alert: Send additional webhook/notification
 #   - exec_command: Execute a command in the container
@@ -43,14 +43,14 @@ rules:
         message: "Container network isolated — reverse shell tool detected"
 
   # --- Critical: Container escape risk ---
-  "Container Docker Socket Mount":
+  "Container Podman Socket Mount":
     enabled: true
     priority: critical
     actions:
       - type: log
-        message: "Docker socket mount detected — container escape risk"
+        message: "Podman socket mount detected — container escape risk"
       - type: alert
-        message: "Container with Docker socket mount detected"
+        message: "Container with Podman socket mount detected"
 
   # --- Critical: Privileged container ---
   "Container Privileged Mode":

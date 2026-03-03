@@ -1,9 +1,10 @@
 """Application configuration."""
 
+import secrets
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,15 +29,24 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # Security
-    secret_key: str = Field(default="change-me-in-production-use-openssl-rand-hex-32")
+    secret_key: str = Field(default="")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
 
-    # Database
-    database_url: str = "sqlite+aiosqlite:///./data/dashboard.db"
+    # CORS
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ]
 
-    # Docker
-    docker_host: str = "unix:///var/run/docker.sock"
+    # Database (PostgreSQL with asyncpg driver)
+    database_url: str = "postgresql+asyncpg://dashboard:dashboard_secret@postgres:5432/dashboard"
+
+    # Podman
+    podman_host: str = "unix:///run/podman/podman.sock"
 
     # Prometheus
     prometheus_url: str = "http://localhost:9090"
@@ -68,6 +78,20 @@ class Settings(BaseSettings):
     # Scheduler
     scheduler_enabled: bool = True
     scheduler_timezone: str = "UTC"
+
+    # Admin seeding
+    admin_default_password: str = ""
+
+    @model_validator(mode="after")
+    def _validate_security(self) -> "Settings":
+        if not self.secret_key:
+            if self.environment == "production":
+                raise ValueError(
+                    "SECRET_KEY must be set in production. "
+                    "Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'"
+                )
+            self.secret_key = secrets.token_hex(32)
+        return self
 
 
 @lru_cache

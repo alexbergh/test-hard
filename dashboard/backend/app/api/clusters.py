@@ -155,8 +155,8 @@ async def discover_cluster(
 
     if cluster.cluster_type == "kubernetes":
         result = await svc.sync_k8s_hosts(cluster)
-    elif cluster.cluster_type == "docker":
-        result = await svc.sync_docker_hosts(cluster)
+    elif cluster.cluster_type == "podman":
+        result = await svc.sync_podman_hosts(cluster)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -271,8 +271,8 @@ async def detect_drift(
 ) -> dict:
     """Detect configuration drift for cluster hosts.
 
-    For Docker clusters: compares stored security_context (from last discovery)
-    against live Docker inspect.
+    For Podman clusters: compares stored security_context (from last discovery)
+    against live Podman inspect.
     For K8s clusters: compares pod spec against container runtime state.
     """
     from app.models import Host
@@ -286,7 +286,7 @@ async def detect_drift(
     result = await session.execute(select(Host).where(Host.cluster_id == cluster_id))
     hosts = result.scalars().all()
 
-    if cluster.cluster_type == "docker":
+    if cluster.cluster_type == "podman":
         host_data = [
             {
                 "name": h.name,
@@ -295,7 +295,7 @@ async def detect_drift(
             }
             for h in hosts
         ]
-        drift_result = await asyncio.to_thread(_run_docker_drift, cluster, host_data)
+        drift_result = await asyncio.to_thread(_run_podman_drift, cluster, host_data)
     elif cluster.cluster_type == "kubernetes":
         drift_result = await asyncio.to_thread(_run_k8s_drift, cluster, cluster.k8s_namespace)
     else:
@@ -307,18 +307,18 @@ async def detect_drift(
     return drift_result
 
 
-def _run_docker_drift(cluster: Cluster, host_data: list[dict]) -> dict:
-    """Run Docker drift detection in thread."""
+def _run_podman_drift(cluster: Cluster, host_data: list[dict]) -> dict:
+    """Run Podman drift detection in thread."""
     from app.services.drift_detector import DriftDetector
 
     try:
-        docker_client = DiscoveryService._get_docker_client(cluster)
-        detector = DriftDetector(docker_client=docker_client)
-        result = detector.detect_docker_drift(host_data)
-        docker_client.close()
+        podman_client = DiscoveryService._get_podman_client(cluster)
+        detector = DriftDetector(podman_client=podman_client)
+        result = detector.detect_podman_drift(host_data)
+        podman_client.close()
         return result
     except Exception as e:
-        logger.error("Docker drift detection failed: %s", e)
+        logger.error("Podman drift detection failed: %s", e)
         return {"success": False, "error": str(e)}
 
 
@@ -336,16 +336,16 @@ def _run_k8s_drift(cluster: Cluster, namespace: str | None) -> dict:
         kubeconfig_context=cluster.kubeconfig_context,
     )
     try:
-        # Try to get docker client on same node for runtime inspect
-        docker_client = None
-        if cluster.docker_host:
-            docker_client = DiscoveryService._get_docker_client(cluster)
+        # Try to get podman client on same node for runtime inspect
+        podman_client = None
+        if cluster.podman_host:
+            podman_client = DiscoveryService._get_podman_client(cluster)
 
-        detector = DriftDetector(connector=connector, docker_client=docker_client)
+        detector = DriftDetector(connector=connector, podman_client=podman_client)
         result = detector.detect_k8s_pod_drift(namespace=namespace)
         connector.close()
-        if docker_client:
-            docker_client.close()
+        if podman_client:
+            podman_client.close()
         return result
     except Exception as e:
         connector.close()

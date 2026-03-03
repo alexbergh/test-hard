@@ -48,7 +48,7 @@ class Host(Base, TimestampMixin):
     last_scan_id: Mapped[int | None] = mapped_column(nullable=True)
     last_scan_score: Mapped[int | None] = mapped_column(nullable=True)
 
-    # Cluster association (optional -- None for standalone Docker hosts)
+    # Cluster association (optional -- None for standalone Podman hosts)
     cluster_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("clusters.id", ondelete="SET NULL"), nullable=True
     )
@@ -61,9 +61,9 @@ class Host(Base, TimestampMixin):
     k8s_annotations: Mapped[dict] = mapped_column(JSON, default=dict)
     container_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     container_image: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    container_runtime: Mapped[str | None] = mapped_column(String(50), nullable=True)  # docker, containerd, cri-o
+    container_runtime: Mapped[str | None] = mapped_column(String(50), nullable=True)  # podman, containerd, cri-o
 
-    # Security context (extracted from K8s pod spec or Docker inspect)
+    # Security context (extracted from K8s pod spec or Podman inspect)
     security_context: Mapped[dict] = mapped_column(JSON, default=dict)
 
     # Tags for filtering

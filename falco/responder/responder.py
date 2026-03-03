@@ -14,7 +14,8 @@ from pathlib import Path
 import yaml
 from flask import Flask, jsonify, request
 
-import docker
+# NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+import docker as podman
 
 app = Flask(__name__)
 
@@ -29,7 +30,7 @@ logger = logging.getLogger("falco-responder")
 # Load response actions config
 CONFIG_PATH = os.environ.get("RESPONSE_CONFIG", "/app/response_actions.yaml")
 DRY_RUN = os.environ.get("DRY_RUN", "false").lower() == "true"
-DOCKER_HOST = os.environ.get("DOCKER_HOST", "unix:///var/run/docker.sock")
+PODMAN_HOST = os.environ.get("PODMAN_HOST", "unix:///run/podman/podman.sock")
 
 # Cooldown tracking: rule_name+container -> last_action_time
 _cooldowns: dict[str, float] = {}
@@ -45,12 +46,12 @@ def load_config() -> dict:
         return yaml.safe_load(f)
 
 
-def get_docker_client() -> docker.DockerClient:
-    """Create Docker client."""
+def get_podman_client() -> podman.DockerClient:
+    """Create Podman client."""
     try:
-        return docker.DockerClient(base_url=DOCKER_HOST)
+        return podman.DockerClient(base_url=PODMAN_HOST)
     except Exception as e:
-        logger.error("Failed to connect to Docker: %s", e)
+        logger.error("Failed to connect to Podman: %s", e)
         raise
 
 
@@ -112,7 +113,7 @@ def action_kill_process(fields: dict, action_config: dict, dry_run: bool) -> dic
         return {"action": "kill_process", "success": True, "dry_run": True}
 
     try:
-        client = get_docker_client()
+        client = get_podman_client()
         container = client.containers.get(container_name)
         container.exec_run(f"kill -9 {pid}", privileged=True)
         logger.warning("Killed PID %s in container %s", pid, container_name)
@@ -133,7 +134,7 @@ def action_pause_container(fields: dict, action_config: dict, dry_run: bool) -> 
         return {"action": "pause_container", "success": True, "dry_run": True}
 
     try:
-        client = get_docker_client()
+        client = get_podman_client()
         container = client.containers.get(container_name)
         container.pause()
         logger.warning("Paused container %s", container_name)
@@ -154,7 +155,7 @@ def action_stop_container(fields: dict, action_config: dict, dry_run: bool) -> d
         return {"action": "stop_container", "success": True, "dry_run": True}
 
     try:
-        client = get_docker_client()
+        client = get_podman_client()
         container = client.containers.get(container_name)
         container.stop(timeout=10)
         logger.warning("Stopped container %s", container_name)
@@ -175,7 +176,7 @@ def action_network_isolate(fields: dict, action_config: dict, dry_run: bool) -> 
         return {"action": "network_isolate", "success": True, "dry_run": True}
 
     try:
-        client = get_docker_client()
+        client = get_podman_client()
         container = client.containers.get(container_name)
         networks = container.attrs.get("NetworkSettings", {}).get("Networks", {})
         disconnected = []

@@ -19,6 +19,8 @@ async def list_schedules(
     current_user: CurrentUser,
     host_id: int | None = None,
     active_only: bool = True,
+    limit: int = 100,
+    offset: int = 0,
 ) -> list[ScanScheduleResponse]:
     """List all scan schedules."""
     query = select(ScanSchedule)
@@ -28,7 +30,7 @@ async def list_schedules(
     if active_only:
         query = query.where(ScanSchedule.is_active == True)  # noqa: E712
 
-    query = query.order_by(ScanSchedule.name)
+    query = query.order_by(ScanSchedule.name).limit(limit).offset(offset)
     result = await session.execute(query)
     schedules = result.scalars().all()
 

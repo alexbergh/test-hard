@@ -99,8 +99,8 @@ case "$USER_TYPE" in
         info "Setting up limited sudo access..."
         cat > "/etc/sudoers.d/$USERNAME" << 'EOF'
 # test-hard Administrator - limited sudo
-hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose
-hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart docker
+hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/podman, /usr/bin/podman-compose
+hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart podman
 hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *
 hardening-admin ALL=(ALL) NOPASSWD: /opt/test-hard/scripts/*
 Defaults:hardening-admin !authenticate
@@ -116,7 +116,7 @@ EOF
     scanner)
         info "Creating scanner user..."
         useradd -m -s /bin/bash -c "test-hard Scanner" "$USERNAME"
-        # Do NOT add to docker group!
+        # Do NOT add to podman group!
 
         # Create working directories
         SCANNER_DIR="/var/lib/$USERNAME"
@@ -134,8 +134,8 @@ Cmnd_Alias SCAN_COMMANDS = \
     /usr/bin/lynis audit system*, \
     /usr/bin/oscap xccdf eval*, \
     /usr/sbin/oscap-ssh*, \
-    /usr/bin/docker exec */lynis*, \
-    /usr/bin/docker exec */oscap*
+    /usr/bin/podman exec */lynis*, \
+    /usr/bin/podman exec */oscap*
 
 hardening-scanner ALL=(ALL) NOPASSWD: SCAN_COMMANDS
 Defaults:hardening-scanner !authenticate
@@ -177,7 +177,7 @@ EOF
 TEST_HARD_HOME=$INSTALL_DIR
 REPORTS_DIR=$INSTALL_DIR/reports
 LOG_LEVEL=INFO
-DOCKER_HOST=unix:///var/run/docker-socket-proxy.sock
+PODMAN_HOST=unix:///run/podman/podman-socket-proxy.sock
 EOF
         chmod 600 /etc/test-hard/scanner.env
         chown "$USERNAME:$USERNAME" /etc/test-hard/scanner.env
@@ -186,8 +186,8 @@ EOF
         cat > /etc/systemd/system/hardening-scanner.service << EOF
 [Unit]
 Description=test-hard Security Scanner
-After=network.target docker.service
-Requires=docker.service
+After=network.target podman.service
+Requires=podman.service
 
 [Service]
 Type=oneshot

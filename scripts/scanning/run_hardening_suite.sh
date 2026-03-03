@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-compose_bin=${COMPOSE_BIN:-docker compose}
+compose_bin=${COMPOSE_BIN:-podman-compose}
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_dir}/../.." && pwd)"
@@ -52,7 +52,7 @@ if [[ $# -gt 0 ]]; then
 fi
 
 if ! command -v "${compose_bin%% *}" >/dev/null 2>&1; then
-  echo "[suite] Required command '${compose_bin}' is not available. Install Docker Compose or set COMPOSE_BIN." >&2
+  echo "[suite] Required command '${compose_bin}' is not available. Install podman-compose or set COMPOSE_BIN." >&2
   exit 1
 fi
 
@@ -60,7 +60,7 @@ cd "$project_root"
 
 mkdir -p reports
 
-${compose_bin} up -d docker-proxy "${targets[@]}"
+${compose_bin} up -d "${targets[@]}"
 # No need to build - unified image already exists
 
 # Run scanners as one-off tasks. They will write results to ./reports via the /reports volume.

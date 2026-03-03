@@ -7,42 +7,42 @@ help: ## Show this help message
 
 .DEFAULT_GOAL := help
 
-COMPOSE ?= docker compose
+COMPOSE ?= podman-compose
 PYTHON ?= python3
 
 TARGET_SERVICES = target-fedora target-debian target-centos target-ubuntu
 SCANNER_SERVICES = openscap-scanner lynis-scanner
-MONITORING_SERVICES = docker-proxy prometheus alertmanager grafana telegraf loki promtail
+MONITORING_SERVICES = podman-proxy prometheus alertmanager grafana telegraf loki promtail
 
 .PHONY: up up-targets monitor down logs restart hardening-suite scan clean check-deps health validate test \
 	test-unit test-integration test-all coverage install-dev ci lint format build push run-lynis run-openscap run-all
 
 # Build unified image
-build: ## Build unified test-hard Docker image
-	docker build -t test-hard:latest -t ghcr.io/alexbergh/test-hard:latest .
+build: ## Build unified test-hard container image
+	podman build -t test-hard:latest -t ghcr.io/alexbergh/test-hard:latest .
 
 # Push unified image to registry
 push: build ## Build and push unified image to GitHub Container Registry
-	docker push ghcr.io/alexbergh/test-hard:latest
+	podman push ghcr.io/alexbergh/test-hard:latest
 
 # Run specific scanners using unified image
 run-lynis: ## Run Lynis scanner using unified image
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+	podman run --rm -v /run/podman/podman.sock:/var/run/docker.sock \
 		-v $(PWD)/reports:/opt/test-hard/reports \
 		ghcr.io/alexbergh/test-hard:latest scan-lynis
 
 run-openscap: ## Run OpenSCAP scanner using unified image
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+	podman run --rm -v /run/podman/podman.sock:/var/run/docker.sock \
 		-v $(PWD)/reports:/opt/test-hard/reports \
 		ghcr.io/alexbergh/test-hard:latest scan-openscap
 
 run-all: ## Run all scanners using unified image
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+	podman run --rm -v /run/podman/podman.sock:/var/run/docker.sock \
 		-v $(PWD)/reports:/opt/test-hard/reports \
 		ghcr.io/alexbergh/test-hard:latest scan-all
 
 run-atomic: ## Run Atomic Red Team tests using unified image
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+	podman run --rm -v /run/podman/podman.sock:/var/run/docker.sock \
 		-v $(PWD)/reports:/opt/test-hard/reports \
 		-v $(PWD)/art-storage:/var/lib/hardening/art-storage \
 		ghcr.io/alexbergh/test-hard:latest atomic --dry-run
@@ -96,17 +96,17 @@ clean:
 
 check-deps:
 	@echo "Checking dependencies..."
-	@command -v docker >/dev/null 2>&1 || { echo "Error: docker not found"; exit 1; }
-	@command -v $(COMPOSE) >/dev/null 2>&1 || { echo "Error: docker compose not found"; exit 1; }
+	@command -v podman >/dev/null 2>&1 || { echo "Error: podman not found"; exit 1; }
+	@command -v $(COMPOSE) >/dev/null 2>&1 || { echo "Error: podman-compose not found"; exit 1; }
 	@command -v $(PYTHON) >/dev/null 2>&1 || { echo "Error: python3 not found"; exit 1; }
-	@echo "✓ All dependencies found"
+	@echo "All dependencies found"
 
 health:
 	@./scripts/monitoring/health_check.sh
 
 validate:
 	@echo "Validating configurations..."
-	@$(COMPOSE) config >/dev/null && echo "✓ docker-compose.yml valid" || echo "✗ docker-compose.yml invalid"
+	@$(COMPOSE) config >/dev/null && echo "podman-compose.yml valid" || echo "podman-compose.yml invalid"
 	@$(PYTHON) -c "import yaml; yaml.safe_load(open('prometheus/prometheus.yml'))" && echo "✓ prometheus.yml valid" || echo "✗ prometheus.yml invalid"
 	@$(PYTHON) -c "import yaml; yaml.safe_load(open('prometheus/alert.rules.yml'))" && echo "✓ alert.rules.yml valid" || echo "✗ alert.rules.yml invalid"
 	@test -f .env || echo "⚠ .env file not found - using defaults"
@@ -234,14 +234,14 @@ validate-all: validate ## Comprehensive validation of all configs
 	@echo "Validating Dockerfiles..."
 	@hadolint docker/Dockerfile.* || echo "⚠ hadolint not installed"
 
-# Docker optimization
-docker-measure: ## Measure Docker image sizes and build times
-	@./scripts/monitoring/measure_docker_improvements.sh
+# Podman optimization
+podman-measure: ## Measure Podman image sizes and build times
+	@./scripts/monitoring/measure_podman_improvements.sh
 
-docker-prune: ## Clean up Docker resources
-	@echo "Cleaning Docker resources..."
-	@docker system prune -a --volumes
-	docker builder prune -a
+podman-prune: ## Clean up Podman resources
+	@echo "Cleaning Podman resources..."
+	@podman system prune -a --volumes
+	podman builder prune -a
 
 # Status and info
 status: ## Show detailed status of all services
@@ -249,10 +249,10 @@ status: ## Show detailed status of all services
 	@$(COMPOSE) ps
 	@echo ""
 	@echo "=== Resource Usage ==="
-	@docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
+	@podman stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
 	@echo ""
 	@echo "=== Disk Usage ==="
-	@docker system df
+	@podman system df
 
 metrics: ## Show current metrics from Prometheus
 	@echo "=== Prometheus Metrics ==="
@@ -287,15 +287,15 @@ clean-reports: ## Clean only report files
 	@mkdir -p reports
 	@echo "✓ Reports cleaned"
 
-clean-cache: ## Clean Docker build cache
-	@docker builder prune -a -f
-	@echo "✓ Build cache cleaned"
+clean-cache: ## Clean Podman build cache
+	@podman builder prune -a -f
+	@echo "Build cache cleaned"
 
 # Troubleshooting
 troubleshoot: ## Run diagnostic commands
-	@echo "=== Docker Version ==="
-	@docker --version
-	@docker compose version
+	@echo "=== Podman Version ==="
+	@podman --version
+	@podman-compose version
 	@echo ""
 	@echo "=== Python Version ==="
 	@$(PYTHON) --version
@@ -311,8 +311,8 @@ diagnostics: ## Create diagnostic bundle
 	@mkdir -p diagnostics
 	@$(COMPOSE) ps > diagnostics/ps.txt 2>&1
 	@$(COMPOSE) logs > diagnostics/logs.txt 2>&1
-	@docker stats --no-stream > diagnostics/stats.txt 2>&1
-	@docker system df > diagnostics/df.txt 2>&1
+	@podman stats --no-stream > diagnostics/stats.txt 2>&1
+	@podman system df > diagnostics/df.txt 2>&1
 	@cp docker-compose.yml diagnostics/ 2>&1
 	@tar czf diagnostics-$(shell date +%Y%m%d).tar.gz diagnostics/
 	@rm -rf diagnostics/

@@ -11,12 +11,12 @@ echo "[TEST] Testing Test-Hard Core Functionality"
 echo "========================================"
 echo ""
 
-# Test 1: Check docker-compose.yml validity
-echo -n "1. Validating docker-compose.yml... "
-if command -v docker >/dev/null 2>&1 && docker compose config > /dev/null 2>&1; then
+# Test 1: Check podman-compose.yml validity
+echo -n "1. Validating podman-compose.yml... "
+if command -v podman-compose >/dev/null 2>&1 && podman-compose config > /dev/null 2>&1; then
     echo -e "${GREEN}[OK]${NC}"
-elif [ -f "docker-compose.yml" ]; then
-    echo -e "${YELLOW}[WARN] File exists (docker compose not available)${NC}"
+elif [ -f "podman-compose.yml" ]; then
+    echo -e "${YELLOW}[WARN] File exists (podman-compose not available)${NC}"
 else
     echo -e "${RED}[ERROR] FAILED${NC}"
     exit 1
@@ -27,7 +27,7 @@ echo -n "2. Checking target containers... "
 targets=(target-fedora target-debian target-centos target-ubuntu)
 all_found=true
 for target in "${targets[@]}"; do
-    if ! grep -q "$target:" docker-compose.yml; then
+    if ! grep -q "$target:" podman-compose.yml; then
         echo -e "${RED}[ERROR] Missing $target${NC}"
         all_found=false
     fi
@@ -38,20 +38,20 @@ fi
 
 # Test 3: Check if scanner services exist
 echo -n "3. Checking scanner services... "
-if grep -q "openscap-scanner:" docker-compose.yml && \
-   grep -q "lynis-scanner:" docker-compose.yml; then
+if grep -q "openscap-scanner:" podman-compose.yml && \
+   grep -q "lynis-scanner:" podman-compose.yml; then
     echo -e "${GREEN}[OK]${NC} Both scanners defined"
 else
     echo -e "${RED}[ERROR] Scanner missing${NC}"
     exit 1
 fi
 
-# Test 4: Check docker-proxy configuration
-echo -n "4. Checking docker-proxy (security)... "
-if grep -q "docker-proxy:" docker-compose.yml; then
-    echo -e "${GREEN}[OK]${NC} Docker proxy configured"
+# Test 4: Check podman-proxy configuration
+echo -n "4. Checking podman-proxy (security)... "
+if podman ps --format '{{.Names}}' | grep -q "podman-proxy"; then
+    echo -e "${GREEN}[OK]${NC} Podman proxy running"
 else
-    echo -e "${YELLOW}[WARN] Docker proxy not found${NC}"
+    echo -e "${YELLOW}[WARN] Podman proxy not found${NC}"
 fi
 
 # Test 5: Check monitoring services
@@ -59,7 +59,7 @@ echo -n "5. Checking monitoring stack... "
 monitoring=(prometheus grafana telegraf alertmanager)
 monitoring_ok=true
 for service in "${monitoring[@]}"; do
-    if ! grep -q "$service:" docker-compose.yml; then
+    if ! grep -q "$service:" podman-compose.yml; then
         echo -e "${RED}[ERROR] Missing $service${NC}"
         monitoring_ok=false
     fi
@@ -152,7 +152,7 @@ echo ""
 echo "[READY] Ready to run:"
 echo "   1. cp .env.example .env"
 echo "   2. nano .env  # Edit passwords"
-echo "   3. docker compose up -d prometheus grafana telegraf alertmanager docker-proxy"
+echo "   3. podman-compose up -d prometheus grafana telegraf alertmanager"
 echo "   4. ./scripts/run_hardening_suite.sh"
 echo "   5. open http://localhost:3000"
 echo ""

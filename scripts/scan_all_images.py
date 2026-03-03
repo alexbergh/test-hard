@@ -9,7 +9,7 @@ import subprocess
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "..", "reports", "trivy")
 
-# All container images from docker-compose
+# All container images from podman-compose
 IMAGES = [
     "ubuntu:22.04",
     "debian:12-slim",
@@ -41,7 +41,7 @@ def scan_image(image: str) -> dict:
     try:
         result = subprocess.run(
             [
-                "docker",
+                "podman",
                 "exec",
                 "trivy-server",
                 "trivy",
@@ -66,7 +66,7 @@ def scan_image(image: str) -> dict:
             # Try without --ignore-unfixed
             result = subprocess.run(
                 [
-                    "docker",
+                    "podman",
                     "exec",
                     "trivy-server",
                     "trivy",

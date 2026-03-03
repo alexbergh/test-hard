@@ -7,7 +7,7 @@
 #   ./scripts/scanning/scan-images.sh [--all|--image IMAGE] [--sbom] [--fail-on HIGH]
 #
 # Примеры:
-#   ./scripts/scanning/scan-images.sh --all              # Сканировать все образы из docker-compose
+#   ./scripts/scanning/scan-images.sh --all              # Сканировать все образы из podman-compose
 #   ./scripts/scanning/scan-images.sh --image nginx:latest --sbom
 #   ./scripts/scanning/scan-images.sh --all --fail-on CRITICAL
 #   ./scripts/scanning/scan-images.sh --all --sbom --output json
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
             echo "Использование: $0 [--all|--image IMAGE] [--sbom] [--fail-on SEVERITY] [--output FORMAT]"
             echo ""
             echo "Параметры:"
-            echo "  --all              Сканировать все образы из docker-compose.yml"
+            echo "  --all              Сканировать все образы из podman-compose.yml"
             echo "  --image IMAGE      Сканировать конкретный образ"
             echo "  --sbom             Генерировать SBOM (CycloneDX + SPDX)"
             echo "  --fail-on SEVERITY Минимальная серьёзность для ошибки (CRITICAL|HIGH|MEDIUM|LOW)"
@@ -87,9 +87,9 @@ check_trivy() {
 # ---- Получение списка образов ----
 get_compose_images() {
     cd "$PROJECT_ROOT"
-    # Извлекаем уникальные image: строки из docker-compose.yml
-    docker compose config --images 2>/dev/null | sort -u || \
-        grep -E '^\s+image:' docker-compose.yml | awk '{print $2}' | sort -u
+    # Извлекаем уникальные image: строки из podman-compose.yml
+    podman-compose config --images 2>/dev/null | sort -u || \
+        grep -E '^\s+image:' podman-compose.yml | awk '{print $2}' | sort -u
 }
 
 # ---- Сканирование одного образа ----
@@ -105,9 +105,9 @@ scan_image() {
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
     # Подтянуть образ если нужно
-    if ! docker image inspect "$image" &>/dev/null; then
+    if ! podman image inspect "$image" &>/dev/null; then
         echo -e "${YELLOW}[WAIT] Загрузка образа: ${image}${NC}"
-        docker pull "$image" 2>/dev/null || {
+        podman pull "$image" 2>/dev/null || {
             echo -e "${RED}[ERROR] Не удалось загрузить образ: ${image}${NC}"
             return 1
         }
@@ -282,7 +282,7 @@ main() {
     local failed=0
 
     if [[ "$SCAN_ALL" == true ]]; then
-        echo -e "${BLUE}[INFO] Получение списка образов из docker-compose.yml...${NC}"
+        echo -e "${BLUE}[INFO] Получение списка образов из podman-compose.yml...${NC}"
         local images
         images=$(get_compose_images)
         local count

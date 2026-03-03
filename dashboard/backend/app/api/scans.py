@@ -1,10 +1,14 @@
 """Scan management endpoints."""
 
+import csv
+import io
+import json
+
 from app.api.deps import CurrentUser, DbSession, OperatorUser
 from app.schemas import ScanCreate, ScanResponse, ScanSummary
 from app.services.scan import ScanService
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 router = APIRouter()
 
@@ -82,6 +86,11 @@ async def create_scan(
     # Create scan and commit so background task can see it
     scan = await scan_service.create_scan(scan_data, user_id=current_user.id)
     await session.commit()
+
+    from app.services.audit import log_action
+    await log_action(session, "scan_started", user_id=current_user.id, username=current_user.username,
+                     resource_type="scan", resource_id=str(scan.id),
+                     detail=f"scanner={scan_data.scanner} host_id={scan_data.host_id}")
 
     # Start scan immediately
     await scan_service.start_scan(scan.id)
@@ -166,3 +175,62 @@ async def get_scan_report(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Report not available",
         )
+
+
+@router.get("/{scan_id}/export")
+async def export_scan_results(
+    scan_id: int,
+    session: DbSession,
+    current_user: CurrentUser,
+    format: str = "csv",
+):
+    """Export scan results as CSV or JSON."""
+    scan_service = ScanService(session)
+    scan = await scan_service.get_scan_by_id(scan_id, include_results=True)
+
+    if not scan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scan not found",
+        )
+
+    results_data = []
+    for r in (scan.results or []):
+        results_data.append({
+            "rule_id": r.rule_id,
+            "title": r.title,
+            "severity": r.severity,
+            "status": r.status,
+            "category": r.category or "",
+        })
+
+    if format == "json":
+        export = {
+            "scan_id": scan.id,
+            "scanner": scan.scanner,
+            "status": scan.status,
+            "score": scan.score,
+            "passed": scan.passed,
+            "failed": scan.failed,
+            "started_at": scan.started_at.isoformat() if scan.started_at else None,
+            "completed_at": scan.completed_at.isoformat() if scan.completed_at else None,
+            "results": results_data,
+        }
+        content = json.dumps(export, indent=2, ensure_ascii=False)
+        return StreamingResponse(
+            io.BytesIO(content.encode("utf-8")),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename=scan_{scan_id}_results.json"},
+        )
+
+    # Default: CSV
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=["rule_id", "title", "severity", "status", "category"])
+    writer.writeheader()
+    writer.writerows(results_data)
+
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode("utf-8")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=scan_{scan_id}_results.csv"},
+    )

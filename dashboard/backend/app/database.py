@@ -10,21 +10,32 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 settings = get_settings()
 
-# Ensure data directory exists for SQLite
+# Database engine configuration
 db_url = settings.database_url
+
+# For SQLite, ensure data directory exists
 if "sqlite" in db_url:
-    # Extract path from sqlite URL (e.g., sqlite+aiosqlite:///./data/dashboard.db)
     db_path = db_url.split("///")[-1]
     if db_path.startswith("./"):
         db_path = db_path[2:]
     db_dir = Path(db_path).parent
     db_dir.mkdir(parents=True, exist_ok=True)
 
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    future=True,
-)
+# PostgreSQL connection pool settings
+engine_kwargs = {
+    "echo": settings.debug,
+    "future": True,
+}
+
+if "postgresql" in db_url:
+    engine_kwargs.update({
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    })
+
+engine = create_async_engine(settings.database_url, **engine_kwargs)
 
 async_session_maker = async_sessionmaker(
     engine,
@@ -52,8 +63,10 @@ async def init_db() -> None:
         count = (await session.execute(select(func.count(User.id)))).scalar() or 0
         if count == 0:
             import bcrypt
+            import secrets
 
-            hashed = bcrypt.hashpw(b"admin123!", bcrypt.gensalt()).decode("utf-8")
+            raw_password = settings.admin_default_password or secrets.token_urlsafe(16)
+            hashed = bcrypt.hashpw(raw_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
             admin = User(
                 username="admin",
                 email="admin@example.com",
@@ -61,10 +74,15 @@ async def init_db() -> None:
                 full_name="Administrator",
                 role="admin",
                 is_superuser=True,
+                must_change_password=True,
             )
             session.add(admin)
             await session.commit()
-            logger.info("Created default admin user (admin / admin123!)")
+            if settings.admin_default_password:
+                logger.info("Created default admin user (admin / <from ADMIN_DEFAULT_PASSWORD>)")
+            else:
+                logger.warning("Created default admin user — username: admin, password: %s", raw_password)
+                logger.warning("This password is shown ONCE. Change it immediately or set ADMIN_DEFAULT_PASSWORD.")
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

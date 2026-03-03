@@ -1,0 +1,34 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (reinstalled in container)
+node_modules
+
+# Build output (rebuilt in container)
+dist
+build
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+coverage
+.nyc_output
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+LICENSE
+
+# Container files
+Containerfile
+.containerignore
+podman-compose*.yml

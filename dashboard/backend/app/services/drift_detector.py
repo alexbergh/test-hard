@@ -4,7 +4,8 @@ import logging
 
 from app.services.k8s_connector import K8sConnector
 
-import docker
+# NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+import docker as podman
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ class DriftDetector:
     def __init__(
         self,
         connector: K8sConnector | None = None,
-        docker_client: docker.DockerClient | None = None,
+        podman_client: podman.DockerClient | None = None,
     ):
         self.connector = connector
-        self.docker_client = docker_client
+        self.podman_client = podman_client
         self.findings: list[DriftFinding] = []
 
     # ------------------------------------------------------------------
@@ -58,7 +59,7 @@ class DriftDetector:
     def detect_k8s_pod_drift(self, namespace: str | None = None) -> dict:
         """Compare K8s pod specs against runtime container state.
 
-        Requires both a K8s connector AND a Docker client connected to the
+        Requires both a K8s connector AND a Podman client connected to the
         same node(s) where the pods run.
         """
         self.findings = []
@@ -88,16 +89,16 @@ class DriftDetector:
 
         return self._build_result(checked, skipped)
 
-    def detect_docker_drift(self, hosts: list[dict]) -> dict:
-        """Compare stored host security_context against live Docker inspect.
+    def detect_podman_drift(self, hosts: list[dict]) -> dict:
+        """Compare stored host security_context against live Podman inspect.
 
         ``hosts`` is a list of dicts with keys: name, container_name,
         security_context (the stored/expected state from last discovery).
         """
         self.findings = []
 
-        if not self.docker_client:
-            return {"success": False, "error": "No Docker client configured"}
+        if not self.podman_client:
+            return {"success": False, "error": "No Podman client configured"}
 
         checked = 0
         skipped = 0
@@ -110,9 +111,9 @@ class DriftDetector:
                 continue
 
             try:
-                container = self.docker_client.containers.get(cname)
+                container = self.podman_client.containers.get(cname)
                 inspect = container.attrs
-            except docker.errors.NotFound:
+            except podman.errors.NotFound:
                 skipped += 1
                 continue
             except Exception as e:
@@ -121,8 +122,8 @@ class DriftDetector:
                 continue
 
             checked += 1
-            runtime = self._extract_docker_runtime(inspect)
-            self._compare_docker_state(cname, expected_sc, runtime)
+            runtime = self._extract_podman_runtime(inspect)
+            self._compare_podman_state(cname, expected_sc, runtime)
 
         return self._build_result(checked, skipped)
 
@@ -133,8 +134,8 @@ class DriftDetector:
     def _get_runtime_state(self, pod: dict, container: dict) -> dict | None:
         """Try to get actual runtime state of a container.
 
-        Uses container_id from pod status to inspect via Docker client.
-        Falls back to K8s-reported status if no Docker client.
+        Uses container_id from pod status to inspect via Podman client.
+        Falls back to K8s-reported status if no Podman client.
         """
         # Find container ID from pod statuses
         container_id = None
@@ -150,10 +151,10 @@ class DriftDetector:
         if not container_id:
             return None
 
-        if self.docker_client:
+        if self.podman_client:
             try:
-                c = self.docker_client.containers.get(container_id)
-                return self._extract_docker_runtime(c.attrs)
+                c = self.podman_client.containers.get(container_id)
+                return self._extract_podman_runtime(c.attrs)
             except Exception:
                 pass
 
@@ -161,8 +162,8 @@ class DriftDetector:
         return None
 
     @staticmethod
-    def _extract_docker_runtime(inspect: dict) -> dict:
-        """Extract security-relevant fields from Docker inspect."""
+    def _extract_podman_runtime(inspect: dict) -> dict:
+        """Extract security-relevant fields from Podman inspect."""
         config = inspect.get("Config", {})
         host_config = inspect.get("HostConfig", {})
         return {
@@ -306,7 +307,8 @@ class DriftDetector:
         sensitive_paths = {
             "/",
             "/etc",
-            "/var/run/docker.sock",
+            "/run/podman/podman.sock",
+            "/var/run/docker.sock",  # Legacy compatibility
             "/proc",
             "/sys",
             "/var/lib/kubelet",
@@ -359,12 +361,12 @@ class DriftDetector:
                 )
 
     # ------------------------------------------------------------------
-    # Docker-only drift (stored state vs live inspect)
+    # Podman-only drift (stored state vs live inspect)
     # ------------------------------------------------------------------
 
-    def _compare_docker_state(self, cname: str, expected: dict, actual: dict) -> None:
-        """Compare stored Docker security_context against live inspect."""
-        ref = f"docker/{cname}"
+    def _compare_podman_state(self, cname: str, expected: dict, actual: dict) -> None:
+        """Compare stored Podman security_context against live inspect."""
+        ref = f"podman/{cname}"
 
         # Privileged
         if not expected.get("privileged") and actual.get("privileged"):
@@ -394,7 +396,7 @@ class DriftDetector:
                 expected=sorted(expected_caps) if expected_caps else "[]",
                 actual=sorted(actual_caps),
                 detail=f"New capabilities since last discovery: {sorted(extra)}",
-                remediation="Investigate docker-compose or orchestrator changes.",
+                remediation="Investigate podman-compose or orchestrator changes.",
             )
 
         # Caps dropped removed
@@ -442,14 +444,14 @@ class DriftDetector:
                     expected=exp_user,
                     actual=act_user or "root",
                     detail="Container was running as non-root but now runs as root.",
-                    remediation="Investigate container image or compose changes.",
+                    remediation="Investigate container image or podman-compose changes.",
                 )
 
         # New mounts
         expected_mounts = {m.get("source") for m in expected.get("mounts", []) if m.get("source")}
         actual_mounts = {m.get("source") for m in actual.get("mounts", []) if m.get("source")}
         new_mounts = actual_mounts - expected_mounts
-        sensitive = {"/", "/etc", "/var/run/docker.sock", "/proc", "/sys", "/root"}
+        sensitive = {"/", "/etc", "/var/run/podman/podman.sock", "/proc", "/sys", "/root"}
         for mount in new_mounts:
             sev = CRITICAL if mount in sensitive else MEDIUM
             self._add(

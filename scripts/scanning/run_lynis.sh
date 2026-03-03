@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Skip sudo escalation in Docker containers - run as root directly
+# Skip sudo escalation in Podman containers - run as root directly
 # Container should be started with proper capabilities
 
 HOSTNAME="$(hostname 2>/dev/null || echo "unknown-host")"

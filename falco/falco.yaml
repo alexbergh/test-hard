@@ -85,7 +85,7 @@ base_syscalls:
 
 # Engine configuration
 # modern_ebpf works on native Linux with kernel >= 5.8
-# For WSL2/Docker Desktop: Falco is disabled via profile in docker-compose
+# For WSL2/Docker Desktop: Falco is disabled via profile in podman-compose
 engine:
   kind: modern_ebpf
   modern_ebpf:

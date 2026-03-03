@@ -14,8 +14,8 @@ cp .env.example .env
 nano .env  # изменить GF_ADMIN_PASSWORD
 
 # Собрать и запустить все сервисы
-docker compose build --no-cache
-docker compose up -d
+podman-compose build
+podman-compose up -d
 ```
 
 ### 2. Запуск сканирования (2-5 минут)
@@ -31,7 +31,7 @@ python3 scripts/scan_all_images.py
 python3 scripts/send_falco_events.py
 
 # Запустить сетевое сканирование
-docker exec telegraf python3 /opt/test-hard/scripts/scanning/run_network_scan.py \
+podman exec telegraf python3 /opt/test-hard/scripts/scanning/run_network_scan.py \
   --targets 172.19.0.0/24 --scan-type quick --output /var/lib/network-scan
 ```
 
@@ -78,8 +78,8 @@ curl "http://localhost:9090/api/v1/query?query=falco_events"
 ```bash
 git clone https://github.com/alexbergh/test-hard.git && \
 cd test-hard && \
-docker compose build --no-cache && \
-docker compose up -d && \
+podman-compose build && \
+podman-compose up -d && \
 sleep 30 && \
 ./scripts/scanning/run_hardening_suite.sh && \
 echo "Готово! Grafana: http://localhost:3000 (admin/admin), Dashboard: http://localhost:3001"
@@ -91,7 +91,7 @@ echo "Готово! Grafana: http://localhost:3000 (admin/admin), Dashboard: htt
 
 ```bash
 # Все контейнеры должны быть UP
-docker compose ps
+podman-compose ps
 
 # Grafana должна быть healthy
 curl http://localhost:3000/api/health
@@ -113,8 +113,8 @@ curl -s http://localhost:9091/metrics | grep -c security_scanners
 ### Перезапуск всего
 
 ```bash
-docker compose down
-docker compose up -d
+podman-compose down
+podman-compose up -d
 sleep 30
 ./scripts/scanning/run_hardening_suite.sh
 ```
@@ -122,19 +122,19 @@ sleep 30
 ### Полная очистка и пересборка
 
 ```bash
-docker compose down -v
-docker compose build --no-cache
-docker compose up -d
+podman-compose down -v
+podman-compose build --no-cache
+podman-compose up -d
 ./scripts/scanning/run_hardening_suite.sh
 ```
 
 ### Проверка логов
 
 ```bash
-docker compose logs -f telegraf
-docker compose logs -f prometheus
-docker compose logs -f grafana
-docker compose logs -f falcosidekick
+podman-compose logs -f telegraf
+podman-compose logs -f prometheus
+podman-compose logs -f grafana
+podman-compose logs -f falcosidekick
 ```
 
 ---
@@ -167,11 +167,30 @@ docker compose logs -f falcosidekick
 
 ## Требования
 
-- Docker 20.10+
-- Docker Compose 2.0+
+- Podman 4.0+
+- podman-compose 1.0+
 - 4 GB RAM (рекомендуется 8 GB)
 - 10 GB disk space
-- Linux / macOS / Windows (WSL2)
+- Linux / macOS / Windows (Podman Machine)
+
+### Дополнительно для Windows
+
+```powershell
+# Установить Podman
+winget install RedHat.Podman
+
+# Инициализировать и запустить машину
+podman machine init
+podman machine start
+
+# Запустить Podman API на TCP (для доступа из контейнеров)
+podman machine ssh "podman system service --time=0 tcp:0.0.0.0:2375 &"
+
+# Установить podman-compose
+pip install podman-compose
+```
+
+**Важно:** При создании кластера в Dashboard используйте `tcp://host.containers.internal:2375` вместо `tcp://podman-proxy:2375`.
 
 ---
 
@@ -181,4 +200,4 @@ docker compose logs -f falcosidekick
 
 ---
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

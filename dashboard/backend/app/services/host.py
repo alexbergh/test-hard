@@ -10,18 +10,19 @@ from app.schemas import HostCreate, HostUpdate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import docker
+# NOTE: 'docker' is the Python SDK package name (API-compatible with Podman)
+import docker as podman
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
-def _get_docker_client():
-    """Get Docker client using configured DOCKER_HOST."""
-    docker_host = settings.docker_host
-    if docker_host.startswith("tcp://"):
-        return docker.DockerClient(base_url=docker_host)
-    return docker.from_env()
+def _get_podman_client():
+    """Get Podman client using configured PODMAN_HOST."""
+    podman_host = settings.podman_host
+    if podman_host.startswith("tcp://"):
+        return podman.DockerClient(base_url=podman_host)
+    return podman.from_env()
 
 
 class HostService:
@@ -30,12 +31,12 @@ class HostService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all_hosts(self, include_inactive: bool = False) -> Sequence[Host]:
+    async def get_all_hosts(self, include_inactive: bool = False, limit: int = 100, offset: int = 0) -> Sequence[Host]:
         """Get all hosts."""
         query = select(Host)
         if not include_inactive:
             query = query.where(Host.is_active == True)  # noqa: E712
-        query = query.order_by(Host.name)
+        query = query.order_by(Host.name).limit(limit).offset(offset)
         result = await self.session.execute(query)
         return result.scalars().all()
 
@@ -114,14 +115,14 @@ class HostService:
             return "offline"
 
     async def _check_container_status(self, container_name: str) -> str:
-        """Check Docker container status."""
+        """Check Podman container status."""
         try:
-            client = _get_docker_client()
+            client = _get_podman_client()
             container = client.containers.get(container_name)
             if container.status == "running":
                 return "online"
             return "offline"
-        except docker.errors.NotFound:
+        except podman.errors.NotFound:
             return "offline"
         except Exception:
             return "unknown"
@@ -158,10 +159,10 @@ class HostService:
         except Exception:
             return "unknown"
 
-    async def sync_docker_containers(self) -> list[Host]:
-        """Sync hosts from running Docker containers."""
+    async def sync_podman_containers(self) -> list[Host]:
+        """Sync hosts from running Podman containers."""
         try:
-            client = _get_docker_client()
+            client = _get_podman_client()
             containers = client.containers.list()
             created_hosts = []
             logger.info("Found %d containers, syncing target-* hosts", len(containers))
@@ -193,7 +194,7 @@ class HostService:
 
     @staticmethod
     def _detect_os_family(image: str) -> str:
-        """Detect OS family from Docker image name."""
+        """Detect OS family from container image name."""
         image_lower = image.lower()
         if "debian" in image_lower:
             return "debian"

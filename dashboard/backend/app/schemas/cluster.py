@@ -11,7 +11,7 @@ class ClusterCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     display_name: str | None = None
     description: str | None = None
-    cluster_type: str = "kubernetes"  # kubernetes, docker, containerd
+    cluster_type: str = "kubernetes"  # kubernetes, podman, containerd
 
     # Kubernetes
     k8s_api_url: str | None = None  # https://host:6443
@@ -23,10 +23,10 @@ class ClusterCreate(BaseModel):
     kubeconfig_context: str | None = None
     k8s_namespace: str | None = None  # None = all namespaces
 
-    # Docker
-    docker_host: str | None = None  # tcp://host:2376 or unix:///...
-    docker_tls_verify: bool = False
-    docker_cert_path: str | None = None
+    # Podman
+    podman_host: str | None = None  # tcp://host:2376 or unix:///...
+    podman_tls_verify: bool = False
+    podman_cert_path: str | None = None
 
     # containerd
     containerd_socket: str | None = None
@@ -50,9 +50,9 @@ class ClusterUpdate(BaseModel):
     kubeconfig_path: str | None = None
     kubeconfig_context: str | None = None
     k8s_namespace: str | None = None
-    docker_host: str | None = None
-    docker_tls_verify: bool | None = None
-    docker_cert_path: str | None = None
+    podman_host: str | None = None
+    podman_tls_verify: bool | None = None
+    podman_cert_path: str | None = None
     containerd_socket: str | None = None
     is_active: bool | None = None
     auto_discover: bool | None = None
@@ -72,8 +72,8 @@ class ClusterResponse(BaseModel):
     kubeconfig_path: str | None
     kubeconfig_context: str | None
     k8s_namespace: str | None
-    docker_host: str | None
-    docker_tls_verify: bool
+    podman_host: str | None
+    podman_tls_verify: bool
     containerd_socket: str | None
     status: str
     is_active: bool

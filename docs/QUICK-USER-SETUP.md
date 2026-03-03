@@ -38,10 +38,7 @@ sudo ./scripts/setup-secure-user.sh readonly
 
 ```bash
 # НЕ запускайте от root
-sudo docker-compose up  # ПЛОХО
-
-# НЕ добавляйте в docker group (кроме admin)
-sudo usermod -aG docker hardening-scanner  # ОПАСНО!
+sudo podman-compose up  # ПЛОХО
 
 # НЕ давайте полный sudo
 hardening-scanner ALL=(ALL) ALL  # КРИТИЧЕСКАЯ УЯЗВИМОСТЬ!
@@ -51,10 +48,10 @@ hardening-scanner ALL=(ALL) ALL  # КРИТИЧЕСКАЯ УЯЗВИМОСТЬ!
 
 ```bash
 # Используйте выделенного пользователя
-sudo -u hardening-admin docker-compose up  # ХОРОШО
+sudo -u hardening-admin podman-compose up  # ХОРОШО
 
-# Используйте Docker Socket Proxy
-DOCKER_HOST=unix:///var/run/docker-socket-proxy.sock  # БЕЗОПАСНО
+# Используйте rootless Podman (по умолчанию)
+# Или Podman Socket Proxy для дополнительной безопасности
 
 # Ограничивайте sudo права
 hardening-scanner ALL=(ALL) NOPASSWD: /usr/bin/lynis  # ПРАВИЛЬНО
@@ -150,8 +147,8 @@ sudo visudo -f /etc/sudoers.d/hardening-scanner
 Cmnd_Alias SCAN_COMMANDS = \
     /usr/bin/lynis audit system*, \
     /usr/bin/oscap xccdf eval*, \
-    /usr/bin/docker exec */lynis*, \
-    /usr/bin/docker exec */oscap*
+    /usr/bin/podman exec */lynis*, \
+    /usr/bin/podman exec */oscap*
 
 hardening-scanner ALL=(ALL) NOPASSWD: SCAN_COMMANDS
 Defaults:hardening-scanner !authenticate
@@ -164,8 +161,8 @@ sudo visudo -f /etc/sudoers.d/hardening-admin
 ```
 
 ```bash
-# test-hard Admin - только Docker команды
-hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose, /usr/bin/systemctl restart docker
+# test-hard Admin - только Podman команды
+hardening-admin ALL=(ALL) NOPASSWD: /usr/bin/podman, /usr/bin/podman-compose, /usr/bin/systemctl restart podman
 ```
 
 ## Права на файлы
@@ -246,7 +243,7 @@ sudo ausearch -k hardening_sudo | tail -20
 ### Базовая безопасность
 
 * [ ] Создан выделенный пользователь (не root)
-* [ ] Пользователи НЕ в docker group (кроме admin)
+* [ ] Используется rootless Podman
 * [ ] Настроены ограниченные sudo права
 * [ ] SSH аутентификация по ключам
 * [ ] Права на файлы: 700 (configs), 750 (dirs), 600 (.env)
@@ -300,17 +297,17 @@ sudo cat /etc/sudoers.d/hardening-scanner
 ls -l /etc/sudoers.d/hardening-scanner  # должно быть 440
 ```
 
-### Проблема: Docker permission denied
+### Проблема: Podman permission denied
 
 ```bash
-# НЕ добавляйте в docker group!
-# Используйте Docker Socket Proxy
+# Podman работает в rootless режиме по умолчанию
+# Используйте Podman Socket Proxy для дополнительной безопасности
 
 # Проверить настройку
-echo $DOCKER_HOST  # должно быть unix:///var/run/docker-socket-proxy.sock
+echo $CONTAINER_HOST  # должно быть unix:///run/podman/podman.sock
 
 # Или используйте sudo для ограниченных команд
-sudo docker ps  # только если настроен sudoers
+sudo podman ps  # только если настроен sudoers
 ```
 
 ### Проблема: SSH ключ не работает
@@ -361,4 +358,4 @@ sudo journalctl _UID=$(id -u hardening-scanner)
 
 **Помните**: Безопасность начинается с правильной настройки пользователей!
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

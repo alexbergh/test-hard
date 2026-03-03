@@ -70,7 +70,7 @@ make logging
 
 **Собирает логи из:**
 
-* Docker контейнеров (через Docker socket)
+* Podman контейнеров (через Podman socket)
 * Системных логов `/var/log`
 * Security scanner отчетов `/reports`
 
@@ -189,7 +189,7 @@ compactor:
 du -sh loki-data/
 
 # Очистка старых данных
-docker compose -f docker-compose.logging.yml exec loki \
+podman-compose -f podman-compose.logging.yml exec loki \
   wget -O- http://localhost:3100/loki/api/v1/delete?query={job="old_job"}&start=0&end=1234567890
 ```
 
@@ -272,7 +272,7 @@ storage_config:
 ### 2. Масштабирование
 
 ```yaml
-# docker-compose.logging.yml
+# podman-compose.logging.yml
 services:
   loki:
     deploy:
@@ -314,13 +314,13 @@ scrape_configs:
 
 ```bash
 # Проверить статус Promtail
-docker compose -f docker-compose.logging.yml logs promtail
+podman-compose -f podman-compose.logging.yml logs promtail
 
 # Проверить targets
 curl http://localhost:9080/targets
 
 # Проверить positions
-docker compose -f docker-compose.logging.yml exec promtail cat /tmp/positions.yaml
+podman-compose -f podman-compose.logging.yml exec promtail cat /tmp/positions.yaml
 ```
 
 ### Loki не принимает логи
@@ -333,7 +333,7 @@ curl http://localhost:3100/ready
 curl http://localhost:3100/metrics | grep loki_ingester
 
 # Логи Loki
-docker compose -f docker-compose.logging.yml logs loki
+podman-compose -f podman-compose.logging.yml logs loki
 ```
 
 ### Медленные запросы
@@ -350,7 +350,7 @@ docker compose -f docker-compose.logging.yml logs loki
 
 1. Проверьте datasource: Configuration → Data Sources → Loki
 2. Test connection
-3. Проверьте, что Promtail работает: `docker ps | grep promtail`
+3. Проверьте, что Promtail работает: `podman ps | grep promtail`
 4. Проверьте, что логи собираются: `curl http://localhost:9080/metrics`
 
 ## Резервное копирование и восстановление
@@ -359,7 +359,7 @@ docker compose -f docker-compose.logging.yml logs loki
 
 ```bash
 # Backup Loki data
-docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
+podman run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
   alpine tar czf /backup/loki-backup-$(date +%Y%m%d).tar.gz /data
 ```
 
@@ -367,7 +367,7 @@ docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
 
 ```bash
 # Restore Loki data
-docker run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
+podman run --rm -v test-hard_loki-data:/data -v $(pwd):/backup \
   alpine tar xzf /backup/loki-backup-YYYYMMDD.tar.gz -C /
 ```
 
@@ -418,4 +418,4 @@ rate({compose_project="test-hard"}[5m])
 
 ---
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

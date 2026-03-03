@@ -1,6 +1,6 @@
-# Локальная сборка Docker образа
+# Локальная сборка образа
 
-Данная инструкция описывает процесс локальной сборки unified Docker образа для проекта test-hard.
+Данная инструкция описывает процесс локальной сборки unified образа для проекта test-hard с использованием Podman.
 
 ## Когда нужна локальная сборка?
 
@@ -11,8 +11,8 @@
 
 ## Требования
 
-- Docker 20.10+ (рекомендуется 24.0+)
-- Docker Compose v2.0+
+- Podman 4.0+ (рекомендуется 5.0+)
+- podman-compose 1.0+
 - Git
 - Минимум 2 GB свободного места на диске
 
@@ -24,10 +24,10 @@ git clone https://github.com/alexbergh/test-hard.git
 cd test-hard
 
 # Собрать unified image
-docker build -t ghcr.io/alexbergh/test-hard:latest .
+podman build -t ghcr.io/alexbergh/test-hard:latest .
 
 # Запустить платформу
-docker compose up -d
+podman-compose up -d
 ```
 
 ## Пошаговая инструкция
@@ -35,66 +35,66 @@ docker compose up -d
 ### 1. Проверка окружения
 
 ```bash
-# Проверить версию Docker
-docker --version
+# Проверить версию Podman
+podman --version
 
-# Проверить версию Docker Compose
-docker compose version
+# Проверить версию podman-compose
+podman-compose version
 
 # Проверить доступное место
-docker system df
+podman system df
 ```
 
 ### 2. Сборка образа
 
 ```bash
 # Стандартная сборка
-docker build -t ghcr.io/alexbergh/test-hard:latest .
+podman build -t ghcr.io/alexbergh/test-hard:latest .
 
 # Сборка с отключенным кэшем (при проблемах)
-docker build --no-cache -t ghcr.io/alexbergh/test-hard:latest .
+podman build --no-cache -t ghcr.io/alexbergh/test-hard:latest .
 
 # Сборка с указанием платформы (для Apple Silicon)
-docker build --platform linux/amd64 -t ghcr.io/alexbergh/test-hard:latest .
+podman build --platform linux/amd64 -t ghcr.io/alexbergh/test-hard:latest .
 ```
 
 ### 3. Проверка образа
 
 ```bash
 # Проверить что образ создан
-docker images | grep test-hard
+podman images | grep test-hard
 
 # Проверить размер образа
-docker image inspect ghcr.io/alexbergh/test-hard:latest --format='{{.Size}}' | numfmt --to=iec
+podman image inspect ghcr.io/alexbergh/test-hard:latest --format='{{.Size}}'
 
 # Проверить доступные команды
-docker run --rm ghcr.io/alexbergh/test-hard:latest --help
+podman run --rm ghcr.io/alexbergh/test-hard:latest --help
 ```
 
 ### 4. Запуск платформы
 
 ```bash
 # Запуск всех сервисов
-docker compose up -d
+podman-compose up -d
 
 # Проверка статуса
-docker compose ps
+podman-compose ps
 
 # Просмотр логов
-docker compose logs -f
+podman-compose logs -f
 ```
 
-## Использование docker-compose.dev.yml
+## Использование podman-compose.dev.yml
 
 Для разработки рекомендуется использовать dev-конфигурацию, которая автоматически собирает образ:
 
 ```bash
 # Сборка и запуск в одну команду
-docker compose -f docker-compose.dev.yml up -d --build
+podman-compose -f podman-compose.dev.yml up -d --build
 
 # Пересборка после изменений
-docker compose -f docker-compose.dev.yml build --no-cache
-docker compose -f docker-compose.dev.yml up -d
+podman-compose -f podman-compose.dev.yml build --no-cache
+podman-compose -f podman-compose.dev.yml up -d
 ```
 
 ## Сборка с использованием Makefile
@@ -114,26 +114,26 @@ make rebuild
 
 ```bash
 # Добавить дополнительный тег
-docker tag ghcr.io/alexbergh/test-hard:latest ghcr.io/alexbergh/test-hard:v1.0.0
+podman tag ghcr.io/alexbergh/test-hard:latest ghcr.io/alexbergh/test-hard:v1.0.0
 
 # Тег для локального использования
-docker tag ghcr.io/alexbergh/test-hard:latest test-hard:local
+podman tag ghcr.io/alexbergh/test-hard:latest test-hard:local
 ```
 
 ## Оптимизация сборки
 
-### Использование BuildKit
+### Использование Buildah cache
 
 ```bash
-# Включить BuildKit для ускорения сборки
-DOCKER_BUILDKIT=1 docker build -t ghcr.io/alexbergh/test-hard:latest .
+# Podman использует Buildah для сборки с поддержкой cache mounts
+podman build -t ghcr.io/alexbergh/test-hard:latest .
 ```
 
 ### Многоэтапная сборка с кэшем
 
 ```bash
 # Использовать кэш из registry (если доступен)
-docker build \
+podman build \
   --cache-from ghcr.io/alexbergh/test-hard:latest \
   -t ghcr.io/alexbergh/test-hard:latest .
 ```
@@ -144,40 +144,38 @@ docker build \
 
 ```bash
 # Очистить неиспользуемые ресурсы
-docker system prune -a
+podman system prune -a
 
 # Очистить build cache
-docker builder prune
+podman system prune --all --volumes
 ```
 
 ### Ошибка при сборке на Apple Silicon
 
 ```bash
 # Использовать эмуляцию amd64
-docker build --platform linux/amd64 -t ghcr.io/alexbergh/test-hard:latest .
+podman build --platform linux/amd64 -t ghcr.io/alexbergh/test-hard:latest .
 ```
 
 ### Медленная сборка
 
 ```bash
-# Проверить что BuildKit включен
-export DOCKER_BUILDKIT=1
-
-# Использовать параллельную сборку
-docker build --parallel -t ghcr.io/alexbergh/test-hard:latest .
+# Podman использует Buildah с поддержкой cache mounts
+# Проверьте .containerignore для уменьшения build context
+podman build -t ghcr.io/alexbergh/test-hard:latest .
 ```
 
 ### Проверка содержимого образа
 
 ```bash
 # Запустить shell в контейнере
-docker run --rm -it ghcr.io/alexbergh/test-hard:latest /bin/bash
+podman run --rm -it ghcr.io/alexbergh/test-hard:latest /bin/bash
 
 # Проверить установленные инструменты
-docker run --rm ghcr.io/alexbergh/test-hard:latest which oscap lynis telegraf
+podman run --rm ghcr.io/alexbergh/test-hard:latest which oscap lynis telegraf
 ```
 
-## Структура Dockerfile
+## Структура Containerfile
 
 Unified image включает:
 
@@ -190,9 +188,9 @@ Unified image включает:
 
 - [QUICKSTART.md](QUICKSTART.md) — быстрый старт
 - [DEPLOYMENT.md](DEPLOYMENT.md) — развертывание
-- [DOCKER_OPTIMIZATIONS.md](DOCKER_OPTIMIZATIONS.md) — оптимизация Docker
+- [PODMAN_OPTIMIZATIONS.md](PODMAN_OPTIMIZATIONS.md) -- оптимизация Podman
 - [FAQ.md](FAQ.md) — часто задаваемые вопросы
 
 ---
 
-Последнее обновление: Февраль 2026
+Последнее обновление: Март 2026

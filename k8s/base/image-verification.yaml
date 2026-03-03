@@ -57,7 +57,7 @@ spec:
                       <REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY>
                       -----END PUBLIC KEY-----
 
-    # Verify images from Docker Hub official repos
+    # Verify images from Container Registry official repos
     - name: verify-official-images
       match:
         any:
@@ -74,7 +74,7 @@ spec:
                 - keys:
                     publicKeys: |-
                       -----BEGIN PUBLIC KEY-----
-                      <REPLACE_WITH_DOCKER_OFFICIAL_COSIGN_KEY>
+                      <REPLACE_WITH_OFFICIAL_COSIGN_KEY>
                       -----END PUBLIC KEY-----
           required: false  # Warn only for official images
 

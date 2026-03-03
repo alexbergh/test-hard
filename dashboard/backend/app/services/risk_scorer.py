@@ -40,12 +40,12 @@ RISK_WEIGHTS: dict[str, dict] = {
         "remediation": "Set hostIPC: false",
     },
     # Volume security
-    "mount_docker_sock": {
+    "mount_podman_sock": {
         "weight": 80,
         "category": "volume-security",
         "severity": "critical",
-        "description": "Docker socket mounted -- container escape possible",
-        "remediation": "Remove docker.sock mount. Use Docker Socket Proxy with read-only access",
+        "description": "Podman socket mounted -- container escape possible",
+        "remediation": "Remove podman.sock mount. Use Podman Socket Proxy with read-only access",
     },
     "mount_host_root": {
         "weight": 70,
@@ -199,7 +199,8 @@ RISK_WEIGHTS: dict[str, dict] = {
 
 # Sensitive host paths for mount detection
 SENSITIVE_MOUNT_PATHS = {
-    "/var/run/docker.sock": "mount_docker_sock",
+    "/run/podman/podman.sock": "mount_podman_sock",
+    "/var/run/docker.sock": "mount_podman_sock",  # Legacy path compatibility
     "/": "mount_host_root",
     "/etc": "mount_host_etc",
     "/proc": "mount_host_proc",
@@ -502,7 +503,7 @@ def _hardening_rule_to_risk(rule_id: str) -> str | None:
         "K8S-POD-002": "host_pid",
         "K8S-POD-003": "host_ipc",
         "K8S-VOL-001": "mount_host_sensitive",
-        "K8S-VOL-002": "mount_docker_sock",
+        "K8S-VOL-002": "mount_podman_sock",
         "K8S-SA-001": "default_service_account",
         "K8S-NET-001": "no_network_policy",
         "K8S-RBAC-001": "cluster_admin_binding",

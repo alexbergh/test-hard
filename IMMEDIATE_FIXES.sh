@@ -28,40 +28,40 @@ print_error() {
 }
 
 # Check if we're in the right directory
-if [ ! -f "docker-compose.yml" ]; then
-    print_error "docker-compose.yml not found. Please run this script from the repository root."
+if [ ! -f "podman-compose.yml" ]; then
+    print_error "podman-compose.yml not found. Please run this script from the repository root."
     exit 1
 fi
 
-print_status "Found docker-compose.yml"
+print_status "Found podman-compose.yml"
 
-# 1. Fix hardcoded paths in docker-compose files
+# 1. Fix hardcoded paths in podman-compose files
 echo ""
-echo "[NOTE] Fix 1: Removing hardcoded paths from docker-compose files..."
+echo "[NOTE] Fix 1: Removing hardcoded paths from podman-compose files..."
 
 # Backup original files
-for file in docker-compose.yml docker-compose.*.yml; do
+for file in podman-compose.yml podman-compose.*.yml; do
     if [ -f "$file" ]; then
         cp "$file" "$file.backup"
         print_status "Backed up $file to $file.backup"
     fi
 done
 
-# Fix docker-compose.yml
-if grep -q "/Users/" docker-compose.yml 2>/dev/null; then
-    sed -i.tmp 's|/Users/[^/]*/Documents/GitHub/test-hard/reports|./reports|g' docker-compose.yml
-    sed -i.tmp 's|/Users/[^/]*/Documents/GitHub/test-hard/art-storage|./art-storage|g' docker-compose.yml
-    rm -f docker-compose.yml.tmp
-    print_status "Fixed hardcoded paths in docker-compose.yml"
+# Fix podman-compose.yml
+if grep -q "/Users/" podman-compose.yml 2>/dev/null; then
+    sed -i.tmp 's|/Users/[^/]*/Documents/GitHub/test-hard/reports|./reports|g' podman-compose.yml
+    sed -i.tmp 's|/Users/[^/]*/Documents/GitHub/test-hard/art-storage|./art-storage|g' podman-compose.yml
+    rm -f podman-compose.yml.tmp
+    print_status "Fixed hardcoded paths in podman-compose.yml"
 else
-    print_status "No hardcoded paths found in docker-compose.yml"
+    print_status "No hardcoded paths found in podman-compose.yml"
 fi
 
-# 2. Improve .dockerignore
+# 2. Improve .containerignore
 echo ""
-echo "[NOTE] Fix 2: Updating .dockerignore..."
+echo "[NOTE] Fix 2: Updating .containerignore..."
 
-cat >> .dockerignore << 'EOF'
+cat >> .containerignore << 'EOF'
 
 # Analysis and reports
 reports/
@@ -90,7 +90,7 @@ Thumbs.db
 *.backup
 EOF
 
-print_status "Updated .dockerignore"
+print_status "Updated .containerignore"
 
 # 3. Create health check script
 echo ""
@@ -174,7 +174,7 @@ TELEGRAF_INTERVAL=10s
 REPORTS_DIR=./reports
 ART_STORAGE_DIR=./art-storage
 
-# Docker Image Version
+# Podman Image Version
 VERSION=1.0.0
 
 # Optional: Atomic Red Team Configuration
@@ -231,8 +231,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Makefile help target
 
 ### Changed
-- Fixed hardcoded paths in docker-compose files
-- Improved .dockerignore
+- Fixed hardcoded paths in podman-compose files
+- Improved .containerignore
 
 ### Fixed
 - Portability issues with absolute paths
@@ -247,13 +247,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telegraf metrics collection
 - Multi-distribution support (Debian, Ubuntu, Fedora, CentOS)
 - Kubernetes deployment manifests
-- Docker Compose multi-environment support
+- Podman Compose multi-environment support
 - Comprehensive documentation
 - CI/CD with GitHub Actions
 - Pre-commit hooks for code quality
 
 ### Security
-- Docker socket proxy for limited API access
+- Podman socket proxy for limited API access
 - Resource limits on all containers
 - Health checks for all services
 EOF
@@ -290,8 +290,8 @@ A clear description of what you expected to happen.
 
 ## Environment
 - OS: [e.g. Ubuntu 22.04]
-- Docker version: [e.g. 24.0.0]
-- Docker Compose version: [e.g. 2.20.0]
+- Podman version: [e.g. 5.0.0]
+- Podman Compose version: [e.g. 1.0.7]
 - Project version: [e.g. 1.0.0]
 
 ## Logs
@@ -343,7 +343,7 @@ if ! grep -q "shields.io" README.md; then
 ![CI Status](https://github.com/alexbergh/test-hard/workflows/CI%20Pipeline/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
-![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
+![Podman](https://img.shields.io/badge/podman-ready-blue.svg)
 ![Kubernetes](https://img.shields.io/badge/kubernetes-ready-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 
@@ -390,8 +390,8 @@ ERRORS=0
 
 # Check 1: No hardcoded paths
 echo "Checking for hardcoded paths..."
-if grep -r "/Users/" docker-compose*.yml 2>/dev/null; then
-    echo "[ERROR] Found hardcoded paths in docker-compose files"
+if grep -r "/Users/" podman-compose*.yml 2>/dev/null; then
+    echo "[ERROR] Found hardcoded paths in podman-compose files"
     ERRORS=$((ERRORS + 1))
 else
     echo "[OK] No hardcoded paths found"
@@ -462,7 +462,7 @@ echo "[SUCCESS] All immediate fixes have been applied!"
 echo "================================================================"
 echo ""
 echo "Applied fixes:"
-echo "  1. [OK] Fixed hardcoded paths in docker-compose files"
+echo "  1. [OK] Fixed hardcoded paths in podman-compose files"
 echo "  2. [OK] Improved .dockerignore"
 echo "  3. [OK] Created health check script"
 echo "  4. [OK] Improved .env.example with comments"

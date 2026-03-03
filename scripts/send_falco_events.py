@@ -1,6 +1,6 @@
 """Send simulated Falco events to falcosidekick for all target containers.
 
-Falco itself requires native Linux eBPF and cannot run on WSL2/Docker Desktop.
+Falco itself requires native Linux eBPF and cannot run on WSL2/Podman Desktop.
 This script sends realistic events via the falcosidekick HTTP input API,
 which then forwards them to Loki, Alertmanager, and Prometheus.
 """
@@ -31,7 +31,7 @@ CONTAINERS = [
     {"name": "alertmanager", "id": "alertm001", "group": "infra"},
     {"name": "promtail", "id": "promta001", "group": "infra"},
     {"name": "telegraf", "id": "telegr001", "group": "infra"},
-    {"name": "docker-proxy", "id": "dproxy001", "group": "infra"},
+    {"name": "podman-proxy", "id": "pproxy001", "group": "infra"},
     {"name": "trivy-server", "id": "trivys001", "group": "scanner"},
     {"name": "openscap-scanner", "id": "oscaps001", "group": "scanner"},
     {"name": "lynis-scanner", "id": "lyniss001", "group": "scanner"},
@@ -202,8 +202,8 @@ INFRA_RULES = [
     {
         "rule": "Sensitive mount by container",
         "priority": "Critical",
-        "output_tpl": "Sensitive path mounted inside container (user={user} container_id={cid} container_name={cname} mount=/var/run/docker.sock)",
-        "fields": {"proc.name": "dockerd", "fd.name": "/var/run/docker.sock", "user.name": "root"},
+        "output_tpl": "Sensitive path mounted inside container (user={user} container_id={cid} container_name={cname} mount=/run/podman/podman.sock)",
+        "fields": {"proc.name": "conmon", "fd.name": "/run/podman/podman.sock", "user.name": "root"},
         "tags": ["container", "cis", "mitre_privilege_escalation"],
     },
     {

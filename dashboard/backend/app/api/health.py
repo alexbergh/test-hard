@@ -3,6 +3,7 @@
 from app.config import get_settings
 from fastapi import APIRouter
 from pydantic import BaseModel
+from sqlalchemy import text
 
 router = APIRouter()
 settings = get_settings()
@@ -14,6 +15,7 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     environment: str
+    database: str
 
 
 class ReadinessResponse(BaseModel):
@@ -26,11 +28,23 @@ class ReadinessResponse(BaseModel):
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
-    """Basic health check endpoint."""
+    """Health check endpoint with database connectivity verification."""
+    from app.database import get_session_context
+
+    db_status = "connected"
+    try:
+        async with get_session_context() as session:
+            await session.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "disconnected"
+
+    overall = "healthy" if db_status == "connected" else "degraded"
+
     return HealthResponse(
-        status="healthy",
+        status=overall,
         version=settings.app_version,
         environment=settings.environment,
+        database=db_status,
     )
 
 
@@ -40,12 +54,12 @@ async def readiness_check() -> ReadinessResponse:
     from app.services.scheduler import scheduler_service
 
     # Check database
+    from app.database import get_session_context
+
     db_status = "healthy"
     try:
-        from app.database import get_session_context
-
         async with get_session_context() as session:
-            await session.execute("SELECT 1")
+            await session.execute(text("SELECT 1"))
     except Exception:
         db_status = "unhealthy"
 

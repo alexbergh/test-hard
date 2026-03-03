@@ -43,9 +43,16 @@ class Token(BaseModel):
     """Schema for JWT token response."""
 
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
     must_change_password: bool = False
+
+
+class RefreshTokenRequest(BaseModel):
+    """Schema for refresh token request."""
+
+    refresh_token: str
 
 
 class PasswordChange(BaseModel):
@@ -61,3 +68,9 @@ class TokenData(BaseModel):
     username: str | None = None
     user_id: int | None = None
     role: str | None = None
+
+
+class EmailUpdate(BaseModel):
+    """Schema for email update."""
+
+    email: EmailStr

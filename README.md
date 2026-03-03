@@ -3,7 +3,7 @@
 ![CI Status](https://github.com/alexbergh/test-hard/workflows/CI%20Pipeline/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
-![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
+![Podman](https://img.shields.io/badge/podman-ready-blue.svg)
 ![Kubernetes](https://img.shields.io/badge/kubernetes-ready-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 
@@ -21,11 +21,11 @@
 * **Atomic Red Team** — тестирование техник MITRE ATT&CK в режиме dry-run
 * **GitOps Deployment** — автоматический deployment с ArgoCD
 * **Container Registry** — автоматическая публикация образов в GitHub Container Registry
-* **Multi-Environment** — поддержка dev/staging/prod через Docker Compose
+* **Multi-Environment** — поддержка dev/staging/prod через Podman Compose
 * **CI/CD Pipeline** — GitHub Actions (9 workflows) для тестирования, сканирования и блокировки
 * **Multi-Distribution** — сканирование Debian, Ubuntu, Fedora, CentOS Stream, ALT Linux
 * **Metrics Collection** — Telegraf для сбора и экспорта метрик в Prometheus
-* **Docker Security** — изолированный доступ к Docker API через security proxy
+* **Podman Security** — изолированный доступ к Podman API через security proxy
 * **Policy Enforcement** — OPA/Gatekeeper политики для Kubernetes
 * **High Test Coverage** — 80%+ покрытие тестами (unit, integration, E2E, shell)
 
@@ -40,7 +40,7 @@
 ```bash
 # (опционально) создайте .env, чтобы переопределить учетные данные Grafana
 cp .env.example .env
-# можно пропустить этот шаг — docker compose использует admin/admin по умолчанию
+# можно пропустить этот шаг — podman-compose использует admin/admin по умолчанию
 make up
 ```
 
@@ -56,8 +56,8 @@ make up
 **Развертывание:**
 
 * **[Полное руководство](docs/DEPLOYMENT.md)** - детальная инструкция с troubleshooting
-* **[Docker Quick Start](docs/DOCKER_QUICK_START.md)** - быстрое руководство по оптимизированным образам
-* **[Нативная установка](docs/NATIVE-INSTALLATION.md)** - установка без Docker
+* **[Podman Quick Start](docs/PODMAN_QUICK_START.md)** — быстрое руководство по оптимизированным образам
+* **[Нативная установка](docs/NATIVE-INSTALLATION.md)** — установка без Podman
 
 **Безопасность:**
 
@@ -67,22 +67,22 @@ make up
 
 **Дополнительно:**
 
-* **[Docker оптимизации](docs/DOCKER_OPTIMIZATIONS.md)** - multi-stage builds, BuildKit cache, метрики
+* **[Podman оптимизации](docs/PODMAN_OPTIMIZATIONS.md)** — multi-stage builds, cache, метрики
 * **[Централизованное логирование](docs/LOGGING.md)** - настройка Loki + Promtail
 
 ### Режимы работы
 
 **1. Тестовые контейнеры (по умолчанию)** - для демонстрации и разработки
 **2. Реальные хосты через SSH** - для production серверов и VM
-**3. Production Docker контейнеры** - через Docker API
+**3. Production Podman контейнеры** — через Podman API
 
 Подробнее: [docs/REAL-HOSTS-SCANNING.md](docs/REAL-HOSTS-SCANNING.md)
 
 ### Автоматические сканы контейнеров (режим 1)
 
-В корне репозитория добавлен отдельный `docker-compose.yml`, который поднимает четыре тестовых
+В корне репозитория добавлен отдельный `podman-compose.yml`, который поднимает четыре тестовых
 контейнера (Fedora, Debian, CentOS Stream, Ubuntu) и два сервисных сканера (OpenSCAP и Lynis).
-Все сканы выполняются через Docker API, а отчёты складываются в `./reports/`.
+Все сканы выполняются через Podman API, а отчёты складываются в `./reports/`.
 
 ```bash
 make up                # поднимает целевые контейнеры, мониторинг и собирает образы сканеров
@@ -108,8 +108,8 @@ make help              # показать все доступные команд
 
 ## Демонстрационная мультидистрибутивная среда
 
-В каталоге `docker/` подготовлены Dockerfile'ы для Debian, Ubuntu, Fedora, CentOS Stream и ALT Linux. Контейнеры
-собираются через общий `docker-compose.yml` и монтируют каталоги `scripts/`, `atomic-red-team/` и `art-storage/`, чтобы использовать
+В каталоге `containers/` подготовлены Containerfile'ы для Debian, Ubuntu, Fedora, CentOS Stream и ALT Linux. Контейнеры
+собираются через общий `podman-compose.yml` и монтируют каталоги `scripts/`, `atomic-red-team/` и `art-storage/`, чтобы использовать
 одинаковые сценарии hardening-аудита.
 
 ```bash
@@ -121,10 +121,10 @@ make help              # показать все доступные команд
 ```
 
 По умолчанию проверки Atomic Red Team выполняются в режиме dry-run (`ATOMIC_DRY_RUN=true`). Чтобы запускать реальные техники,
-установите переменную окружения при запуске `docker compose`, например: `ATOMIC_DRY_RUN=false docker compose up`. Для немедленного запуска
+установите переменную окружения при запуске `podman-compose`, например: `ATOMIC_DRY_RUN=false podman-compose up`. Для немедленного запуска
 проверок при старте контейнера добавьте `RUN_HARDENING_ON_START=true`.
 
-По умолчанию `docker-compose.yml` и `scripts/scanning/run_hardening_suite.sh` запускают дистрибутивы с публично доступными образами
+По умолчанию `podman-compose.yml` и `scripts/scanning/run_hardening_suite.sh` запускают дистрибутивы с публично доступными образами
 (Debian, Ubuntu, Fedora, CentOS, ALT Linux).
 
 ## Alerting
@@ -198,7 +198,7 @@ pip install atomic-operator attrs click pyyaml
 | **Falco Runtime Security** | Runtime-события Falco, правила, доставка через Falcosidekick |
 | **Container Image Security** | Уязвимости образов Trivy, тренды, таблицы |
 | **Network Security Monitoring** | Bandwidth, packets, errors/drops, TCP states, Falco network events |
-| **Network Discovery** | Обнаруженные хосты, открытые порты, сервисы в Docker-сети |
+| **Network Discovery** | Обнаруженные хосты, открытые порты, сервисы в Podman-сети |
 | **Security Monitoring** | Метрики сканеров в динамике |
 
 ### Диагностика 401 при обращении к Grafana API
@@ -210,27 +210,27 @@ pip install atomic-operator attrs click pyyaml
 1. **Убедитесь, что порт 3000 не занят другой Grafana.**
 
    ```bash
-   docker ps --filter "publish=3000" --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
+   podman ps --filter "publish=3000" --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
    sudo ss -tulpn | grep ':3000'           # или lsof -iTCP:3000 -sTCP:LISTEN
    ```
 
    Если в выводе видны другие контейнеры или процессы, либо версию `/api/health` отвечает не `11.0.0`, остановите конфликтующий сервис
-   или смените порт в `.env` (`GRAFANA_HOST_PORT=3300`) и перезапустите `docker compose`.
+   или смените порт в `.env` (`GRAFANA_HOST_PORT=3300`) и перезапустите `podman-compose`.
 2. **Проверьте, что работает именно нужный контейнер.**
 
    ```bash
-   docker compose ps grafana
-   docker compose exec grafana grafana-cli -v
-   docker compose exec grafana env | grep '^GF_'
+   podman-compose ps grafana
+   podman exec grafana grafana-cli -v
+   podman exec grafana env | grep '^GF_'
    ```
 
    Так вы увидите имя контейнера, версию Grafana и актуальные переменные окружения.
-3. **Убедитесь, что не отключены basic-auth и форма логина.** В `docker-compose.yml` заданы переменные
+3. **Убедитесь, что не отключены basic-auth и форма логина.** В `podman-compose.yml` заданы переменные
    `GF_AUTH_BASIC_ENABLED=true` и `GF_AUTH_DISABLE_LOGIN_FORM=false`. При необходимости переопределите их в `.env` перед запуском.
 4. **Перезапустите контейнер после изменения настроек или порта.**
 
    ```bash
-   docker compose up -d grafana
+   podman-compose up -d grafana
    ```
 
 При включённом [provisioning](grafana/provisioning/datasources/prometheus.yml) стандартный datasource Prometheus создаётся
@@ -241,9 +241,9 @@ pip install atomic-operator attrs click pyyaml
 ```text
 test-hard/
 ├── .env.example               # Переменные окружения
-├── docker-compose.yml         # Все сервисы: мониторинг, сканеры, Falco, Trivy
-├── Dockerfile                 # Единый multi-stage образ
-├── docker/                    # Dockerfiles для целевых ОС (Debian, Ubuntu, Fedora, CentOS, ALT)
+├── podman-compose.yml         # Все сервисы: мониторинг, сканеры, Falco, Trivy
+├── Containerfile                 # Единый multi-stage образ
+├── containers/                    # Dockerfiles для целевых ОС (Debian, Ubuntu, Fedora, CentOS, ALT)
 ├── falco/
 │   ├── falco.yaml             # Конфигурация Falco
 │   ├── falcosidekick.yaml     # Маршрутизация событий (Alertmanager, Loki, webhook)
@@ -280,8 +280,8 @@ test-hard/
 make up          # полный стек (целевые контейнеры, мониторинг, сканеры)
 make up-targets  # только целевые контейнеры и сканеры
 make monitor     # Prometheus + Alertmanager + Grafana + Telegraf
-make down        # docker compose down
-make logs        # docker compose logs -f --tail=200
+make down        # podman-compose down
+make logs        # podman-compose logs -f --tail=200
 make restart     # перезапуск стека
 ```
 
@@ -311,9 +311,57 @@ make test-coverage
 * **Build and Push** — сборка, публикация в GHCR, Cosign signing, SBOM
 * **CodeQL** — статический анализ кода
 * **CD Pipeline** — деплой в staging/production
-* **Docker Publish** — публикация Docker-образов
+* **Podman Publish** — публикация Podman-образов
 * **Hardening Suite** — запуск hardening-проверок
 * **Dependency Update** — автообновление зависимостей
+
+## Dashboard API
+
+Платформа включает REST API для управления безопасностью:
+
+### Аутентификация
+
+```bash
+# Получить JWT токен
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123!"}'
+```
+
+### Основные endpoints
+
+| Endpoint | Метод | Описание |
+|----------|-------|----------|
+| `/api/v1/health` | GET | Проверка здоровья API |
+| `/api/v1/auth/login` | POST | Аутентификация |
+| `/api/v1/clusters` | GET/POST | Управление кластерами |
+| `/api/v1/clusters/{id}/discover` | POST | Обнаружение контейнеров |
+| `/api/v1/clusters/{id}/drift` | POST | Drift detection |
+| `/api/v1/clusters/{id}/image-check` | POST | Проверка образов |
+| `/api/v1/clusters/{id}/risk-score` | POST | Оценка рисков |
+| `/api/v1/hosts` | GET | Список хостов/контейнеров |
+| `/api/v1/scans` | GET/POST | Управление сканированиями |
+
+### Создание Podman кластера
+
+```bash
+# Linux
+curl -X POST http://localhost:8000/api/v1/clusters \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"local-podman","cluster_type":"podman","podman_host":"tcp://podman-proxy:2375"}'
+
+# Windows (используйте host.containers.internal)
+curl -X POST http://localhost:8000/api/v1/clusters \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"local-podman","cluster_type":"podman","podman_host":"tcp://host.containers.internal:2375"}'
+```
+
+### Учетные данные по умолчанию
+
+* **Username:** `admin`
+* **Password:** `admin123!`
 
 ## Kubernetes
 
@@ -350,7 +398,7 @@ kubectl apply -k k8s/overlays/prod
 
 ## CIS Benchmarks Compliance
 
-Политики безопасности основаны на актуальных требованиях из CIS Kubernetes Benchmark v1.12.0, CIS Docker Benchmark v1.8.0 и FSTEK.
+Политики безопасности основаны на актуальных требованиях из CIS Kubernetes Benchmark v1.12.0, CIS Podman Benchmark v1.8.0 и FSTEK.
 
 ### OPA Gatekeeper — 14 политик
 
@@ -361,7 +409,7 @@ kubectl apply -k k8s/overlays/prod
 | 3 | Privileged Container | 5.2.1 | Запрет privileged |
 | 4 | RunAsNonRoot | 5.2.6 | Non-root пользователь |
 | 5 | Required Resources | best practice | CPU/memory лимиты |
-| 6 | Block Docker Socket | Docker 5.31 | Запрет /var/run/docker.sock |
+| 6 | Block Podman Socket | Podman 5.31 | Запрет /var/run/docker.sock |
 | 7 | Required Probes | best practice | liveness + readiness |
 | 8 | Privilege Escalation | 5.2.5 | allowPrivilegeEscalation: false |
 | 9 | Dangerous Capabilities | 5.2.7/5.2.8 | Блокировка SYS_ADMIN, SYS_MODULE и др. |
@@ -432,13 +480,13 @@ kube-bench --config k8s/base/kube-bench-config.yaml
 
 ## Container Image Scanning (Trivy)
 
-* **Trivy Server** — локальное сканирование образов (docker-compose, :4954)
+* **Trivy Server** — локальное сканирование образов (podman-compose, :4954)
 * **SBOM** — генерация CycloneDX + SPDX
 * **CI/CD блокировка** — автоматическая блокировка образов с CRITICAL/HIGH уязвимостями
 * **OPA/Gatekeeper** — 14 CIS-политик для Kubernetes (CIS 5.2.x, 5.3.x, 5.5.x, 5.7.x)
 
 ```bash
-# Сканировать все образы из docker-compose
+# Сканировать все образы из podman-compose
 ./scripts/scanning/scan-images.sh --all --sbom
 
 # Сканировать конкретный образ
