@@ -18,8 +18,8 @@ updates:
       prefix-development: "chore"
       include: "scope"
 
-  # Podman dependencies
-  - package-ecosystem: "podman"
+  # Container image dependencies (Containerfile/Dockerfile)
+  - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
@@ -28,7 +28,7 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
-      - "podman"
+      - "container"
     reviewers:
       - "alexbergh"
     commit-message:

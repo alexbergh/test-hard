@@ -57,19 +57,19 @@ monitor: ## Start monitoring stack (Prometheus, Grafana, etc)
 	$(COMPOSE) up -d $(MONITORING_SERVICES)
 
 up-with-logging: ## Start all services with centralized logging (Loki)
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.logging.yml up -d
+	$(COMPOSE) -f podman-compose.yml -f podman-compose.logging.yml up -d
 
 logging: ## Start only logging stack (Loki, Promtail)
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.logging.yml up -d loki promtail
+	$(COMPOSE) -f podman-compose.yml -f podman-compose.logging.yml up -d loki promtail
 
 up-with-tracing: ## Start all services with distributed tracing (Tempo)
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.tracing.yml up -d
+	$(COMPOSE) -f podman-compose.yml -f podman-compose.tracing.yml up -d
 
 tracing: ## Start only tracing stack (Tempo)
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.tracing.yml up -d tempo
+	$(COMPOSE) -f podman-compose.yml -f podman-compose.tracing.yml up -d tempo
 
 dashboard: ## Start dashboard (backend + frontend)
-	$(COMPOSE) -f dashboard/docker-compose.yml up -d
+	$(COMPOSE) -f dashboard/podman-compose.yml up -d
 
 dashboard-dev: ## Start dashboard in development mode
 	cd dashboard/backend && uvicorn app.main:app --reload &
@@ -107,26 +107,26 @@ health:
 validate:
 	@echo "Validating configurations..."
 	@$(COMPOSE) config >/dev/null && echo "podman-compose.yml valid" || echo "podman-compose.yml invalid"
-	@$(PYTHON) -c "import yaml; yaml.safe_load(open('prometheus/prometheus.yml'))" && echo "✓ prometheus.yml valid" || echo "✗ prometheus.yml invalid"
-	@$(PYTHON) -c "import yaml; yaml.safe_load(open('prometheus/alert.rules.yml'))" && echo "✓ alert.rules.yml valid" || echo "✗ alert.rules.yml invalid"
-	@test -f .env || echo "⚠ .env file not found - using defaults"
+	@$(PYTHON) -c "import yaml; yaml.safe_load(open('prometheus/prometheus.yml'))" && echo "[OK] prometheus.yml valid" || echo "[FAIL] prometheus.yml invalid"
+	@$(PYTHON) -c "import yaml; yaml.safe_load(open('prometheus/alert.rules.yml'))" && echo "[OK] alert.rules.yml valid" || echo "[FAIL] alert.rules.yml invalid"
+	@test -f .env || echo "[WARN] .env file not found - using defaults"
 
 test:
 	@echo "Running basic tests..."
-	@find scripts -name "*.py" -exec $(PYTHON) -m py_compile {} \; && echo "✓ Python scripts syntax OK" || echo "✗ Python syntax errors"
-	@find scripts -name "*.sh" -exec bash -n {} \; && echo "✓ Shell scripts syntax OK" || echo "✗ Shell syntax errors"
+	@find scripts -name "*.py" -exec $(PYTHON) -m py_compile {} \; && echo "[OK] Python scripts syntax OK" || echo "[FAIL] Python syntax errors"
+	@find scripts -name "*.sh" -exec bash -n {} \; && echo "[OK] Shell scripts syntax OK" || echo "[FAIL] Shell syntax errors"
 
 setup:
 	@echo "Initial setup..."
-	@test -f .env || { cp .env.example .env && echo "✓ Created .env from .env.example"; }
+	@test -f .env || { cp .env.example .env && echo "[OK] Created .env from .env.example"; }
 	@mkdir -p reports art-storage/history art-storage/prometheus
-	@echo "✓ Setup complete"
+	@echo "[OK] Setup complete"
 
 install-dev:
 	@echo "Installing development dependencies..."
 	@$(PYTHON) -m pip install -r requirements.txt
 	@pre-commit install
-	@echo "✓ Development environment ready"
+	@echo "[OK] Development environment ready"
 
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
@@ -169,20 +169,20 @@ format:
 	@echo "Formatting code..."
 	@$(PYTHON) -m black scripts/ tests/
 	@$(PYTHON) -m isort scripts/ tests/
-	@echo "✓ Code formatted"
+	@echo "[OK] Code formatted"
 
 ci: lint test-all
-	@echo "✓ CI checks passed"
+	@echo "[OK] CI checks passed"
 
 # Environment-specific deployments
 up-dev:
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml up -d
+	$(COMPOSE) -f podman-compose.yml -f podman-compose.dev.yml up -d
 
 up-staging:
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.staging.yml up -d
+	$(COMPOSE) -f podman-compose.yml -f podman-compose.staging.yml up -d
 
 up-prod:
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up -d
+	$(COMPOSE) -f podman-compose.yml -f podman-compose.prod.yml up -d
 
 # Kubernetes deployment
 k8s-dev:
@@ -223,16 +223,16 @@ security: ## Run security checks on configuration
 	@echo "Running security checks..."
 	@./scripts/testing/verify_fixes.sh
 	@echo "Checking for secrets in code..."
-	@git secrets --scan || echo "⚠ git-secrets not installed"
+	@git secrets --scan || echo "[WARN] git-secrets not installed"
 
 # Validation helpers
 validate-all: validate ## Comprehensive validation of all configs
 	@echo "Validating YAML files..."
-	@yamllint . || echo "⚠ yamllint not installed"
+	@yamllint . || echo "[WARN] yamllint not installed"
 	@echo "Validating shell scripts..."
-	@shellcheck scripts/**/*.sh || echo "⚠ shellcheck not installed"
-	@echo "Validating Dockerfiles..."
-	@hadolint docker/Dockerfile.* || echo "⚠ hadolint not installed"
+	@shellcheck scripts/**/*.sh || echo "[WARN] shellcheck not installed"
+	@echo "Validating Containerfiles..."
+	@hadolint Containerfile || echo "[WARN] hadolint not installed"
 
 # Podman optimization
 podman-measure: ## Measure Podman image sizes and build times
@@ -280,12 +280,12 @@ clean-all: clean ## Clean everything including volumes
 	@echo "Cleaning all data..."
 	@$(COMPOSE) down -v
 	@rm -rf prometheus-data grafana-data
-	@echo "✓ All data cleaned"
+	@echo "[OK] All data cleaned"
 
 clean-reports: ## Clean only report files
 	@rm -rf reports/*
 	@mkdir -p reports
-	@echo "✓ Reports cleaned"
+	@echo "[OK] Reports cleaned"
 
 clean-cache: ## Clean Podman build cache
 	@podman builder prune -a -f
@@ -313,7 +313,7 @@ diagnostics: ## Create diagnostic bundle
 	@$(COMPOSE) logs > diagnostics/logs.txt 2>&1
 	@podman stats --no-stream > diagnostics/stats.txt 2>&1
 	@podman system df > diagnostics/df.txt 2>&1
-	@cp docker-compose.yml diagnostics/ 2>&1
+	@cp podman-compose.yml diagnostics/ 2>&1
 	@tar czf diagnostics-$(shell date +%Y%m%d).tar.gz diagnostics/
 	@rm -rf diagnostics/
-	@echo "✓ Diagnostic bundle created: diagnostics-$(shell date +%Y%m%d).tar.gz"
+	@echo "[OK] Diagnostic bundle created: diagnostics-$(shell date +%Y%m%d).tar.gz"

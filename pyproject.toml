@@ -182,6 +182,5 @@ exclude_dirs = [
     ".venv",
 ]
 skips = [
-    "B101",  # assert_used
-    "B601",  # paramiko_calls
+    "B101",  # assert_used - assertions are used intentionally in non-production code
 ]

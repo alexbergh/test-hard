@@ -14,9 +14,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check for Podman image updates
+      - name: Install podman-compose
+        run: pip install podman-compose
+
+      - name: Check for container image updates
         run: |
-          echo "Checking for Podman image updates..."
+          echo "Checking for container image updates..."
           podman-compose pull || true
           podman images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
@@ -24,6 +27,7 @@ jobs:
         run: |
           pip install pip-audit
           pip-audit -r requirements.txt || true
+          pip-audit -r dashboard/backend/requirements.txt || true
 
       - name: Create update report
         run: |
@@ -31,11 +35,15 @@ jobs:
           echo "" >> update-report.md
           echo "Generated on: $(date)" >> update-report.md
           echo "" >> update-report.md
-          echo "## Podman Images" >> update-report.md
-          podman-compose config --images >> update-report.md
+          echo "## Container Images" >> update-report.md
+          podman-compose config --images >> update-report.md || true
+          echo "" >> update-report.md
+          echo "## Python Audit" >> update-report.md
+          pip-audit -r requirements.txt --format json >> update-report.md 2>/dev/null || true
 
       - name: Upload report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dependency-report
           path: update-report.md
+          retention-days: 30
