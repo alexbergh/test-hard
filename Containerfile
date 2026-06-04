@@ -106,6 +106,10 @@ RUN mkdir -p /var/lib/hardening/results \
 
 RUN find /opt/test-hard/scanners -type f -name "*.sh" -exec chmod +x {} \;
 
+# Create non-root user for runtime (scanners may override with --user root)
+RUN groupadd -r scanner && useradd -r -g scanner -d /opt/test-hard -s /bin/bash scanner \
+    && chown -R scanner:scanner /opt/test-hard /var/lib/hardening
+
 # Set working directory
 WORKDIR /opt/test-hard
 
@@ -113,12 +117,18 @@ WORKDIR /opt/test-hard
 COPY containers/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Health check - verify core tools are accessible
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD ["/usr/sbin/lynis", "--version"] || exit 1
+
 # Labels
 LABEL org.opencontainers.image.title="test-hard" \
       org.opencontainers.image.description="Security hardening and monitoring platform" \
       org.opencontainers.image.source="https://github.com/alexbergh/test-hard" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="1.0.0"
+
+USER scanner
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["help"]

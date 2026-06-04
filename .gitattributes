@@ -24,10 +24,12 @@
 *.txt text eol=lf
 *.rst text eol=lf
 
-# Docker
+# Containers
+Containerfile* text eol=lf
 Dockerfile* text eol=lf
+*.containerignore text eol=lf
 *.dockerignore text eol=lf
-docker-compose*.yml text eol=lf
+podman-compose*.yml text eol=lf
 
 # Makefile
 Makefile text eol=lf
@@ -68,6 +70,7 @@ docs/examples/ export-ignore
 *.md export-ignore
 CONTRIBUTING.md -export-ignore
 README.md -export-ignore
+SECURITY.md -export-ignore
 LICENSE -export-ignore
 
 # Linguist overrides (для GitHub language detection)

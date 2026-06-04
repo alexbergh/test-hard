@@ -10,12 +10,12 @@ import requests
 
 
 @pytest.mark.integration
-@pytest.mark.requires_docker
-class TestDockerComposeIntegration:
+@pytest.mark.requires_podman
+class TestPodmanComposeIntegration:
     """Test Podman Compose stack integration."""
 
     @pytest.fixture(scope="class")
-    def docker_services(self):
+    def podman_services(self):
         """Start Podman Compose services for testing."""
         project_root = Path(__file__).parent.parent.parent
 
@@ -36,12 +36,12 @@ class TestDockerComposeIntegration:
         # Cleanup
         subprocess.run(["podman", "compose", "down", "-v"], cwd=project_root)
 
-    def test_prometheus_health(self, docker_services):
+    def test_prometheus_health(self, podman_services):
         """Test Prometheus health endpoint."""
         response = requests.get("http://localhost:9090/-/healthy", timeout=5)
         assert response.status_code == 200
 
-    def test_prometheus_targets(self, docker_services):
+    def test_prometheus_targets(self, podman_services):
         """Test that Prometheus can reach its targets."""
         response = requests.get("http://localhost:9090/api/v1/targets", timeout=5)
         assert response.status_code == 200
@@ -49,14 +49,14 @@ class TestDockerComposeIntegration:
         assert "data" in data
         assert "activeTargets" in data["data"]
 
-    def test_grafana_health(self, docker_services):
+    def test_grafana_health(self, podman_services):
         """Test Grafana health endpoint."""
         response = requests.get("http://localhost:3000/api/health", timeout=5)
         assert response.status_code == 200
         data = response.json()
         assert data.get("database") == "ok"
 
-    def test_grafana_datasource(self, docker_services):
+    def test_grafana_datasource(self, podman_services):
         """Test that Grafana has Prometheus datasource configured."""
         # Grafana credentials can be overridden via env/.env in different environments.
         # Try a small set of common credentials to make local runs reliable while
@@ -90,13 +90,13 @@ class TestDockerComposeIntegration:
         prometheus_ds = [ds for ds in datasources if ds["type"] == "prometheus"]
         assert len(prometheus_ds) > 0
 
-    def test_telegraf_metrics(self, docker_services):
+    def test_telegraf_metrics(self, podman_services):
         """Test that Telegraf exposes metrics."""
         response = requests.get("http://localhost:9091/metrics", timeout=5)
         assert response.status_code == 200
         assert "# HELP" in response.text
 
-    def test_alertmanager_health(self, docker_services):
+    def test_alertmanager_health(self, podman_services):
         """Test Alertmanager health endpoint."""
         response = requests.get("http://localhost:9093/-/healthy", timeout=5)
         assert response.status_code == 200
@@ -117,7 +117,7 @@ class TestDockerComposeIntegration:
         assert running_count >= 5  # prometheus, grafana, telegraf, alertmanager, docker-proxy
 
     @pytest.mark.slow
-    def test_prometheus_scrapes_telegraf(self, docker_services):
+    def test_prometheus_scrapes_telegraf(self, podman_services):
         """Test that Prometheus is scraping Telegraf."""
         # Wait a bit for scraping to happen
         time.sleep(30)
@@ -154,7 +154,7 @@ def test_makefile_commands():
 
 
 @pytest.mark.integration
-@pytest.mark.requires_docker
+@pytest.mark.requires_podman
 def test_scanner_images_build():
     """Test that the unified scanner Podman image can be built."""
     project_root = Path(__file__).parent.parent.parent

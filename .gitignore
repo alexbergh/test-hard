@@ -95,9 +95,10 @@ dist/
 *.egg
 *.whl
 
-# Docker artifacts
+# Container artifacts
 .dockerignore.backup
-docker-compose*.backup
+.containerignore.backup
+podman-compose*.backup
 
 # Backups from scripts
 backups/
