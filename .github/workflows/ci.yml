@@ -191,7 +191,7 @@ jobs:
 
       - name: Upload logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: container-logs
           path: logs.txt
@@ -275,7 +275,7 @@ jobs:
           echo "Commit: ${{ github.sha }}" >> build-info.txt
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-info
           path: build-info.txt
