@@ -119,7 +119,7 @@ RUN chmod +x /entrypoint.sh
 
 # Health check - verify core tools are accessible
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD ["/usr/sbin/lynis", "--version"] || exit 1
+    CMD /usr/sbin/lynis --version || exit 1
 
 # Labels
 LABEL org.opencontainers.image.title="test-hard" \
