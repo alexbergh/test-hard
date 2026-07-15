@@ -2,6 +2,8 @@
 # Install: pip install pre-commit && pre-commit install
 # Run: pre-commit run --all-files
 
+exclude: 'node_modules/'
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

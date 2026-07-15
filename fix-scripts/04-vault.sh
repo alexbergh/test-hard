@@ -24,7 +24,7 @@ else
     fi
 
     echo "Unsealing with keys from $KEYS_FILE..."
-    grep 'Unseal Key' "$KEYS_FILE" | head -2 | awk '{print $NF}' | while read key; do
+    grep 'Unseal Key' "$KEYS_FILE" | head -2 | awk '{print $NF}' | while read -r key; do
         echo "Unsealing with key..."
         kubectl exec -n vault vault-0 -- vault operator unseal "$key" 2>/dev/null | grep -E 'Sealed|Progress'
     done

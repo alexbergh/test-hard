@@ -45,7 +45,7 @@ spec:
               entries:
               - keys:
                   publicKeys: |-
-$(echo "$PUB_KEY" | sed 's/^/                    /')
+$(printf '%s' "$PUB_KEY" | sed 's/^/                    /')
 ENDPOLICY
 
 kubectl apply -f /tmp/verify-images.yaml 2>&1

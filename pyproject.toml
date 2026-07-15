@@ -108,6 +108,7 @@ ignore = [
 "scanners/openscap/entrypoint.py" = ["T201"]            # CLI script uses print
 "falco/responder/responder.py" = ["S104"]               # binding to 0.0.0.0 is intentional
 "scripts/**/*.py" = ["T201", "S108", "S110", "S311", "S314"]  # scripts: print, /tmp, xml, random
+"remote-scripts/**/*.py" = ["T201", "S105", "S108", "S110", "S311", "S314", "E402", "E702", "E741", "B904", "I001", "SIM117"]  # remote-scripts: same as scripts + one-liners, ambiguous names
 "tests/**/*.py" = ["S105", "S106", "S108", "E402"]     # test passwords + /tmp + sys.path imports
 
 [tool.ruff.lint.isort]

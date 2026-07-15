@@ -9,46 +9,53 @@ Since vault-init.txt is empty, we attempt to find keys from:
 
 If keys are truly unavailable, re-init vault (DESTRUCTIVE - loses all data).
 """
-import subprocess, re, os, json
+
+import json
+import os
+import re
+import subprocess
+
 
 def run(cmd, inp=None, timeout=30):
     r = subprocess.run(cmd, capture_output=True, text=True, input=inp, timeout=timeout)
     return r.stdout.strip(), r.stderr.strip()
 
+
 def vexec(vault_cmd, timeout=15):
-    return run(['kubectl', 'exec', '-n', 'vault', 'vault-0', '--'] + vault_cmd, timeout=timeout)
+    return run(["kubectl", "exec", "-n", "vault", "vault-0", "--"] + vault_cmd, timeout=timeout)
+
 
 print("=== Vault status ===")
-out, _ = vexec(['vault', 'status'])
+out, _ = vexec(["vault", "status"])
 print(out[:300])
 
 # Check if already have auth list working
-out2, err2 = vexec(['vault', 'auth', 'list'])
+out2, err2 = vexec(["vault", "auth", "list"])
 print("\n=== Current auth list (no token) ===")
 print(out2[:200] or err2[:200])
 
 # If kubernetes is already there (from a previous login state)
-if 'kubernetes' in out2.lower():
+if "kubernetes" in out2.lower():
     print("SKIP: Kubernetes auth already enabled")
     raise SystemExit(0)
 
 # Try generate-root with no keys (will show OTP + nonce, need to provide keys)
 print("\n=== Attempting generate-root init ===")
-out3, err3 = vexec(['vault', 'operator', 'generate-root', '-init', '-format=json'])
+out3, err3 = vexec(["vault", "operator", "generate-root", "-init", "-format=json"])
 print(out3[:300] or err3[:200])
 
 if not out3.strip():
     print("ERROR: generate-root failed")
     # Check if there's already a generate-root in progress
-    out_cancel, _ = vexec(['vault', 'operator', 'generate-root', '-cancel'])
+    out_cancel, _ = vexec(["vault", "operator", "generate-root", "-cancel"])
     print("Cancel result:", out_cancel[:100])
-    out3, err3 = vexec(['vault', 'operator', 'generate-root', '-init', '-format=json'])
+    out3, err3 = vexec(["vault", "operator", "generate-root", "-init", "-format=json"])
     print("Retry:", out3[:300] or err3[:200])
 
 try:
     data = json.loads(out3)
-    otp   = data.get('otp', '')
-    nonce = data.get('nonce', '')
+    otp = data.get("otp", "")
+    nonce = data.get("nonce", "")
     print(f"\nOTP: {otp[:20]}...")
     print(f"Nonce: {nonce}")
 except Exception as e:
@@ -70,11 +77,11 @@ except Exception as e:
 # We have OTP and nonce - but need the unseal keys
 # Check if there are any keys stored anywhere
 keys = []
-for path in ['/root/vault-init.txt', '/root/vault-keys.txt']:
+for path in ["/root/vault-init.txt", "/root/vault-keys.txt"]:
     if os.path.exists(path) and os.path.getsize(path) > 0:
         with open(path) as f:
             content = f.read()
-        found = re.findall(r'Unseal Key \d+:\s+(\S+)', content)
+        found = re.findall(r"Unseal Key \d+:\s+(\S+)", content)
         keys.extend(found)
 
 print(f"\nFound {len(keys)} unseal keys")
@@ -91,10 +98,9 @@ if len(keys) < 2:
 # Provide keys
 encoded_token = None
 for i, key in enumerate(keys[:2]):
-    out_k, err_k = vexec(['vault', 'operator', 'generate-root',
-                           f'-nonce={nonce}', key], timeout=15)
+    out_k, err_k = vexec(["vault", "operator", "generate-root", f"-nonce={nonce}", key], timeout=15)
     print(f"Key {i+1} result: {out_k[:200] or err_k[:100]}")
-    m = re.search(r'Encoded Token\s+(\S+)', out_k)
+    m = re.search(r"Encoded Token\s+(\S+)", out_k)
     if m:
         encoded_token = m.group(1)
         print(f"Encoded token: {encoded_token[:20]}...")
@@ -104,28 +110,35 @@ if not encoded_token:
     raise SystemExit(1)
 
 # Decode
-out_dec, err_dec = vexec(['vault', 'operator', 'generate-root',
-                           f'-otp={otp}', '-decode', encoded_token], timeout=15)
+out_dec, err_dec = vexec(["vault", "operator", "generate-root", f"-otp={otp}", "-decode", encoded_token], timeout=15)
 root_token = out_dec.strip()
 print(f"\nRoot token: {root_token[:12]}...")
 
 # Save token
-with open('/root/vault-root-token.txt', 'w') as f:
+with open("/root/vault-root-token.txt", "w") as f:
     f.write(root_token)
 print("Saved to /root/vault-root-token.txt")
 
 # Enable k8s auth
-out_al, _ = vexec(['env', f'VAULT_TOKEN={root_token}', 'vault', 'auth', 'list'])
-if 'kubernetes' in out_al.lower():
+out_al, _ = vexec(["env", f"VAULT_TOKEN={root_token}", "vault", "auth", "list"])
+if "kubernetes" in out_al.lower():
     print("k8s auth already enabled")
 else:
-    _, e1 = vexec(['env', f'VAULT_TOKEN={root_token}', 'vault', 'auth', 'enable', 'kubernetes'])
+    _, e1 = vexec(["env", f"VAULT_TOKEN={root_token}", "vault", "auth", "enable", "kubernetes"])
     print(f"enable kubernetes: {e1 or 'ok'}")
-    _, e2 = vexec(['env', f'VAULT_TOKEN={root_token}', 'vault', 'write',
-                   'auth/kubernetes/config', 'kubernetes_host=https://10.10.10.10:6443'])
+    _, e2 = vexec(
+        [
+            "env",
+            f"VAULT_TOKEN={root_token}",
+            "vault",
+            "write",
+            "auth/kubernetes/config",
+            "kubernetes_host=https://10.10.10.10:6443",
+        ]
+    )
     print(f"configure: {e2 or 'ok'}")
 
-out_final, _ = vexec(['env', f'VAULT_TOKEN={root_token}', 'vault', 'auth', 'list'])
+out_final, _ = vexec(["env", f"VAULT_TOKEN={root_token}", "vault", "auth", "list"])
 print("\nFinal auth list:")
 print(out_final[:300])
 print("VAULT_K8S_AUTH_DONE")

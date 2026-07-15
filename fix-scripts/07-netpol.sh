@@ -3,7 +3,8 @@
 
 apply_netpol() {
     local ns=$1
-    local count=$(kubectl get networkpolicies -n $ns --no-headers 2>/dev/null | wc -l)
+    local count
+    count=$(kubectl get networkpolicies -n "$ns" --no-headers 2>/dev/null | wc -l)
     if [ "$count" -gt 0 ]; then
         echo "SKIP $ns already has NetworkPolicies"
         return
