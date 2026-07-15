@@ -29,7 +29,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  TRIVY_VERSION: '0.58.0'
+  TRIVY_VERSION: '0.72.0'
 
 jobs:
   # ──────────────────────────────────────────────
@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Сканирование FS — уязвимости зависимостей
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -57,7 +57,7 @@ jobs:
           trivyignores: 'trivy/.trivyignore'
 
       - name: Сканирование FS — мисконфигурации (Containerfile, K8s, etc.)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'config'
           scan-ref: '.'
@@ -122,7 +122,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Сканирование образа — уязвимости
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'test-hard:scan'
           format: 'json'
@@ -133,7 +133,7 @@ jobs:
           exit-code: '0'
 
       - name: Сканирование образа — SARIF для GitHub
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'test-hard:scan'
           format: 'sarif'
@@ -153,7 +153,7 @@ jobs:
 
       # ---- Блокировка при наличии критических уязвимостей ----
       - name: "Блокировка: проверка CRITICAL уязвимостей"
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         env:
           TRIVY_FORMAT: table
           TRIVY_OUTPUT: ''
@@ -265,7 +265,7 @@ jobs:
         continue-on-error: true
 
       - name: Сканирование ${{ matrix.image }}
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ matrix.image }}
           format: 'table'
